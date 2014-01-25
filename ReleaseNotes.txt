@@ -1,0 +1,37 @@
+Automatic Backup Release Notes (C) Valentin Illich 2011-2013
+
+Release 1.9:
+============
+
+- new: added setting for suspending backup execution after given timeout, continuing on next run
+- new: checking (and waiting) for existence of source and destination path in order to deal with removable media
+- fixed multi selection bug: now closing windows after execution
+- fixed problem with missing online help on Mountain Lion
+
+Release 1.8:
+============
+
+- new: when cancelling backup in batch, no longer doing verify
+- new: when cleaning up a backup, on demand moving files to special directory before deleting
+- while cleaning up backups, empty directories are deleted now
+
+Release 1.7:
+============
+
+- now verifying files in backup (CRC method) with the next higher time interval than selected for backup
+- progress bar now dealing with big sizes (more than 2GB)
+
+Release 1.6:
+============
+
+- adding menu "Run now" when in background (keep running) mode
+- Added timeout of 20 seconds for the quit warning
+- when cleaning up a backup, now the source directory is scanned for duplicates, too.
+- tooltip only showing up when not in background mode
+- repositioning icon after Config as workaround on not regognizing screen size changes bug
+
+Release 1.5:
+============
+
+- added "Run & Shutdown" mode for executing large backups. After backup is done,
+  the machine will shut down. Quitting the application in this mode will give a warning

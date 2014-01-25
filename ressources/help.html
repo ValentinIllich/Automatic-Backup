@@ -1,0 +1,57 @@
+<html>
+<head>
+	<meta name='qrichtext' content='1' />\n"
+	<title>Filter Help</title>\n"
+</head>
+<body>
+
+<h2>The syntax of the Filter Condition field</h2>
+
+<p>
+The syntax of the filter definition field defines two sections for include 
+and exclude definitions. The include section begins with  '+', 
+the exclude section with '-'. Both sections may be omitted but the include section 
+has to be defined first. If a part of or the whole include section is empty all 
+directories/files are taken. If a part of or the whole exclude section is empty 
+nothing will be exluded.
+</p>
+
+<p>
+All directories to be included/excluded are listet with the ';' seperator. Behind the last 
+named directory there may be a list of files in brackets, again seperated by ';'.
+</p>
+
+<p>
+The filter algorithm will include/exclude directories and files if the specified string is part 
+of the full pathname. The full syntax is given in the table below.
+</p>
+
+<table cellspacing=0 cellpadding=0>
+<tr><td><font face=courier>filter</font></td><td> := </td><td><font face=courier>[ [+]includelist ] [ -excludelist ]</font></tr>
+<tr><td></td><td></tr>
+<tr><td><font face=courier>includelist</font></td><td> := </td><td><font face=courier>[ directorylist ] [( filelist )]</font></tr>
+<tr><td><font face=courier>excludelist</font></td><td> := </td><td><font face=courier>[ directorylist ] [( filelist )]</font></tr>
+<tr><td></td><td></tr>
+<tr><td><font face=courier>directorylist</font></td><td> := </td><td><font face=courier>directory [; directory [ ... ] ]</font></tr>
+<tr><td><font face=courier>filelist</font></td><td> := </td><td><font face=courier>file [; file [ ... ] ]</font></tr>
+<tr><td></td><td></tr>
+<tr><td><font face=courier>directory</font></td><td> := </td><td><font face=courier>directoryname | part of directoryname | relative path</font></tr>
+<tr><td><font face=courier>file</font></td><td> := </td><td><font face=courier>filename | part of filename | relative path</font></tr>
+</table>
+
+<h2>Examples</h2>
+
+<table>
+<tr><td><font face=courier>-/temp/</font></td><td>will exclude everything inside any folder named 'temp'</tr>
+<tr><td><font face=courier>-temp</font></td><td>will exclude every folder with 'temp' in its name. So the folder
+'templates' will be excluded as well!</tr>
+<tr><td><font face=courier>-/cache/;/Cache/(.tmp)</font></td><td>will exclude all files inside cache folders
+and all files with the extension 'tmp' regardless where they are.</tr>
+<tr><td></td><td></tr>
+<tr><td><font face=courier>+(.jpg;.bmp)-/temp/</font></td><td>will backup only JPEG and BMP images 
+outside any 'temp' folders.</tr>
+</table>
+
+</body>
+</html>
+

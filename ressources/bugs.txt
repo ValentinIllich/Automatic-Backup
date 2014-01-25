@@ -1,0 +1,13 @@
+- die _chk Dateien nicht ins Verify nehmen!
+  (gel√∂st am 21.7.2013, siehe unten)
+
+- Verify nicht durchführen, wenn "preview" gewählt. Nur Meldung!
+
+- Hilfe-PDF erneut auspacken, auch wenn existent
+  (implementiert am 21.7.2013)
+
+- Probleme bei Files, die aktualisiert werden, wenn direckt danach Verify l√§uft?
+  (implementiert am 21.7.2013)
+
+- bei Run&Shutdown KEINE Meldung bei Fehler!!
+  (implementiert 22.7.2013)
