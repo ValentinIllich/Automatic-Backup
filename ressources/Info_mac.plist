@@ -9,7 +9,7 @@
 	<key>CFBundleGetInfoString</key>
 	<string>Created by Qt/QMake</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.trolltech.Designer</string>
+	<string>de.visolutions.AutomaticBackup</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleExecutable</key>
@@ -30,6 +30,6 @@
 		</dict>
 	</array>
 	<key>NOTE</key>
-	<string>Qt/Designer by Nokia Corporation and/or its subsidiary(-ies)</string>
+	<string>Automatic Backup by Valentins QT Solutions</string>
 </dict>
 </plist>
