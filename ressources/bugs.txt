@@ -11,3 +11,8 @@
 
 - bei Run&Shutdown KEINE Meldung bei Fehler!!
   (implementiert 22.7.2013)
+
+- Bei Shutdown während Copy / Verify keine Speicherung des Zustands!
+  (implementiert 31.1.2014)
+
+- Probleme mit Zeitstempel-Erkennung bei Einlegen von Wechselmedium? (mal 0, mal -1)
