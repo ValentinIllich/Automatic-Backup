@@ -73,6 +73,7 @@ protected:
   void closeEvent ( QCloseEvent */*event*/ );
 
 private:
+  void saveData();
   void changeVisibility();
   void startingAction();
   void stoppingAction();

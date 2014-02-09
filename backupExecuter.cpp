@@ -180,6 +180,16 @@ QDataStream &operator>>(QDataStream &in, struct crcInfo &dst)
 
 backupExecuter::~backupExecuter()
 {
+  saveData();
+}
+
+void backupExecuter::screenResizedSlot( int screen )
+{
+  changeVisibility();
+}
+
+void backupExecuter::saveData()
+{
   if( checksumsChanged )
   {
     QString summaryFile = destination+"/checksumsummary.crcs";
@@ -191,11 +201,7 @@ backupExecuter::~backupExecuter()
     str << crcSummary;
     crcfile.close();
   }
-}
-
-void backupExecuter::screenResizedSlot( int screen )
-{
-  changeVisibility();
+  checksumsChanged = false;
 }
 
 void backupExecuter::changeVisibility()
@@ -379,7 +385,6 @@ void backupExecuter::stoppingAction()
 {
   if( verboseExecute->isChecked() || verboseMaintenance->isChecked() )
   {
-    stream.setDevice(0);
     buff.close();
     displayResult(this,QString(buff.buffer()));
   }
@@ -404,8 +409,10 @@ void backupExecuter::stoppingAction()
         QMessageBox::warning(this,"backup problems","problems occured during backup.\nPlease refer to 'backup.log' for details.");
         displayResult(this,errstream,"backup errors");
       }
+
+      m_error = false;
+      errstream = "";
     }
-    stream.setDevice(0);
     //buff.close();
     log->close();
   }
@@ -413,7 +420,9 @@ void backupExecuter::stoppingAction()
   if( m_isBatch ) return;
 
   QString str = "================ backup '" + getTitle() + "' ending on " + QDateTime::currentDateTime().toString() + " ================\r\n";
-  stream << str; errstream.append(str);
+  stream << str;
+
+  stream.setDevice(0);
 
   m_running=false;
   progressLab->setText("");
@@ -1123,6 +1132,8 @@ void backupExecuter::contextMenuEvent(QContextMenuEvent */*event*/)
 
 void backupExecuter::closeEvent ( QCloseEvent */*event*/ )
 {
+  fileObj.close();
+  saveData();
   m_closed = true;
   cancel();
 }
@@ -1790,7 +1801,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                 verifydays = 365;
                 break;
             }
-            if( scanTime.daysTo(startTime)<=verifydays )
+            if( false/*scanTime.daysTo(startTime)<=verifydays*/ )
             {
               willVerify = false;
 
