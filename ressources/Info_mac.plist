@@ -2,12 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleShortVersionString</key>
+	<string>1.9.1-rc-246</string>
+	<key>CFBundleVersion</key>
+	<string>1.9.1</string>
 	<key>CFBundleIconFile</key>
 	<string>@ICON@</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
-	<key>CFBundleGetInfoString</key>
-	<string>Created by Qt/QMake</string>
 	<key>CFBundleIdentifier</key>
 	<string>de.visolutions.AutomaticBackup</string>
 	<key>CFBundleSignature</key>
@@ -15,20 +17,7 @@
 	<key>CFBundleExecutable</key>
 	<string>@EXECUTABLE@</string>
 	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeExtensions</key>
-			<array>
-				<string>ui</string>
-			</array>
-			<key>CFBundleTypeIconFile</key>
-			<string>@ICON@</string>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSIsAppleDefaultForType</key>
-			<true/>
-		</dict>
-	</array>
+	<array/>
 	<key>NOTE</key>
 	<string>Automatic Backup by Valentins QT Solutions</string>
 </dict>
