@@ -38,4 +38,6 @@ macx {
 }
 OTHER_FILES += distribute/welcome.html \
     ressources/help.html \
-    ReleaseNotes.txt
+    ReleaseNotes.txt \
+    ressources/backup.rc \
+    ressources/Info_mac.plist
