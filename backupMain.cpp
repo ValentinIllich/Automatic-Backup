@@ -375,7 +375,7 @@ void backupMain::editBackup()
 {
   m_immediateShutdown = false;
 
-  if( shutDown->isChecked()&& (m_selected>1) )
+  if( shutDown->isChecked()/*&& (m_selected>1)*/ )
   {
     if( QMessageBox::question(0,"security question","Do you want the system to shut down automatically after execution?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::Yes )
       m_immediateShutdown = true;
@@ -388,7 +388,7 @@ void backupMain::editBackup()
 
     if( m_selected==1 )
     {
-      static_cast<backupListItem*>(item)->editBackupItem(shutDown->isChecked());
+      static_cast<backupListItem*>(item)->editBackupItem(m_immediateShutdown);
       // if user just did an edit then cancel shutdown!
       if( !static_cast<backupListItem*>(item)->executionDone() )
         m_immediateShutdown = false;

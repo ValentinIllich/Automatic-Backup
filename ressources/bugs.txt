@@ -1,7 +1,18 @@
-- die _chk Dateien nicht ins Verify nehmen!
-  (gel√∂st am 21.7.2013, siehe unten)
+- Shutdown auch bei Direkt-Execute ?
+  (gelöst 11.5.2014)
+
+- Zielverzeichnisse werden auch angelegt, wenn nix kopiert wird (Filter)
+
+- Wenn CreationDate > ModificationDate dann nix machen!
+  (ist extra so programmiert, warum ?)
 
 - Verify nicht durchführen, wenn "preview" gewählt. Nur Meldung!
+
+- Dateien mit '' oder '' im Namen werden immer kopiert!!
+  (gelöst 11.5.2014)
+
+- die _chk Dateien nicht ins Verify nehmen!
+  (gelöst am 21.7.2013, siehe unten)
 
 - Hilfe-PDF erneut auspacken, auch wenn existent
   (implementiert am 21.7.2013)

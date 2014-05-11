@@ -1,5 +1,7 @@
 Automatic Backup Release Notes (C) Valentin Illich 2011-2013
 
+- fixed problm with always copying files containing '[' or ']' in their names
+
 Release 1.9:
 ============
 

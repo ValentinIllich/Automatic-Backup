@@ -628,7 +628,9 @@ void backupExecuter::analyzeDirectories()
         if( passed )
         {
           QDir dir(dstpath);
-          QString filter = actualName;
+          // we must avoid the [] characters inside search mask (regexp) so
+          // we replace them by the '?' wildcard and check the src and dst filenames later on
+          QString filter = actualName.replace("[","?").replace("]","?");
 
           if( getCompress() ) filter += "_";
           if( getKeep() ) filter += ".*";
@@ -645,26 +647,29 @@ void backupExecuter::analyzeDirectories()
 
           while ( it!=fl.end() ) {
             fi = *it;
-            if(     ( (srcFile.lastModified()>=srcFile.created()) && (srcFile.lastModified()>fi.lastModified()) )
-            ||	( (srcFile.lastModified()<srcFile.created()) && (srcFile.created()>fi.lastModified()) )
-            )
+            if( srcFile.fileName()==fi.fileName() )
             {
-              found = true;
-              copy = true;
-            }
-            else
-            {
-              found = true;
-              copy = false;
-              break;
-            }
-            if( getKeep() )
-            {
-              if( (cnt<(n-1)) && (cnt<toDelete) )//never will delete last that means latest backup version
+              if(     ( (srcFile.lastModified()>=srcFile.created()) && (srcFile.lastModified()>fi.lastModified()) )
+              ||	( (srcFile.lastModified()<srcFile.created()) && (srcFile.created()>fi.lastModified()) )
+              )
               {
-                if( verboseExecute->isChecked() )
-                  stream << "will delete the "+QString::number(cnt)+"th destination file '"+fi.absoluteFilePath()+"'\r\n";
-                QFile::remove(fi.absoluteFilePath());
+                found = true;
+                copy = true;
+              }
+              else
+              {
+                found = true;
+                copy = false;
+                break;
+              }
+              if( getKeep() )
+              {
+                if( (cnt<(n-1)) && (cnt<toDelete) )//never will delete last that means latest backup version
+                {
+                  if( verboseExecute->isChecked() )
+                    stream << "will delete the "+QString::number(cnt)+"th destination file '"+fi.absoluteFilePath()+"'\r\n";
+                  QFile::remove(fi.absoluteFilePath());
+                }
               }
             }
             ++it;
@@ -683,7 +688,7 @@ void backupExecuter::analyzeDirectories()
                 +"), found dst was '"+fi.absoluteFilePath()+"'\r\n";
             }
             else
-              stream << "file(s) "+filter+": no destination file found.\r\n";
+              stream << "destination file(s) "+dstpath+"/"+filter+": not found.\r\n";
           }
         }
         else
