@@ -589,13 +589,13 @@ void backupExecuter::analyzeDirectories()
     }
 
     const QFileInfoList &list = dir.entryInfoList();
-    QFileInfoList::const_iterator it=list.begin();
+    QFileInfoList::const_iterator it2=list.begin();
     QFileInfo srcFile;
 
     unsigned count = 0;
     unsigned long dirkbytes = 0;
 
-    while ( m_running && (it!=list.end()) )
+    while ( m_running && (it2!=list.end()) )
     {
       checkTimeout();
 
@@ -603,7 +603,7 @@ void backupExecuter::analyzeDirectories()
       if( getBackground() )
         m_waiter.Sleep(20);
 
-      srcFile = *it;
+      srcFile = *it2;
       QString actualName = srcFile.fileName();
       QString fullName = srcFile.absoluteFilePath();
       bool passed = true;
@@ -612,14 +612,14 @@ void backupExecuter::analyzeDirectories()
 
       if( !fileincludes.isEmpty() )
         passed = false;
-      for ( QStringList::Iterator it2 = fileincludes.begin(); it2 != fileincludes.end(); ++it2 )
+      for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
       {
-        if( (*it2).isEmpty() || fullName.contains(*it2) )
+        if( (*it3).isEmpty() || fullName.contains(*it3) )
           passed = true;
       }
-      for ( QStringList::Iterator it3 = fileexcludes.begin(); passed && it3 != fileexcludes.end(); ++it3 )
+      for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
       {
-        if( !(*it3).isEmpty() && fullName.contains(*it3) )
+        if( !(*it4).isEmpty() && fullName.contains(*it4) )
           passed = false;
       }
 
@@ -636,7 +636,7 @@ void backupExecuter::analyzeDirectories()
           if( getKeep() ) filter += ".*";
 
           const QFileInfoList &fl = dir.entryInfoList(QStringList(filter));
-          QFileInfoList::const_iterator it = fl.begin();
+          QFileInfoList::const_iterator it5 = fl.begin();
 
           QFileInfo fi;
 
@@ -645,8 +645,8 @@ void backupExecuter::analyzeDirectories()
           int toDelete = n > v ? n-v : 0;
           int cnt = 0;
 
-          while ( it!=fl.end() ) {
-            fi = *it;
+          while ( it5!=fl.end() ) {
+            fi = *it5;
             if( srcFile.fileName()==fi.fileName() )
             {
               if(     ( (srcFile.lastModified()>=srcFile.created()) && (srcFile.lastModified()>fi.lastModified()) )
@@ -672,7 +672,7 @@ void backupExecuter::analyzeDirectories()
                 }
               }
             }
-            ++it;
+            ++it5;
             cnt++;
           }
           if( verboseExecute->isChecked() )
@@ -708,7 +708,7 @@ void backupExecuter::analyzeDirectories()
         dirkbytes += (filesize/1024);
       }
 
-      ++it;
+      ++it2;
     }
 
     if( count>0 )
@@ -1634,7 +1634,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
         else
         {
           QDateTime filemodified = fi.lastModified();
-          QDate today = QDate::currentDate();
+          //QDate today = QDate::currentDate();
 
           QString filename = fi.fileName();
           int cutting = 0;
@@ -1784,7 +1784,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
           if( m_closeAfterExecute && crcSummary.contains(verifyFile) )
           {
             scanTime = QDateTime::fromTime_t(crcSummary[verifyFile].lastScan);
-            int verifydays = 30;
+            /*int verifydays = 30;
             switch( getInterval() )
             {
               case 0://daily
@@ -1805,7 +1805,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
               case 5://yearly
                 verifydays = 365;
                 break;
-            }
+            }*/
             if( false/*scanTime.daysTo(startTime)<=verifydays*/ )
             {
               willVerify = false;
