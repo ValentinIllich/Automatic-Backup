@@ -9,7 +9,7 @@
 #include "backupSplash.h"
 #include "backupMain.h"
 #include "backupExecuter.h"
-#include "../utilities.h"
+#include "utilities.h"
 
 int main( int argc, char **argv )
 {

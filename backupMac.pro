@@ -9,7 +9,7 @@ HEADERS += backupExecuter.h \
     backupMain.h \
     cleanupdialog.h \
     backupSplash.h \
-    ../utilities.h
+    utilities.h
 FORMS += backupwindow.ui \
     mainwindow.ui \
     cleanupdialog.ui
@@ -18,7 +18,7 @@ SOURCES += backupExecuter.cpp \
     main.cpp \
     cleanupdialog.cpp \
     backupSplash.cpp \
-    ../utilities.cpp
+    utilities.cpp
 RESOURCES += backupwindow.qrc
 win32 { 
     MOC_DIR = c:/tmp/backup_obj

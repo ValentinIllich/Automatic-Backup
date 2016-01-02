@@ -6,7 +6,7 @@
 #include "backupSplash.h"
 #include "backupMain.h"
 #include "backupExecuter.h"
-#include "../utilities.h"
+#include "utilities.h"
 
 class startMessage : public QMessageBox
 {
