@@ -2,19 +2,19 @@
 #ifndef _STRINGS_H_
 #define _STRINGS_H_
  
-#define _STR_COMPANY_NAME       "My Company Name"
-#define _STR_PRODUCT_NAME       "ProgramName"
-#define _PRODUCT_VERSION        3,4,0,0
-#define _STR_PRODUCT_VERSION    "3.4"
-#define _STR_FILE_DESCRIPTION   "Short description of the program"
-#define _FILE_VERSION           3,4,1234,0
-#define _STR_FILE_VERSION       "3,4,1234,0"
-#define _STR_INTERNAL_NAME      "ProgramName"
-#define _STR_LEGAL_COPYRIGHT    "Copyright © ..."
+#define _STR_COMPANY_NAME       "VI Solutions"
+#define _STR_PRODUCT_NAME       "Automatic Backup"
+#define _PRODUCT_VERSION        1,10,0,0
+#define _STR_PRODUCT_VERSION    "1.10"
+#define _STR_FILE_DESCRIPTION   "Automatic Backup of Selected Paths"
+#define _FILE_VERSION           1,10,352,0
+#define _STR_FILE_VERSION       "1,10,352,0"
+#define _STR_INTERNAL_NAME      "Automatic Backup"
+#define _STR_LEGAL_COPYRIGHT    "Copyright © 2015 (GPL)"
 #define _STR_LEGAL_TRADE_1      "All rights reserved or something"
 #define _STR_LEGAL_TRADE_2      _STR_LEGAL_TRADE_1
-#define _STR_ORIGINAL_FILE_NAME "Program.exe"
-#define _STR_WEBSITE            "www.mywebsite.com"
+#define _STR_ORIGINAL_FILE_NAME "backup.exe"
+#define _STR_WEBSITE            "www.valentins-qtsolutions.de"
  
 #endif /* _STRINGS_H_ */
 
