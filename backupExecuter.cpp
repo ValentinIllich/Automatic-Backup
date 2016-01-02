@@ -1,5 +1,6 @@
 #include "backupExecuter.h"
 #include "backupMain.h"
+#include "Utilities.h"
 
 #include <qlayout.h>
 
@@ -609,6 +610,7 @@ void backupExecuter::analyzeDirectories()
       bool passed = true;
       bool copy = true;
       bool found = false;
+      bool fix = false;
 
       if( !fileincludes.isEmpty() )
         passed = false;
@@ -649,9 +651,19 @@ void backupExecuter::analyzeDirectories()
             fi = *it5;
             if( srcFile.fileName()==fi.fileName() )
             {
-              if(     ( (srcFile.lastModified()>=srcFile.created()) && (srcFile.lastModified()>fi.lastModified()) )
-              ||	( (srcFile.lastModified()<srcFile.created()) && (srcFile.created()>fi.lastModified()) )
-              )
+              // first of all, fix src modification time if neccessary (must be greater or equal to creation time)
+/*              if( srcFile.created()>srcFile.lastModified() )
+              {
+                if( verboseExecute->isChecked() )
+                  stream << "fix src file(s) "+filter+": "
+                  +"c("+srcFile.created().toString(Qt::ISODate)
+                  +") m("+srcFile.lastModified().toString(Qt::ISODate)
+                  +"'\r\n";
+                else
+                  setTimestamps(srcFile.absoluteFilePath(),srcFile.created());
+              }*/
+
+              if( srcFile.lastModified()>fi.lastModified() )
               {
                 found = true;
                 copy = true;
@@ -660,6 +672,8 @@ void backupExecuter::analyzeDirectories()
               {
                 found = true;
                 copy = false;
+                if( (fi.lastModified()>srcFile.lastModified()) )
+                  fix = true;
                 break;
               }
               if( getKeep() )
@@ -667,7 +681,7 @@ void backupExecuter::analyzeDirectories()
                 if( (cnt<(n-1)) && (cnt<toDelete) )//never will delete last that means latest backup version
                 {
                   if( verboseExecute->isChecked() )
-                    stream << "will delete the "+QString::number(cnt)+"th destination file '"+fi.absoluteFilePath()+"'\r\n";
+                    stream << "will delete the "+QString::number(cnt)+"the destination file '"+fi.absoluteFilePath()+"'\r\n";
                   QFile::remove(fi.absoluteFilePath());
                 }
               }
@@ -680,7 +694,14 @@ void backupExecuter::analyzeDirectories()
             if( found )
             {
               if( copy )
-                stream << "file(s) "+filter+": "
+                stream << "    file(s) "+filter+": "
+                +"c("+srcFile.created().toString(Qt::ISODate)
+                +") m("+srcFile.lastModified().toString(Qt::ISODate)
+                +"), dst c("+fi.created().toString(Qt::ISODate)
+                +") m("+fi.lastModified().toString(Qt::ISODate)
+                +"), found dst was '"+fi.absoluteFilePath()+"'\r\n";
+              if( fix )
+                stream << "fix dst file(s) "+filter+": "
                 +"c("+srcFile.created().toString(Qt::ISODate)
                 +") m("+srcFile.lastModified().toString(Qt::ISODate)
                 +"), dst c("+fi.created().toString(Qt::ISODate)
@@ -689,6 +710,11 @@ void backupExecuter::analyzeDirectories()
             }
             else
               stream << "destination file(s) "+dstpath+"/"+filter+": not found.\r\n";
+          }
+          else
+          {
+            if( fix )
+              setTimestamps(fi.absoluteFilePath(),srcFile.lastModified());
           }
         }
         else
@@ -908,6 +934,10 @@ void backupExecuter::copySelectedFiles()
             stream << "--> " <<  " (" << written << " bytes)\r\n";
           else
             stream << "\r\n";
+
+          // finally, fix modification time stamp to src file
+          QFileInfo fi(srcFile);
+          setTimestamps(dstFile,fi.lastModified());
         }
         else
           dst.remove();
@@ -1355,13 +1385,16 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
         QFileInfo fi(absolutePath);
         QDir dir(fi.dir());
         QStringList list(dir.entryList());
-        while( list.count()<=2 )
+        while( !dir.isRoot() && (list.count()<=2) )
         {
           QFile::remove(dir.absolutePath()+"/.DS_Store");
           QString name = dir.dirName();
           dir.cdUp();
           if( !dir.rmdir(name) )
+          {
             QMessageBox::warning(0,"dir error","directory\n"+dir.absolutePath()+"/"+name+"\nseems to have (hidden) content.");
+            break;
+          }
           else
             list = dir.entryList();
         }
@@ -1490,12 +1523,58 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
             QString srcfile = source + (fi.absolutePath()+"/"+filename).mid(destination.length());
 
-            if( !QFile::exists(srcfile) && (filemodified.daysTo(date)>0) )
+            if( filemodified.daysTo(date)>0 )
             {
-              eraseIt = true;
-              count++;
-              dirkbytes += (fi.size()/1024);
+              if( QFile::exists(srcfile) )
+              {
+                bool passed = true;
+
+                // first, check directories filter
+                if( !dirincludes.isEmpty() )
+                  passed = false;
+                for ( QStringList::Iterator it2 = dirincludes.begin(); it2 != dirincludes.end(); ++it2 )
+                {
+                  if( (*it2).isEmpty() || srcfile.contains(*it2) )
+                    passed = true;
+                }
+                for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
+                {
+                  if( !(*it3).isEmpty() && srcfile.contains(*it3) )
+                    passed = false;
+                }
+
+                if( passed )
+                {
+                  // second, check files filter
+                  if( !fileincludes.isEmpty() )
+                    passed = false;
+                  for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
+                  {
+                    if( (*it3).isEmpty() || srcfile.contains(*it3) )
+                      passed = true;
+                  }
+                  for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
+                  {
+                    if( !(*it4).isEmpty() && srcfile.contains(*it4) )
+                      passed = false;
+                  }
+                }
+
+                if( !passed )
+                {
+                  eraseIt = true;
+                  count++;
+                  dirkbytes += (fi.size()/1024);
+                }
+              }
+              else
+              {
+                eraseIt = true;
+                count++;
+                dirkbytes += (fi.size()/1024);
+              }
             }
+
             if( filemodified.daysTo(today)>365 )
             {
               yearcount++;
@@ -1721,6 +1800,9 @@ void backupExecuter::verifyBackup(QString const &startPath)
 {
   if( startPath.isNull() )
   {
+    if( verboseExecute->isChecked() )
+      return;
+
     progressLab->setText("verifying files in backup...");
     progressBar->setMaximum(lastVerifiedK);
     verifiedK = 0;
