@@ -649,7 +649,10 @@ void backupExecuter::analyzeDirectories()
 
           while ( it5!=fl.end() ) {
             fi = *it5;
-            if( srcFile.fileName()==fi.fileName() )
+            QString destFilename = fi.fileName();
+            if( getKeep() ) destFilename = destFilename.left(destFilename.length()-9);
+            if( getCompress() ) destFilename = destFilename.left(destFilename.length()-1);
+            if( srcFile.fileName()==destFilename )
             {
               // first of all, fix src modification time if neccessary (must be greater or equal to creation time)
 /*              if( srcFile.created()>srcFile.lastModified() )
@@ -1083,7 +1086,7 @@ void backupExecuter::doIt(bool runningInBackground)
   if( m_running && !m_isBatch )
     verifyBackup();
 
-  if( m_running && m_isBatch )
+  if( m_running /*&& m_isBatch*/ )
   {
     stream << "updating backup time of automatic item '"+getTitle()+"'\r\n";
     QFile tst(getSrc()+"/"+getTitle().remove(" "));
@@ -1115,7 +1118,7 @@ void backupExecuter::verifyIt(bool runningInBackground)
 
   verifyBackup();
 
-  if( m_running && m_isBatch )
+  if( m_running /*&& m_isBatch*/ )
   {
     stream << "updating verify time of automatic item '"+getTitle()+"'\r\n";
     QFile tst(getSrc()+"/"+getTitle().remove(" ")+"_chk");
