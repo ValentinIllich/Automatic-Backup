@@ -11,8 +11,6 @@ distribute
 release
 object_script.backup.Release
 object_script.backup.Debug
-backupwin7.pro.user
-backupMac.pro.user
 Info_mac.plist
 ressources/qt_menu.nib
 Thumbs.db
@@ -20,7 +18,8 @@ backup.app
 backupwindow_.ui
 test.qip
 .sync.ffs_db
-*.pro*
+*.pro.user
+*.pro.user
 *.6pre1
-backup.cfg
 *.log
+backup.cfg
