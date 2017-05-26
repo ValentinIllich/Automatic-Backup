@@ -123,6 +123,8 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
 //, m_batchRunning(false)
 , collectingDeleted(false)
 , checksumsChanged(false)
+, m_engine(NULL)
+, m_changed(false)
 {
   setObjectName("backupExecuter");
   setupUi(this);
@@ -160,6 +162,8 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
   }
   else
     lastVerifiedK = 0;
+
+  startTimer(100);
 }
 
 QDataStream &operator<<(QDataStream &out, const struct crcInfo &src)
@@ -184,7 +188,7 @@ backupExecuter::~backupExecuter()
   saveData();
 }
 
-void backupExecuter::screenResizedSlot( int screen )
+void backupExecuter::screenResizedSlot( int /*screen*/ )
 {
   changeVisibility();
 }
@@ -210,19 +214,19 @@ void backupExecuter::changeVisibility()
   if( getBackground() )
   {
     tabWidget->hide();
-    progressLab->hide();
+    progresslabel->hide();
     executeButt->hide();
 
     if( m_isBatch )
     {
-      actualFile->hide();
+      actualfile->hide();
       cancelButt->hide();
       setToolTip(QString("Automatic Backup V")+BACKUP_VERSION+" running.\nProcessing Configuration '"+getTitle()+"'");
     }
     else
     {
-      actualFile->setFixedWidth(450);
-      actualFile->setAlignment(Qt::AlignRight);
+      actualfile->setFixedWidth(450);
+      actualfile->setAlignment(Qt::AlignRight);
     }
 
     // give the layouts time to process size chages
@@ -426,8 +430,8 @@ void backupExecuter::stoppingAction()
   stream.setDevice(0);
 
   m_running=false;
-  progressLab->setText("");
-  actualFile->setText("");
+  setProgressText("");
+  setFileNameText("");
   cancelButt->setText("OK");
 }
 
@@ -474,6 +478,9 @@ void backupExecuter::findDirectories( QString const &start )
       }
       source = msg.getPath();
     }
+
+    setProgressText("Finding Directories...");
+    setProgressMaximum(0);
 
     directories.append(source);
     findDirectories(source);
@@ -540,6 +547,7 @@ void backupExecuter::findDirectories( QString const &start )
         {
           dircount++;
           directories.append(path);
+          setFileNameText(path);
         }
         if( stepinto )
           findDirectories(path);
@@ -557,8 +565,8 @@ void backupExecuter::analyzeDirectories()
   unsigned totalcount = 0;
   unsigned long totaldirkbytes = 0;
 
-  progressLab->setText("Scanning Directories...");
-  progressBar->setMaximum(dircount);
+  setProgressText("Scanning Directories...");
+  setProgressMaximum(dircount);
 
   for ( QStringList::Iterator it=directories.begin(); m_running && it!=directories.end(); ++it,i++ )
   {
@@ -566,9 +574,8 @@ void backupExecuter::analyzeDirectories()
 
     if( m_isBatch )
       setToolTip(QString("Automatic Backup V")+BACKUP_VERSION+" running.\nProcessing Directory '"+*it+"'");
-    actualFile->setText(*it);
-    progressBar->setValue(i);
-    qApp->processEvents();
+    setFileNameText(*it);
+    setProgressValue(i);
     if( getBackground() )
       m_waiter.Sleep(20);
 
@@ -600,7 +607,6 @@ void backupExecuter::analyzeDirectories()
     {
       checkTimeout();
 
-      qApp->processEvents();
       if( getBackground() )
         m_waiter.Sleep(20);
 
@@ -634,8 +640,8 @@ void backupExecuter::analyzeDirectories()
           // we replace them by the '?' wildcard and check the src and dst filenames later on
           QString filter = actualName.replace("[","?").replace("]","?");
 
-          if( getCompress() ) filter += "_";
-          if( getKeep() ) filter += ".*";
+          if( getKeep() ) filter = "*" + filter;
+          if( getCompress() ) filter = "_" + filter;
 
           const QFileInfoList &fl = dir.entryInfoList(QStringList(filter));
           QFileInfoList::const_iterator it5 = fl.begin();
@@ -650,8 +656,8 @@ void backupExecuter::analyzeDirectories()
           while ( it5!=fl.end() ) {
             fi = *it5;
             QString destFilename = fi.fileName();
-            if( getKeep() ) destFilename = destFilename.left(destFilename.length()-9);
-            if( getCompress() ) destFilename = destFilename.left(destFilename.length()-1);
+            if( getCompress() ) destFilename = cutFilenamePrefix(destFilename,1);
+            if( getKeep() ) destFilename = cutFilenamePrefix(destFilename,9);
             if( srcFile.fileName()==destFilename )
             {
               // first of all, fix src modification time if neccessary (must be greater or equal to creation time)
@@ -816,8 +822,8 @@ void backupExecuter::copySelectedFiles()
 
   buffer = new char[buffsize];
 
-  progressLab->setText("processing Files...");
-  progressBar->setMaximum(kbytes_to_copy);
+  setProgressText("processing Files...");
+  setProgressMaximum(kbytes_to_copy);
 
   QTime startTime = QTime::currentTime();
 
@@ -828,17 +834,15 @@ void backupExecuter::copySelectedFiles()
     if( !m_running )
       break;
 
-    actualFile->setText(*it2);
-    progressBar->setValue(copiedk);
-    qApp->processEvents();
+    setFileNameText(*it2);
+    setProgressValue(copiedk);
 
     relPath = *it2;
     srcFile = source + relPath;
+
+    if( getKeep() ) relPath = addFilenamePrefix(relPath,appendixcpy +".");
+    if( getCompress() ) dstFile = addFilenamePrefix(relPath,"_");
     dstFile = destination + relPath;
-    if( getCompress() )
-      dstFile += "_";
-    if( getKeep() )
-      dstFile += ("." + appendixcpy);
 
     QFile src(srcFile);
     if( src.open(QIODevice::ReadOnly) )
@@ -910,8 +914,7 @@ void backupExecuter::copySelectedFiles()
             }
           }
           copiedk += (n/1024);
-          progressBar->setValue(copiedk);
-          qApp->processEvents();
+          setProgressValue(copiedk);
 
           if( /*isBatch &&*/ getBackground() )
           {
@@ -921,8 +924,7 @@ void backupExecuter::copySelectedFiles()
             time = time.addSecs((int)((double)(kbytes_to_copy-copiedk)/(ratio)+0.5));
             setWindowTitle(time.toString("hh:mm:ss") +" remaining");
             if( m_isBatch )
-              setToolTip(QString("Automatic Backup V")+BACKUP_VERSION+" running "+getTitle()+".\nProcessing File '"+*it2+"'...\n");
-            qApp->processEvents();
+              setToolTipText(QString("Automatic Backup V")+BACKUP_VERSION+" running "+getTitle()+".\nProcessing File '"+*it2+"'...\n");
             m_waiter.Sleep(20);
           }
 
@@ -961,9 +963,8 @@ void backupExecuter::copySelectedFiles()
     }
   }
 
-  progressBar->setMaximum(1);
-  progressBar->setValue(0);
-  qApp->processEvents();
+  setProgressMaximum(1);
+  setProgressValue(0);
 
   delete[] buffer;
 }
@@ -1061,20 +1062,8 @@ void backupExecuter::selAuto()
     m_autoStart = false;
 }
 
-void backupExecuter::doIt(bool runningInBackground)
+void backupExecuter::threadedCopyOperation()
 {
-  m_background = runningInBackground || backgroundExec->isChecked();
-
-  changeVisibility();
-
-/*  if( m_quitAfterExecute )
-  {
-    if( QMessageBox::question(0,"security question","Do you want the system to shut down automatically after execution?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::No )
-      m_quitAfterExecute = false;
-  }*/
-
-  startingAction();
-
   findDirectories();
   analyzeDirectories();
   if( m_running && !verboseExecute->isChecked() )
@@ -1099,23 +1088,10 @@ void backupExecuter::doIt(bool runningInBackground)
     else
       stream << "++++ couldn't create automatic test item\r\n";
   }
-
-  stoppingAction();
-
-  if( verboseExecute->isChecked() || m_closed ) // when debugging this means: just like OK / when dialog closed: Cancel
-    cancel();
-  else if( m_closeAfterExecute )
-    accept();								// this means: execution done, return to main window
 }
 
-void backupExecuter::verifyIt(bool runningInBackground)
+void backupExecuter::threadedVerifyOperation()
 {
-  m_background = runningInBackground || backgroundExec->isChecked();
-
-  changeVisibility();
-
-  startingAction(); // do verify only if not cancelled in batch
-
   verifyBackup();
 
   if( m_running /*&& m_isBatch*/ )
@@ -1131,7 +1107,10 @@ void backupExecuter::verifyIt(bool runningInBackground)
     else
       stream << "++++ couldn't create automatic test item\r\n";
   }
+}
 
+void backupExecuter::operationFinishedEvent()
+{
   stoppingAction();
 
   if( verboseExecute->isChecked() || m_closed ) // when debugging this means: just like OK / when dialog closed: Cancel
@@ -1140,14 +1119,78 @@ void backupExecuter::verifyIt(bool runningInBackground)
     accept();								// this means: execution done, return to main window
 }
 
+void backupExecuter::setProgressMaximum(int max)
+{
+  m_locker.lock();
+  m_progressMax = max;
+  m_changed = true;
+  m_locker.unlock();
+}
+
+void backupExecuter::setProgressValue(int value)
+{
+  m_locker.lock();
+  m_progressValue = value;
+  m_changed = true;
+  m_locker.unlock();
+}
+
+void backupExecuter::setProgressText(const QString &text)
+{
+  m_locker.lock();
+  m_progressText = text;
+  m_changed = true;
+  m_locker.unlock();
+}
+
+void backupExecuter::setFileNameText(const QString &text)
+{
+  m_locker.lock();
+  m_filenameText = text;
+  m_changed = true;
+  m_locker.unlock();
+}
+
+void backupExecuter::setToolTipText(const QString &text)
+{
+  m_locker.lock();
+  m_tooltipText = text;
+  m_changed = true;
+  m_locker.unlock();
+}
+
+void backupExecuter::doIt(bool runningInBackground)
+{
+  m_background = runningInBackground || backgroundExec->isChecked();
+
+  changeVisibility();
+
+  startingAction();
+
+  m_engine = new backupEngine(*this,false);
+  m_engine->start();
+}
+
+void backupExecuter::verifyIt(bool runningInBackground)
+{
+  m_background = runningInBackground || backgroundExec->isChecked();
+
+  changeVisibility();
+
+  startingAction(); // do verify only if not cancelled in batch
+
+  m_engine = new backupEngine(*this,true);
+  m_engine->start();
+}
+
 void backupExecuter::cancel() // OK (Cancel when running) pressed
 {
   if( m_running )
   {
     cancelButt->setText("OK");
-    progressLab->setText("");
-    actualFile->setText("");
-    progressBar->setValue(0);
+    setProgressText("");
+    setFileNameText("");
+    setProgressValue(0);
     m_running=false;
   }
   else
@@ -1174,6 +1217,22 @@ void backupExecuter::closeEvent ( QCloseEvent */*event*/ )
   saveData();
   m_closed = true;
   cancel();
+}
+
+void backupExecuter::timerEvent(QTimerEvent *)
+{
+  if (!m_changed)
+    return;
+
+  m_locker.lock();
+  progressbar->setMaximum(m_progressMax);
+  progressbar->setValue(m_progressValue);
+  progresslabel->setText(m_progressText);
+  actualfile->setText(m_filenameText);
+  setToolTip(m_tooltipText);
+  m_locker.unlock();
+
+  m_changed = false;
 }
 
 void backupExecuter::help()
@@ -1254,7 +1313,7 @@ void backupExecuter::restoreDirectory(QString const &startPath)
 
   ensureDirExists(startPath,destination,source);
 
-  actualFile->setText(startPath);
+  setFileNameText(startPath);
   //	progressBar->setValue(scanned++);
   qApp->processEvents();
 
@@ -1272,10 +1331,8 @@ void backupExecuter::restoreDirectory(QString const &startPath)
       else
       {
         QString relfile = srcfile.mid(destination.length());
-        if( getKeep() )
-          relfile = relfile.left(relfile.length()-9);
-        if( getCompress() )
-          relfile = relfile.left(relfile.length()-1);
+        if( getCompress() ) relfile = cutFilenamePrefix(relfile,1);
+        if( getKeep() ) relfile = cutFilenamePrefix(relfile,9);
         QString destfile = source+relfile;
         if( verboseMaintenance->isChecked() )
           stream << "---> " << "would restore file " << srcfile
@@ -1323,6 +1380,30 @@ void backupExecuter::copyFile(QString const &srcFile, QString const &dstFile)
     }
     src.close();
   }
+}
+
+QString backupExecuter::addFilenamePrefix(const QString &relPath, const QString &prefix)
+{
+  QString result = relPath;
+  int pos = result.lastIndexOf("/");
+  if( pos>=0 )
+    result = result.insert(pos+1,prefix);
+  else
+    result = prefix + result;
+
+  return result;
+}
+
+QString backupExecuter::cutFilenamePrefix(const QString &relPath, int prefixLen)
+{
+  QString result = relPath;
+  int pos = result.lastIndexOf("/");
+  if( pos>=0 )
+    result = result.remove(pos+1,prefixLen);
+  else
+    result = result.mid(prefixLen);
+
+  return result;
 }
 
 void backupExecuter::cleanup()
@@ -1433,12 +1514,12 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
   if( startPath.isNull() )
   {
-    progressLab->setText("Cleaning up Directories...");
+    setProgressText("Cleaning up Directories...");
     scanned = 0;
     totalcount = yearcount = halfcount = quartercount = monthcount = daycount = 0;
     totaldirkbytes = yearkbytes = halfkbytes = quarterkbytes = monthkbytes = daykbytes = 0;
     level = 0;
-    progressBar->setMaximum(0);
+    setProgressMaximum(0);
     scanDirectory(date,destination);
     stream << "----> " << daycount << " files younger than a month with " << daykbytes << " Kbytes found\r\n";
     stream << "----> " << monthcount << " files between one and three months with " << monthkbytes << " Kbytes found\r\n";
@@ -1450,7 +1531,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
       stream << "====> " << totalcount << " deletable files with " << totaldirkbytes << " Kbytes found\r\n";
     else
       stream << "====> " << totalcount << " files with " << totaldirkbytes << " Kbytes deleted\r\n";
-    progressBar->setMaximum(1);
+    setProgressMaximum(1);
   }
   else
   {
@@ -1468,9 +1549,8 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     QFileInfoList::const_iterator it=list.begin();
     QFileInfo fi;
 
-    actualFile->setText(actPath);
-    progressBar->setValue(scanned++);
-    qApp->processEvents();
+    setFileNameText(actPath);
+    setProgressValue(scanned++);
 
     QString lastName = "";
     QString indent = "";
@@ -1519,10 +1599,8 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
             //QString srcfile = source + fi.absoluteFilePath().remove(destination);//VIL
 
             QString filename = fi.fileName();
-            int cutting = 0;
-            if( getCompress() ) cutting += 1;
-            if( getKeep() )     cutting += 9;
-            if( cutting>0 ) filename = filename.left(filename.length()-cutting);
+            if( getCompress() ) filename = cutFilenamePrefix(filename,1);
+            if( getKeep() )     filename = cutFilenamePrefix(filename,9);
 
             QString srcfile = source + (fi.absolutePath()+"/"+filename).mid(destination.length());
 
@@ -1663,8 +1741,8 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
 
   if( startPath.isNull() )
   {
-    progressLab->setText("Finding duplicate files...");
-    progressBar->setMaximum(0);
+    setProgressText("Finding duplicate files...");
+    setProgressMaximum(0);
     scanned = 0;
     totaldirkbytes = 0;
     totalcount = 0;
@@ -1677,9 +1755,8 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
       stream << "====> " << totalcount << " duplicate files with " << totaldirkbytes << " Kbytes found\r\n";
     else
       stream << "====> " << totalcount << " duplicate files with " << totaldirkbytes << " Kbytes deleted\r\n";
-    progressBar->setMaximum(1);
-    progressBar->setValue(0);
-    qApp->processEvents();
+    setProgressMaximum(1);
+    setProgressValue(0);
   }
   else
   {
@@ -1692,9 +1769,8 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
     QFileInfoList::const_iterator it=list.begin();
     QFileInfo fi;
 
-    actualFile->setText(actPath);
-    progressBar->setValue(scanned++);
-    qApp->processEvents();
+    setFileNameText(actPath);
+    setProgressValue(scanned++);
 
     QString lastFile = "";
     QString lastName = "";
@@ -1719,10 +1795,8 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
           //QDate today = QDate::currentDate();
 
           QString filename = fi.fileName();
-          int cutting = 0;
-          if( getCompress() ) cutting += 1;
-          if( getKeep() )     cutting += 9;
-          if( cutting>0 ) filename = filename.left(filename.length()-cutting);
+          if( getCompress() ) filename = cutFilenamePrefix(filename,1);
+          if( getKeep() )     filename = cutFilenamePrefix(filename,9);
 
           QString srcfile = source + (fi.absolutePath()+"/"+filename).mid(destination.length());
           //stream << "source file is " << srcfile << " \r\n";
@@ -1806,13 +1880,12 @@ void backupExecuter::verifyBackup(QString const &startPath)
     if( verboseExecute->isChecked() )
       return;
 
-    progressLab->setText("verifying files in backup...");
-    progressBar->setMaximum(lastVerifiedK);
+    setProgressText("verifying files in backup...");
+    setProgressMaximum(lastVerifiedK);
     verifiedK = 0;
     verifyBackup(destination);
-    progressBar->setMaximum(1);
-    progressBar->setValue(0);
-    qApp->processEvents();
+    setProgressMaximum(1);
+    setProgressValue(0);
     if ( m_running )
       lastVerifiedK = verifiedK;
   }
@@ -1827,9 +1900,8 @@ void backupExecuter::verifyBackup(QString const &startPath)
     QFileInfoList::const_iterator it=list.begin();
     QFileInfo fi;
 
-    actualFile->setText(actPath);
+    setFileNameText(actPath);
     //progressBar->setValue(scanned++);
-    qApp->processEvents();
     if( getBackground() )
       m_waiter.Sleep(20);
 
@@ -1853,10 +1925,8 @@ void backupExecuter::verifyBackup(QString const &startPath)
         else
         {
           QString filename = fi.fileName();
-          int cutting = 0;
-          if( getCompress() ) cutting += 1;
-          if( getKeep() )     cutting += 9;
-          if( cutting>0 ) filename = filename.left(filename.length()-cutting);
+          if( getCompress() ) filename = cutFilenamePrefix(filename,1);
+          if( getKeep() )     filename = cutFilenamePrefix(filename,9);
 
           QString verifyFile = fi.absolutePath()+"/"+fi.fileName();
           //QString dstFile = fi.absolutePath()+"/"+filename;
@@ -1898,10 +1968,9 @@ void backupExecuter::verifyBackup(QString const &startPath)
               // verify of this file will be skipped, so just add its size to the progress
               verifiedK += (fi.size()/(qint64)1024);
               if( verifiedK<=lastVerifiedK )
-                progressBar->setValue(verifiedK);
+                setProgressValue(verifiedK);
               else
-                progressBar->setMaximum(0);
-              qApp->processEvents();
+                setProgressMaximum(0);
               if( getBackground() )
                 m_waiter.Sleep(20);
             }
@@ -1950,10 +2019,9 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
                   verifiedK += (decode.size()/1024);
                   if( verifiedK<=lastVerifiedK )
-                    progressBar->setValue(verifiedK);
+                    setProgressValue(verifiedK);
                   else
-                    progressBar->setMaximum(0);
-                  qApp->processEvents();
+                    setProgressMaximum(0);
                   if( getBackground() )
                     m_waiter.Sleep(20);
                 }
@@ -1982,10 +2050,9 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
                   verifiedK += (data.size()/1024);
                   if( verifiedK<=lastVerifiedK )
-                    progressBar->setValue(verifiedK);
+                    setProgressValue(verifiedK);
                   else
-                    progressBar->setMaximum(0);
-                  qApp->processEvents();
+                    setProgressMaximum(0);
                   if( getBackground() )
                     m_waiter.Sleep(20);
                 }

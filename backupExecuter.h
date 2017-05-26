@@ -2,6 +2,7 @@
 #define	__backupExecuter__
 
 #include "ui_backupwindow.h"
+#include "backupengine.h"
 
 #include <qstring.h>
 #include <qstringlist.h>
@@ -10,6 +11,7 @@
 #include <qbuffer.h>
 #include <qvector.h>
 #include <qmap.h>
+#include <qmutex.h>
 
 #include <stdlib.h>
 
@@ -21,7 +23,7 @@ struct crcInfo
   crcSums crc;
 };
 
-class backupExecuter : public QDialog, public Ui_backupwindow
+class backupExecuter : public QDialog, public Ui_backupwindow, public IBackupOperationsInterface
 {
   Q_OBJECT
 public:
@@ -55,6 +57,16 @@ public:
   static void displayResult( QWidget *parent, QString const &text, QString const windowTitle = "" );
   static void setWindowOnScreen(QWidget *widget,int width,int height);
 
+  virtual void threadedCopyOperation();
+  virtual void threadedVerifyOperation();
+  virtual void operationFinishedEvent();
+
+  void setProgressMaximum(int max);
+  void setProgressValue(int value);
+  void setProgressText(QString const &text);
+  void setFileNameText(QString const &text);
+  void setToolTipText(QString const &text);
+
 public slots:
   virtual void selSource();
   virtual void selDest();
@@ -71,6 +83,7 @@ public slots:
 protected:
   void contextMenuEvent(QContextMenuEvent */*event*/);
   void closeEvent ( QCloseEvent */*event*/ );
+  void timerEvent(QTimerEvent */*event*/ );
 
 private:
   void saveData();
@@ -82,6 +95,9 @@ private:
   void copySelectedFiles();
   void restoreDirectory(QString const &startPath);
   void copyFile(QString const &srcFile, QString const &dstFile);
+
+  QString addFilenamePrefix(QString const &relPath,QString const &prefix);
+  QString cutFilenamePrefix(QString const &relPath,int prefixLen);
 
   void deletePath(QString const &absolutePath,QString const &indent = "");
   void scanDirectory(QDate const &date, QString const &startPath = QString::null, bool eraseAll = false);
@@ -135,6 +151,16 @@ private:
   bool checksumsChanged;
 
   QDateTime startTime;
+
+  backupEngine *m_engine;
+
+  volatile bool m_changed;
+  int m_progressMax;
+  int m_progressValue;
+  QString m_progressText;
+  QString m_filenameText;
+  QString m_tooltipText;
+  QMutex m_locker;
 };
 
 #endif

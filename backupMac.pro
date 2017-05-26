@@ -9,7 +9,8 @@ HEADERS += backupExecuter.h \
     backupMain.h \
     cleanupdialog.h \
     backupSplash.h \
-    utilities.h
+    utilities.h \
+    backupengine.h
 FORMS += backupwindow.ui \
     mainwindow.ui \
     cleanupdialog.ui
@@ -18,7 +19,9 @@ SOURCES += backupExecuter.cpp \
     main.cpp \
     cleanupdialog.cpp \
     backupSplash.cpp \
-    utilities.cpp
+    utilities.cpp \
+    backupengine.cpp \
+    authexec.c
 RESOURCES += backupwindow.qrc
 win32 { 
     MOC_DIR = c:/tmp/backup_obj
@@ -35,6 +38,7 @@ macx {
     RCC_DIR = /private/var/tmp/backup_obj
     ICON = ressources/backup.icns
     QMAKE_INFO_PLIST = ressources/Info_mac.plist
+    LIBS += -framework Security
 }
 OTHER_FILES += distribute/welcome.html \
     ressources/help.html \
