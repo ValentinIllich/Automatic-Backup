@@ -21,7 +21,7 @@ int main( int argc, char **argv )
 
   //object.setWindowTitle("backup");
   //object.move(qApp->desktop()->width(),qApp->desktop()->height());
-  if( object.startup() )
+  if( object.startup(argc,argv) )
   {
     if( object.keepRunning() )
     {

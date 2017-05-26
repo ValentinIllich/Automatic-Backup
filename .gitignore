@@ -23,3 +23,5 @@ test.qip
 *.6pre1
 *.log
 backup.cfg
+
+backupMini.pro
