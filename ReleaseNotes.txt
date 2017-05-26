@@ -1,4 +1,17 @@
-Automatic Backup Release Notes (C) Valentin Illich 2011-2013
+Automatic Backup Release Notes (C) Valentin Illich 2011-2017
+
+Release 1.20:
+============
+
++ in history mode, now taking timestamp as prefix instead of suffix (files still may be opend by applications)
++ now using separate thread for doing the work
++ reducing UI update rates to <= 5/sec.
++ addin "Admin" button for elevating file access rights to root
+
+- fixing problem with duplicate file finder and save history mode
+
+Release 1.10:
+============
 
 - fixed problm with always copying files containing '[' or ']' in their names
 
