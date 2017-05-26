@@ -3,13 +3,13 @@
 
 #include "ui_mainwindow.h"
 
-#define	BACKUP_VERSION	 "1.10"
+#define	BACKUP_VERSION	 "1.20"
 
 class backupMain : public QDialog, public Ui_mainwindow
 {
   Q_OBJECT
 public:
-  backupMain( QString const &configfile = QString::null );
+  backupMain(bool runsAsAdmin, QString const &configfile);
   virtual ~backupMain();
 
   void saveConfig(QString const &configFile = QString::null);

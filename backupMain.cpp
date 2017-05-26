@@ -147,7 +147,7 @@ void do_log( QString const &txt )
   log->close();
 }
 
-backupMain::backupMain(QString const &configfile)
+backupMain::backupMain(bool runsAsAdmin, QString const &configfile)
 : m_selected(0)
 , m_immediateShutdown(false)
 {
@@ -160,7 +160,10 @@ backupMain::backupMain(QString const &configfile)
 
   setupUi(this);
 
-  setWindowTitle(windowTitle()+" "+BACKUP_VERSION);
+  if( runsAsAdmin )
+    setWindowTitle(windowTitle()+" with Administrator Rights "+BACKUP_VERSION);
+  else
+    setWindowTitle(windowTitle()+" "+BACKUP_VERSION);
 
   config.setFileName( configfile.isEmpty() ? path : configfile );
 

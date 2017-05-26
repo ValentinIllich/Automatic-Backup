@@ -12,7 +12,7 @@ public:
 
   void updateSettings(backupMain const &main);
 
-  bool startup();
+  bool startup(int argc,char **argv);
   void executeBackups(bool runningInBackground);
   void shutDown();
 

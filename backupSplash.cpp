@@ -8,12 +8,15 @@
 #include "backupExecuter.h"
 #include "utilities.h"
 
+extern "C" int getAdminRights(int argc, char* argv[]);
+
 class startMessage : public QMessageBox
 {
 public:
-  startMessage()
+  startMessage(bool allowAdmin)
   : QMessageBox(QMessageBox::NoIcon,"","")
-  , m_seconds(5)
+  , m_allowAdmin(allowAdmin)
+  , m_seconds(allowAdmin ? 5 : 30)
   , m_config(0)
   , m_cancel(0)
   {
@@ -25,6 +28,11 @@ public:
     m_config->setMinimumWidth(buttons.width("Config...")+50);
     m_help =  addButton("Help",QMessageBox::ActionRole);
     m_help->setMinimumWidth(buttons.width("Config...")+50);
+    if( allowAdmin )
+    {
+      m_admin = addButton("Root",QMessageBox::ActionRole);
+      m_admin->setMinimumWidth(buttons.width("Config...")+50);
+    }
     m_cancel = addButton("Quit",QMessageBox::ActionRole);
     m_cancel->setMinimumWidth(buttons.width("Config...")+50);
     setIconPixmap(QApplication::style()->standardPixmap(QStyle::SP_DesktopIcon));
@@ -44,6 +52,10 @@ public:
   {
     return clickedButton()==m_help;
   }
+  bool isAdmin()
+  {
+    return clickedButton()==m_admin;
+  }
   bool isQuit()
   {
     return clickedButton()==m_cancel;
@@ -60,13 +72,18 @@ protected:
 private:
   void updateText()
   {
-    setText("Automatic Backup will start in "+QString::number(m_seconds)+" seconds.");
+    if( m_allowAdmin )
+      setText("Automatic Backup will start in "+QString::number(m_seconds)+" seconds.");
+    else
+      setText("Backup with Administrator Rights starts in "+QString::number(m_seconds)+" seconds.");
   }
 
+  bool m_allowAdmin;
   int	m_seconds;
   QPushButton *m_ok;
   QPushButton *m_config;
   QPushButton *m_help;
+  QPushButton *m_admin;
   QPushButton *m_cancel;
 };
 
@@ -176,7 +193,7 @@ void backupSplash::updateSettings(backupMain const &main)
     shtdwnwarning = false;
 }
 
-bool backupSplash::startup()
+bool backupSplash::startup(int argc,char **argv)
 {
   QSettings settings;
   bool startDialog = (settings.value("KeepRunning").toInt()==1 ? false : true);
@@ -191,9 +208,11 @@ bool backupSplash::startup()
     fp->remove();
   }
 
+  bool enableAdminButton = ( (argc<2) || (strcmp(argv[1],"-admin")!=0) );
+
   if( !interactive && startDialog )
   {
-    startMessage msg;
+    startMessage msg(enableAdminButton);
     //interactive = false;
     msg.exec();
     if( msg.isConfig() )
@@ -202,6 +221,12 @@ bool backupSplash::startup()
     {
       active = false;
       showHelp(this,":/helptext/AutomaticBackup.pdf","AutomaticBackup.pdf");
+    }
+    if( msg.isAdmin() )
+    {
+      getAdminRights(argc,argv);
+      active = false;
+      qApp->quit();
     }
     if( msg.isQuit() )
     {
@@ -212,7 +237,7 @@ bool backupSplash::startup()
 
   if( active )
   {
-    backupMain main("");
+    backupMain main(!enableAdminButton,"");
 
     updateSettings(main);
 
@@ -248,7 +273,7 @@ bool backupSplash::startup()
 
 void backupSplash::executeBackups(bool runningInBackground)
 {
-  backupMain main("");
+  backupMain main(false,"");
   main.autoExecute(runningInBackground);
 }
 
@@ -283,7 +308,7 @@ bool backupSplash::keepRunning()
 {
   return batch;
 }
-void backupSplash::closeEvent(QCloseEvent *event)
+void backupSplash::closeEvent(QCloseEvent */*event*/)
 {
   checkQuit();
   qApp->quit();
@@ -325,7 +350,8 @@ void backupSplash::contextMenuEvent(QContextMenuEvent */*event*/)
 
     interactive = true;
     hide();
-    shutDown = !startup();
+    char *argv[] = { (char*)"",NULL };
+    shutDown = !startup(1,argv);
     show();
     backupExecuter::setWindowOnScreen(this,32,32);
     interactive = false;
@@ -370,7 +396,7 @@ void backupSplash::timerEvent(QTimerEvent */*event*/)
   }
 }
 
-void backupSplash::screenResizedSlot(int screen)
+void backupSplash::screenResizedSlot(int /*screen*/)
 {
   backupExecuter::setWindowOnScreen(this,32,32);
 }
