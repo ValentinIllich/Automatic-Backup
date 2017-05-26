@@ -68,12 +68,14 @@ QString formatSize( double size )
 }
 double unformatSize( QString const &size )
 {
-  double mantissa = size.toDouble();
+  double scale = 1.0;
 
   if( size.contains("MB") )
-    mantissa = mantissa * 1024.0 * 1024.0;
+    scale = 1024.0 * 1024.0;
 
-  return mantissa;
+  QString mantissa = size;
+  mantissa = mantissa.replace("MB","");
+  return mantissa.toDouble() * scale;
 }
 
 QDateTime lastmodified = QDateTime::currentDateTime();
@@ -189,8 +191,17 @@ void cleanupDialog::scanRelativePath( QString const &path, double &Bytes, QTreeW
 
     while( m_metrics->width(path.left(m_chars))+textw>ui->label->width() )
       m_chars-=5;
-    ui->label->setText(path.left(m_chars)+"...");
-    qApp->processEvents();
+
+    static quint64 lastmsecs = 0;
+    QTime acttime = QDateTime::currentDateTime().time();
+    quint64 msecs = acttime.hour()*3600000 + acttime.minute()*60000 + acttime.second()*1000 + acttime.msec();
+
+    if( (msecs-lastmsecs)>200 )
+    {
+      ui->label->setText(path.left(m_chars)+"...");
+      qApp->processEvents();
+      lastmsecs = msecs;
+    }
   }
 
   QFileInfoList list = dir.entryInfoList();
@@ -377,9 +388,17 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
     if( sels.count()>0 )
     {
       QTreeWidgetItem *item = const_cast<QTreeWidgetItem*>(sels.first());
-      double dirSize = unformatSize(item->text(1));
-      if( traverseItems(item,dirSize) )
-        item->setText(1,formatSize(dirSize));
+      double dirSize = 0;
+      QTreeWidgetItem *parent = item->parent();
+      traverseItems(item,dirSize);
+      while( parent )
+      {
+        double actual = unformatSize(parent->text(1)) - dirSize;
+        if( actual<0 ) actual = 0;
+        parent->setText(1,formatSize(actual));
+        parent = parent->parent();
+      }
+
     }
   }
 }
@@ -393,7 +412,16 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
   {
     startingItem->setExpanded(true);
     startingItem->treeWidget()->scrollToItem(startingItem);
-    qApp->processEvents();
+
+    static quint64 lastmsecs = 0;
+    QTime acttime = QDateTime::currentDateTime().time();
+    quint64 msecs = acttime.hour()*3600000 + acttime.minute()*60000 + acttime.second()*1000 + acttime.msec();
+
+    if( (msecs-lastmsecs)>200 )
+    {
+      qApp->processEvents();
+      lastmsecs = msecs;
+    }
 
     // is a directory
     QList<QTreeWidgetItem*> items;
@@ -415,8 +443,8 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
         delete startingItem;
         ret = false;
       }
-      else
-        QMessageBox::warning(0,"dir error","directory\n"+startingItem->text(3)+"\nseems to have (hidden) content.");
+//      else
+//        QMessageBox::warning(0,"dir error","directory\n"+startingItem->text(3)+"\nseems to have (hidden) content.");
     }
     //else
     //    QMessageBox::warning(0,"dir",list.join(";"));
@@ -424,10 +452,11 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
   else if(!m_cancel)
   {
     const QTreeWidgetItem *item = startingItem;
-    if( QFile::setPermissions(item->text(3),QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther) && QFile::remove(item->text(3)) )
+    QFile::setPermissions(item->text(3),QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther);
+    if( QFile::remove(item->text(3)) )
     {
       delete startingItem;
-      dirSize -= (double)(info.size());
+      dirSize += (double)(info.size());
       ret = false;
     }
     else if( !m_ignore )
