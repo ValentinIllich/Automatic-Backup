@@ -14,6 +14,8 @@
 #include <qmutex.h>
 
 #include <stdlib.h>
+#include <map>
+#include <string>
 
 typedef QVector<quint16> crcSums;
 
@@ -27,6 +29,14 @@ class backupExecuter : public QDialog, public Ui_backupwindow, public IBackupOpe
 {
   Q_OBJECT
 public:
+  struct fileTocEntry
+  {
+    qint64 m_tocId;
+    qint64 m_size;
+    qint64 m_modify;
+    qint64 m_crc;
+  };
+
   backupExecuter( QString const &name, QString const &src, QString const &dst,
                   QString const &flt, bool automatic, int repeat,
                   bool keepVers, int versions, bool zlib,
@@ -57,15 +67,14 @@ public:
   static void displayResult( QWidget *parent, QString const &text, QString const windowTitle = "" );
   static void setWindowOnScreen(QWidget *widget,int width,int height);
 
+  virtual void processProgressMaximum(int maximum);
+  virtual void processProgressValue(int value);
+  virtual void processProgressText(QString const &text);
+  virtual void processFileNameText(QString const &text);
+
   virtual void threadedCopyOperation();
   virtual void threadedVerifyOperation();
   virtual void operationFinishedEvent();
-
-  void setProgressMaximum(int max);
-  void setProgressValue(int value);
-  void setProgressText(QString const &text);
-  void setFileNameText(QString const &text);
-  void setToolTipText(QString const &text);
 
 public slots:
   virtual void selSource();
@@ -86,6 +95,32 @@ protected:
   void timerEvent(QTimerEvent */*event*/ );
 
 private:
+  struct backupStatistics
+  {
+    backupStatistics() : count(0), dirkbytes(0) {}
+    unsigned count;
+    unsigned long dirkbytes;
+
+    unsigned yearcount;
+    unsigned long yearkbytes;
+    unsigned halfcount;
+    unsigned long halfkbytes;
+    unsigned quartercount;
+    unsigned long quarterkbytes;
+    unsigned monthcount;
+    unsigned long monthkbytes;
+    unsigned daycount;
+    unsigned long daykbytes;
+
+    backupStatistics & operator += ( backupStatistics const &a1)
+    {
+      this->count += a1.count;
+      return *this;
+    }
+  };
+
+  backupStatistics getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool eraseAll);
+
   void saveData();
   void changeVisibility();
   void startingAction();
@@ -146,6 +181,11 @@ private:
   static QFile fileObj;
 
   QMap<QString,struct crcInfo> crcSummary;
+  QMap<QString,QMap<QString,fileTocEntry> > archiveContent;
+  qint64 m_nextTocId;
+
+//  std::map<std::string,std::map<std::string,qint64> > lastModified2;
+
   quint32 lastVerifiedK;
   quint32 verifiedK;
   bool checksumsChanged;
@@ -153,14 +193,6 @@ private:
   QDateTime startTime;
 
   backupEngine *m_engine;
-
-  volatile bool m_changed;
-  int m_progressMax;
-  int m_progressValue;
-  QString m_progressText;
-  QString m_filenameText;
-  QString m_tooltipText;
-  QMutex m_locker;
 };
 
 #endif
