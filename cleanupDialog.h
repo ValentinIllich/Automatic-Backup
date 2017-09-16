@@ -26,12 +26,12 @@ public:
     m_tocData.m_crc = 0;
   }
 
-  void updateDirInfo(qint64 dirSizes,qint64 lastModified)
+  void updateDirInfos(qint64 sizeOfFiles,qint64 lastModified)
   {
     dirEntry *parent = this;
     while( parent )
     {
-      parent->m_tocData.m_size += dirSizes;
+      parent->m_tocData.m_size += sizeOfFiles;
       if( lastModified>parent->m_tocData.m_modify ) parent->m_tocData.m_modify = lastModified;
       parent = parent->m_parent;
     }
@@ -49,6 +49,26 @@ public:
     }
 
     return path;
+  }
+  void deleteDir(dirEntry *entry)
+  {
+    m_dirs.remove(entry->m_name);
+    dirEntry *current = this;
+    while( current )
+    {
+      //current->m_tocData.m_size -= entry->m_tocData.m_size;
+      current = current->m_parent;
+    }
+  }
+  void deleteFile(dirEntry *entry)
+  {
+    m_files.removeAll(entry);
+    dirEntry *current = this;
+    while( current )
+    {
+      current->m_tocData.m_size -= entry->m_tocData.m_size;
+      current = current->m_parent;
+    }
   }
 
   dirEntry *m_parent;
@@ -88,9 +108,9 @@ protected:
     virtual void contextMenuEvent ( QContextMenuEvent * e );
 
 private:
-    void scanRelativePath( QString const &path, double &Bytes, dirEntry *entry, bool &isEmpty );
+    void scanRelativePath( QString const &path, dirEntry *entry, int &dirCount );
     bool canReadFromTocFile( QString const &path, dirEntry *entry );
-    void populateTree( dirEntry *entry, QTreeWidgetItem *item, int &depth );
+    void populateTree( dirEntry *entry, QTreeWidgetItem *item, int &depth, int &processedDirs );
 
     bool traverseItems(QTreeWidgetItem *startingItem,double &dirSize);
     void openFile( QString const &fn );
@@ -116,7 +136,8 @@ private:
     //QTreeWidgetItem *m_item;
     dirEntry *m_rootEntry;
     QDateTime m_lastmodified;
-    double m_totalbytes;
+    int m_dirCount;
+    //double m_totalbytes;
 
     backupEngine *m_engine;
 };

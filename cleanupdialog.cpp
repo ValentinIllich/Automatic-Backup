@@ -11,6 +11,7 @@
 #include <QLineEdit>
 #include <QcalendarWidget>
 #include <QMessageBox>
+#include <QFontMetrics>
 
 #if defined(Q_OS_WIN)
 #include <windows.h>
@@ -64,13 +65,12 @@ void cleanupDialog::threadedVerifyOperation()
   delete m_rootEntry;
   m_rootEntry = new dirEntry(0,m_path);
 
-  bool isEmpty = false;
-  scanRelativePath(m_path,m_totalbytes,m_rootEntry,isEmpty);
+  m_dirCount = 0;
+  scanRelativePath(m_path,m_rootEntry,m_dirCount);
 
   m_engine->setProgressText("");
-  ui->progressBar->setMinimum(0);
-  ui->progressBar->setMaximum(1);
-  ui->progressBar->setValue(0);
+  m_engine->setProgressMaximum(1);
+  m_engine->setProgressValue(0);
 }
 
 void cleanupDialog::processProgressMaximum(int maximum)
@@ -85,7 +85,18 @@ void cleanupDialog::processProgressValue(int value)
 
 void cleanupDialog::processProgressText(const QString &text)
 {
-  ui->label->setText(text);
+  QFontMetrics metrics(ui->label->font());
+  int chars = 0;
+  if( !text.isEmpty() )
+  {
+    chars = (int)((double)ui->label->width() / (double)metrics.width(text) * 0.8 * (double)text.length());
+    if( chars<text.length() )
+      ui->label->setText("..."+text.right(chars));
+    else
+      ui->label->setText(text);
+  }
+  else
+    ui->label->setText(text);
 }
 
 void cleanupDialog::processFileNameText(const QString &/*text*/)
@@ -133,8 +144,12 @@ void cleanupDialog::operationFinishedEvent()
   QTreeWidgetItem *item = new QTreeWidgetItem(ui->treeView,rootColumns);
   ui->treeView->addTopLevelItem(item);
 
+  m_engine->setProgressMaximum(m_dirCount);
+  m_engine->setProgressValue(0);
+
   int depth = 0;
-  populateTree(m_rootEntry,item,depth);
+  int dirsProcessed = 0;
+  populateTree(m_rootEntry,item,depth,dirsProcessed);
 
   item->setText(1,formatSize(m_rootEntry->m_tocData.m_size/*m_totalbytes*/));
   item->setData(3,Qt::UserRole,QVariant(qint64(m_rootEntry)));
@@ -145,10 +160,9 @@ void cleanupDialog::operationFinishedEvent()
 
   ui->treeView->setSortingEnabled(true);
 
-  ui->progressBar->setMinimum(0);
-  ui->progressBar->setMaximum(100);
-  ui->progressBar->setValue(100);
-  ui->label->setText("");
+  m_engine->setProgressText("");
+  m_engine->setProgressMaximum(1);
+  m_engine->setProgressValue(0);
 }
 
 void cleanupDialog::doAnalyze()
@@ -184,11 +198,10 @@ QDataStream &operator>>(QDataStream &in, struct backupExecuter::fileTocEntry &ds
 
 void cleanupDialog::analyzePath(QString const &path)
 {
-
-  ui->progressBar->setValue(0);
-  ui->progressBar->setMinimum(0);
-  ui->progressBar->setMaximum(0);
   ui->progressBar->setTextVisible(true);
+  m_engine->setProgressText("");
+  m_engine->setProgressMaximum(0);
+  m_engine->setProgressValue(0);
 
   m_run = true;
 
@@ -243,7 +256,7 @@ void cleanupDialog::setLimitDate()
   }
 }
 
-void cleanupDialog::scanRelativePath( QString const &path, double &Bytes, dirEntry *entry, bool &isEmpty )
+void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int &dirCount )
 {
   if( canReadFromTocFile(path,entry) )
   {
@@ -270,8 +283,8 @@ void cleanupDialog::scanRelativePath( QString const &path, double &Bytes, dirEnt
         dirEntry *newEntry = new dirEntry(entry,name);
         entry->m_dirs[name] = newEntry;
 
-        double dirBytes = 0;
-        scanRelativePath(path+"/"+name,dirBytes,newEntry,isEmpty);
+        scanRelativePath(path+"/"+name,newEntry,dirCount);
+        dirCount++;
       }
     }
     else
@@ -287,16 +300,12 @@ void cleanupDialog::scanRelativePath( QString const &path, double &Bytes, dirEnt
 
       entry->m_files.append(newEntry);
 
-      Bytes += fileInfo.size();
       fileSizes += tocentry.m_size;
       if( tocentry.m_modify>lastModifiedFile ) lastModifiedFile = tocentry.m_modify;
-
-//      entry->m_tocData.m_size += fileSizes;
-//      if( lastModifiedFile>entry->m_tocData.m_modify ) entry->m_tocData.m_modify = lastModifiedFile;
     }
   }
 
-  entry->updateDirInfo(fileSizes,lastModifiedFile);
+  entry->updateDirInfos(fileSizes,lastModifiedFile);
 }
 
 bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
@@ -307,6 +316,8 @@ bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
   QFile tocFile(tocSummaryFile);
   if( QFile::exists(tocSummaryFile) )
   {
+    m_engine->setProgressText("reading table of content...");
+
     tocFile.open(QIODevice::ReadOnly);
     QDataStream str(&tocFile);
     str >> archiveContent;
@@ -315,9 +326,16 @@ bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
     QMap<QString,QMap<QString,backupExecuter::fileTocEntry> >::iterator it1 = archiveContent.begin();
     while( it1 != archiveContent.end() )
     {
+      m_engine->setProgressText(it1.key());
+
       QString fullPath = it1.key();
       m_engine->setProgressText(fullPath);
 
+      if( m_sourcePath.length()>0 )
+      {
+        if( fullPath.startsWith(m_sourcePath) )
+          fullPath = fullPath.mid(m_sourcePath.length());
+      }
       if( fullPath.startsWith("/") ) fullPath = fullPath.mid(1);
       QStringList paths = fullPath.split("/");
 
@@ -366,7 +384,7 @@ bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
         }
       }
 
-      currDir->updateDirInfo(fileSizes,lastModifiedFile);
+      currDir->updateDirInfos(fileSizes,lastModifiedFile);
 
       ++it1;
     }
@@ -377,7 +395,7 @@ bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
   return false;
 }
 
-void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &depth )
+void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &depth, int &processedDirs )
 {
   depth++;
 
@@ -385,9 +403,14 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
   quint64 msecs = QDateTime::currentDateTime().toMSecsSinceEpoch();
   if( (msecs-lastmsecs)>200 )
   {
+    m_engine->setProgressText(entry->absoluteFilePath());
+    m_engine->setProgressValue(processedDirs);
     qApp->processEvents();
     lastmsecs = msecs;
   }
+
+  entry->m_tocData.m_size = 0;
+  entry->m_tocData.m_modify = 0;
 
   QMap<QString,dirEntry*>::iterator it = entry->m_dirs.begin();
   while( m_run && it!=entry->m_dirs.end() )
@@ -402,7 +425,7 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
     dirItem->setBackgroundColor(0,Qt::lightGray);
     dirItem->setBackgroundColor(1,Qt::lightGray);
 
-    if( depth>2 )
+    if( depth>1 )
       dirItem->setExpanded(false);
     else
     {
@@ -410,12 +433,16 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
       dirItem->treeWidget()->scrollToItem(dirItem);
       ui->treeView->resizeColumnToContents(0);
     }
-    populateTree(it.value(),dirItem,depth);
+    populateTree(it.value(),dirItem,depth,processedDirs);
+    processedDirs++;
 
     if( dirItem->childCount()==0 ) delete dirItem;
 
     ++it;
   }
+
+  qint64 lastModifiedFile = 0;
+  qint64 fileSizes = 0;
 
   QList<dirEntry*>::iterator it2 = entry->m_files.begin();
   while( m_run && it2!=entry->m_files.end() )
@@ -430,10 +457,15 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
       fileItem->setText(2,filedate.toString("yyyy/MM/dd-hh:mm"));
       fileItem->setText(3,(*it2)->absoluteFilePath());
       fileItem->setData(3,Qt::UserRole,QVariant(qint64(*it2)));
+
+      fileSizes += (*it2)->m_tocData.m_size;
+      if( (*it2)->m_tocData.m_modify>lastModifiedFile ) lastModifiedFile = (*it2)->m_tocData.m_modify;
     }
 
     ++it2;
   }
+
+  entry->updateDirInfos(fileSizes,lastModifiedFile);
 
   depth--;
 }
@@ -532,7 +564,7 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
         dirEntry *entry = (dirEntry*)parent->data(3,Qt::UserRole).toLongLong();
         if( entry )
         {
-          entry->m_tocData.m_size -= dirSize;
+          //entry->m_tocData.m_size -= dirSize;
           parent->setText(1,formatSize(entry->m_tocData.m_size));
         }
         parent = parent->parent();
@@ -587,6 +619,11 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
       }
 //      else
 //        QMessageBox::warning(0,"dir error","directory\n"+startingItem->text(3)+"\nseems to have (hidden) content.");
+    }
+    if( !ret )
+    {
+      dirEntry *entry = (dirEntry*)startingItem->data(3,Qt::UserRole).toLongLong();
+      startingItem->setText(1,formatSize(entry->m_tocData.m_size));
     }
     //else
     //    QMessageBox::warning(0,"dir",list.join(";"));
