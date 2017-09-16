@@ -193,8 +193,8 @@ void cleanupDialog::doAnalyze()
 static QString exclusions = "/Volumes";
 static QDateTime lastTime;
 
-QDataStream &operator<<(QDataStream &out, const struct backupExecuter::fileTocEntry &src);
-QDataStream &operator>>(QDataStream &in, struct backupExecuter::fileTocEntry &dst);
+QDataStream &operator<<(QDataStream &out, const struct fileTocEntry &src);
+QDataStream &operator>>(QDataStream &in, struct fileTocEntry &dst);
 
 void cleanupDialog::analyzePath(QString const &path)
 {
@@ -258,7 +258,7 @@ void cleanupDialog::setLimitDate()
 
 void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int &dirCount )
 {
-  if( canReadFromTocFile(path,entry) )
+  if( backupDirstruct::convertFromTocFile(path,entry)/*canReadFromTocFile(path,entry)*/ )
   {
     return;
   }
@@ -289,7 +289,7 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
     }
     else
     {
-      backupExecuter::fileTocEntry tocentry;
+      fileTocEntry tocentry;
       tocentry.m_tocId = 0;//m_nextTocId++;
       tocentry.m_size = fileInfo.size();
       tocentry.m_modify = fileInfo.lastModified().toMSecsSinceEpoch();;
@@ -310,7 +310,7 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
 
 bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
 {
-  QMap<QString,QMap<QString,backupExecuter::fileTocEntry> > archiveContent;
+  QMap<QString,QMap<QString,fileTocEntry> > archiveContent;
 
   QString tocSummaryFile = path+"/tocsummary.crcs";
   QFile tocFile(tocSummaryFile);
@@ -323,7 +323,7 @@ bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
     str >> archiveContent;
     tocFile.close();
 
-    QMap<QString,QMap<QString,backupExecuter::fileTocEntry> >::iterator it1 = archiveContent.begin();
+    QMap<QString,QMap<QString,fileTocEntry> >::iterator it1 = archiveContent.begin();
     while( it1 != archiveContent.end() )
     {
       m_engine->setProgressText(it1.key());
@@ -364,10 +364,10 @@ bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
       qint64 fileSizes = 0;
       if( !exclusions.contains(it1.key()) )
       {
-        QMap<QString,backupExecuter::fileTocEntry>::iterator it2 = it1.value().begin();
+        QMap<QString,fileTocEntry>::iterator it2 = it1.value().begin();
         while( it2!=it1.value().end() )
         {
-          backupExecuter::fileTocEntry tocentry;
+          fileTocEntry tocentry;
           tocentry.m_tocId = it2.value().m_tocId;
           tocentry.m_size = it2.value().m_size;
           tocentry.m_modify = it2.value().m_modify;

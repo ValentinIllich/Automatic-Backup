@@ -2,6 +2,7 @@
 #define DIALOG_H
 
 #include "backupExecuter.h"
+#include "backupdirstruct.h"
 
 #include <QtGui/QDialog>
 #include <qtreewidgetitem>
@@ -12,72 +13,6 @@ namespace Ui
 {
     class cleanupDialog;
 }
-
-class dirEntry
-{
-public:
-  dirEntry(dirEntry *parent,QString const &name)
-    : m_parent(parent)
-    ,m_name(name)
-  {
-    m_tocData.m_tocId = 0;
-    m_tocData.m_size = 0;
-    m_tocData.m_modify = 0;
-    m_tocData.m_crc = 0;
-  }
-
-  void updateDirInfos(qint64 sizeOfFiles,qint64 lastModified)
-  {
-    dirEntry *parent = this;
-    while( parent )
-    {
-      parent->m_tocData.m_size += sizeOfFiles;
-      if( lastModified>parent->m_tocData.m_modify ) parent->m_tocData.m_modify = lastModified;
-      parent = parent->m_parent;
-    }
-  }
-  QString absoluteFilePath()
-  {
-    QString path = "";
-
-    dirEntry *parent = this;
-    while( parent )
-    {
-      if( !path.isEmpty() ) path.prepend("/");
-      path = parent->m_name + path;
-      parent = parent->m_parent;
-    }
-
-    return path;
-  }
-  void deleteDir(dirEntry *entry)
-  {
-    m_dirs.remove(entry->m_name);
-    dirEntry *current = this;
-    while( current )
-    {
-      //current->m_tocData.m_size -= entry->m_tocData.m_size;
-      current = current->m_parent;
-    }
-  }
-  void deleteFile(dirEntry *entry)
-  {
-    m_files.removeAll(entry);
-    dirEntry *current = this;
-    while( current )
-    {
-      current->m_tocData.m_size -= entry->m_tocData.m_size;
-      current = current->m_parent;
-    }
-  }
-
-  dirEntry *m_parent;
-  QString m_name;
-  backupExecuter::fileTocEntry m_tocData;
-
-  QMap<QString,dirEntry*> m_dirs;
-  QList<dirEntry*> m_files;
-};
 
 class cleanupDialog : public QDialog, public IBackupOperationsInterface
 {

@@ -3,6 +3,7 @@
 
 #include "ui_backupwindow.h"
 #include "backupengine.h"
+#include "backupdirstruct.h"
 
 #include <qstring.h>
 #include <qstringlist.h>
@@ -29,14 +30,6 @@ class backupExecuter : public QDialog, public Ui_backupwindow, public IBackupOpe
 {
   Q_OBJECT
 public:
-  struct fileTocEntry
-  {
-    qint64 m_tocId;
-    qint64 m_size;
-    qint64 m_modify;
-    qint64 m_crc;
-  };
-
   backupExecuter( QString const &name, QString const &src, QString const &dst,
                   QString const &flt, bool automatic, int repeat,
                   bool keepVers, int versions, bool zlib,
@@ -181,10 +174,8 @@ private:
   static QFile fileObj;
 
   QMap<QString,struct crcInfo> crcSummary;
-  QMap<QString,QMap<QString,fileTocEntry> > archiveContent;
-  qint64 m_nextTocId;
 
-//  std::map<std::string,std::map<std::string,qint64> > lastModified2;
+  backupDirstruct m_dirs;
 
   quint32 lastVerifiedK;
   quint32 verifiedK;

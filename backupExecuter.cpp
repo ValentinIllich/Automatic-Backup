@@ -124,7 +124,6 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
 , collectingDeleted(false)
 , dircount(0)
 , kbytes_to_copy(0)
-, m_nextTocId(0)
 , lastVerifiedK(0)
 , verifiedK(0)
 , checksumsChanged(false)
@@ -168,28 +167,7 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
     lastVerifiedK = 0;
 
   QString tocSummaryFile = destination+"/tocsummary.crcs";
-  QFile tocFile(tocSummaryFile);
-  if( QFile::exists(tocSummaryFile) )
-  {
-    tocFile.open(QIODevice::ReadOnly);
-    QDataStream str(&tocFile);
-    str >> archiveContent;
-    tocFile.close();
-  }
-
-  QMap<QString,QMap<QString,fileTocEntry> >::iterator it1 = archiveContent.begin();
-  while( it1 != archiveContent.end() )
-  {
-    QMap<QString,fileTocEntry>::iterator it2 = it1.value().begin();
-
-    while( it2!=it1.value().end() )
-    {
-      if( it2.value().m_tocId>=m_nextTocId )
-        m_nextTocId = it2.value().m_tocId + 1;
-      ++it2;
-    }
-    ++it1;
-  }
+  m_dirs.readFromFile(tocSummaryFile);
 
   startTimer(100);
 }
@@ -211,19 +189,6 @@ QDataStream &operator>>(QDataStream &in, struct crcInfo &dst)
   return in;
 }
 
-QDataStream &operator<<(QDataStream &out, const struct backupExecuter::fileTocEntry &src)
-{
-  out << src.m_tocId << src.m_size << src.m_modify << src.m_crc;
-  return out;
-}
-QDataStream &operator>>(QDataStream &in, struct backupExecuter::fileTocEntry &dst)
-{
-  in >> dst.m_tocId;
-  in >> dst.m_size;
-  in >> dst.m_modify;
-  in >> dst.m_crc;
-  return in;
-}
 
 backupExecuter::~backupExecuter()
 {
@@ -252,11 +217,7 @@ void backupExecuter::saveData()
   checksumsChanged = false;
 
   QString tocSummaryFile = destination+"/tocsummary.crcs";
-  QFile tocFile(tocSummaryFile);
-  tocFile.open(QIODevice::WriteOnly | QIODevice::Truncate);
-  QDataStream str(&tocFile);
-  str << archiveContent;
-  tocFile.close();
+  m_dirs.writeToFile(tocSummaryFile);
 }
 
 void backupExecuter::changeVisibility()
@@ -550,7 +511,7 @@ void backupExecuter::findDirectories( QString const &start )
     }
 
     m_engine->setProgressText("Finding Directories...");
-    m_engine->setProgressMaximum(archiveContent.size());
+    m_engine->setProgressMaximum(m_dirs.size());
 
     directories.append(source);
     findDirectories(source);
@@ -717,9 +678,9 @@ void backupExecuter::analyzeDirectories()
             else
               copy = false;
           }
-          else*/ if( archiveContent.contains(filePath) && archiveContent[filePath].contains(fileName) )
+          else*/ if( m_dirs.exists(filePath,fileName) )
           {
-            qint64 lastm = archiveContent[filePath][fileName].m_modify;
+            qint64 lastm = m_dirs.lastModified(filePath,fileName);
             if( modify>lastm )
               copy = true;
             else
@@ -731,11 +692,11 @@ void backupExecuter::analyzeDirectories()
             copy = true;
           }
           fileTocEntry entry;
-          entry.m_tocId = m_nextTocId++;
+          entry.m_tocId = m_dirs.nextTocId();
           entry.m_size = srcFile.size();
           entry.m_modify = modify;
           entry.m_crc = 0;
-          archiveContent[filePath][fileName] = entry;
+          m_dirs.addFile(filePath,fileName,entry);
 //          lastModified2[filePath.toLatin1().data()][fileName.toLatin1().data()] = modify;
         }
         else
@@ -1661,13 +1622,13 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 //    totalcount = yearcount = halfcount = quartercount = monthcount = daycount = 0;
 //    totaldirkbytes = yearkbytes = halfkbytes = quarterkbytes = monthkbytes = daykbytes = 0;
     level = 0;
-    m_engine->setProgressMaximum(archiveContent.size());
-    if( archiveContent.size()==0 )
+    m_engine->setProgressMaximum(m_dirs.size());
+    if( m_dirs.size()==0 )
       scanDirectory(date,destination);
     else
     {
-      QMap<QString,QMap<QString,fileTocEntry> >::iterator it1 = archiveContent.begin();
-      while( m_running &&(it1!=archiveContent.end()) )
+      QMap<QString,QMap<QString,fileTocEntry> >::iterator it1 = m_dirs.getFirstElement();
+      while( m_running &&(it1!=m_dirs.getLastElement()) )
       {
         unsigned found = 0;
         unsigned long foundkbytes = 0;
@@ -2059,14 +2020,14 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
   else
   {
     m_engine->setProgressText("Finding duplicate files...");
-    m_engine->setProgressMaximum(archiveContent.size());
+    m_engine->setProgressMaximum(m_dirs.size());
     scanned = 0;
     totaldirkbytes = 0;
     totalcount = 0;
     filemap.clear();
 
-    QMap<QString,QMap<QString,fileTocEntry> >::iterator it1 = archiveContent.begin();
-    while( m_running &&(it1!=archiveContent.end()) )
+    QMap< QString,QMap<QString,fileTocEntry> >::iterator it1 = m_dirs.getFirstElement();
+    while( m_running &&(it1!=m_dirs.getLastElement()) )
     {
       QMap<QString,fileTocEntry>::iterator it2 = it1.value().begin();
 
@@ -2077,9 +2038,6 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
 
       while( m_running && (it2!=it1.value().end()) )
       {
-        if( it2.value().m_tocId>=m_nextTocId )
-          m_nextTocId = it2.value().m_tocId + 1;
-
         QString filename = it2.key();
         QString srcfile = (it1.key()+"/"+filename);
 
@@ -2199,7 +2157,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
 
         totaldirkbytes += it2.value().m_size / 1024;
         totalcount++;
-        archiveContent[path].remove(file);
+        m_dirs.removeFile(path,file);
         ++it3;
       }
       ++it1;
