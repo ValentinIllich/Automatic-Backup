@@ -27,6 +27,9 @@ cleanupDialog::cleanupDialog(QWidget *parent)
 , m_chars(0)
 , m_metrics(NULL)
 , m_rootEntry(NULL)
+, m_dirCount(0)
+, m_dirStructValid(false)
+, m_dirStructChanged(false)
 , m_engine(new backupEngine(*this))
 {
   ui->setupUi(this);
@@ -42,8 +45,18 @@ cleanupDialog::cleanupDialog(QWidget *parent)
 
 cleanupDialog::~cleanupDialog()
 {
+  if( m_dirStructValid && m_dirStructChanged )
+    saveDirStruct();
+
   delete m_metrics;
   delete ui;
+}
+
+void cleanupDialog::saveDirStruct()
+{
+  QString tocSummaryFile = m_path+"/tocsummary.crcs";
+  if( !backupDirstruct::convertToTocFile(tocSummaryFile,m_rootEntry ) )
+      ;
 }
 
 void cleanupDialog::setPaths(QString const &srcpath,QString const &dstpath)
@@ -65,8 +78,15 @@ void cleanupDialog::threadedVerifyOperation()
   delete m_rootEntry;
   m_rootEntry = new dirEntry(0,m_path);
 
+  m_dirStructValid = false;
+  m_dirStructChanged = false;
   m_dirCount = 0;
-  scanRelativePath(m_path,m_rootEntry,m_dirCount);
+
+  QString tocSummaryFile = m_path+"/tocsummary.crcs";
+  if( backupDirstruct::convertFromTocFile(tocSummaryFile,m_rootEntry,m_dirCount)/*canReadFromTocFile(path,entry)*/ )
+    m_dirStructValid = true;
+  else
+    scanRelativePath(m_path,m_rootEntry,m_dirCount);
 
   m_engine->setProgressText("");
   m_engine->setProgressMaximum(1);
@@ -122,15 +142,6 @@ QString formatSize( double size )
         result.sprintf("%8.3f B",size);*/
   return result;
 }
-/*double unformatSize( QString const &size )
-{
-  double scale = 1.0;
-  if( size.contains("MB") )
-    scale = 1024.0 * 1024.0;
-  QString mantissa = size;
-  mantissa = mantissa.replace("MB","");
-  return mantissa.toDouble() * scale;
-}*/
 
 void cleanupDialog::operationFinishedEvent()
 {
@@ -198,6 +209,9 @@ QDataStream &operator>>(QDataStream &in, struct fileTocEntry &dst);
 
 void cleanupDialog::analyzePath(QString const &path)
 {
+  if( m_dirStructValid && m_dirStructChanged )
+    saveDirStruct();
+
   ui->progressBar->setTextVisible(true);
   m_engine->setProgressText("");
   m_engine->setProgressMaximum(0);
@@ -258,11 +272,6 @@ void cleanupDialog::setLimitDate()
 
 void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int &dirCount )
 {
-  if( backupDirstruct::convertFromTocFile(path,entry)/*canReadFromTocFile(path,entry)*/ )
-  {
-    return;
-  }
-
   m_engine->setProgressText(path);
 
   QDir dir(path);
@@ -306,6 +315,8 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
   }
 
   entry->updateDirInfos(fileSizes,lastModifiedFile);
+
+  if( m_run ) m_dirStructValid = m_dirStructChanged = true;
 }
 
 bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
@@ -615,6 +626,7 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
         delete entry;
         delete startingItem;
 
+        m_dirStructChanged = true;
         ret = false;
       }
 //      else
@@ -641,6 +653,8 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
       delete startingItem;
 
       dirSize += (double)(info.size());
+
+      m_dirStructChanged = true;
       ret = false;
     }
     else if( !m_ignore )

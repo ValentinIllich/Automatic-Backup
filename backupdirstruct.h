@@ -180,14 +180,21 @@ public:
 
   void addFile(QString const &path, QString const &file, fileTocEntry const &entry)
   {
-    m_archiveContent[path][file] = entry;
+    if( path.isEmpty() )
+      m_archiveContent["."][file] = entry;
+    else
+      m_archiveContent[path][file] = entry;
   }
   void removeFile(QString const &path, QString const &file)
   {
-    m_archiveContent[path].remove(file);
+    if( path.isEmpty() )
+      m_archiveContent["."].remove(file);
+    else
+      m_archiveContent[path].remove(file);
   }
 
-  static bool convertFromTocFile(QString const &tocSummaryFile, dirEntry *rootEntry);
+  static bool convertFromTocFile(QString const &tocSummaryFile, dirEntry *rootEntry, int &dirCount);
+  static bool convertToTocFile(QString const &tocSummaryFile, dirEntry *rootEntry);
 
 private:
   QMap<QString,QMap<QString,fileTocEntry> > m_archiveContent;

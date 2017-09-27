@@ -26,7 +26,7 @@ backupDirstruct::~backupDirstruct()
 {
 }
 
-bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry *rootEntry)
+bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry *rootEntry, int &dirCount)
 {
   backupDirstruct dirs;
 
@@ -46,18 +46,21 @@ bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry
       while ( it!=paths.end() )
       {
         QString currentPath = *it;
-        if( currDir->m_dirs.contains(currentPath) )
-          currDir = currDir->m_dirs[currentPath];
-        else
+        if( currentPath!="." )
         {
-          dirEntry *newEntry = new dirEntry(currDir,currentPath);
-          newEntry->m_tocData.m_tocId = 0;
-          newEntry->m_tocData.m_size = 0;
-          newEntry->m_tocData.m_modify = 0;
-          newEntry->m_tocData.m_crc = 0;
+          if( currDir->m_dirs.contains(currentPath) )
+            currDir = currDir->m_dirs[currentPath];
+          else
+          {
+            dirEntry *newEntry = new dirEntry(currDir,currentPath);
+            newEntry->m_tocData.m_tocId = 0;
+            newEntry->m_tocData.m_size = 0;
+            newEntry->m_tocData.m_modify = 0;
+            newEntry->m_tocData.m_crc = 0;
 
-          currDir->m_dirs[currentPath] = newEntry;
-          currDir = newEntry;
+            currDir->m_dirs[currentPath] = newEntry;
+            currDir = newEntry;
+          }
         }
         ++it;
       }
@@ -88,6 +91,8 @@ bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry
 
       currDir->updateDirInfos(fileSizes,lastModifiedFile);
 
+      dirCount++;
+
       ++it1;
     }
 
@@ -95,4 +100,30 @@ bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry
   }
 
   return false;
+}
+
+void iterateDirecories(dirEntry *entry,backupDirstruct &dirs)
+{
+  QMap<QString,dirEntry*>::iterator it1 = entry->m_dirs.begin();
+  while( it1!=entry->m_dirs.end() )
+  {
+    iterateDirecories(it1.value(),dirs);
+    ++it1;
+  }
+
+  QList<dirEntry*>::iterator it2 = entry->m_files.begin();
+  while( it2!=entry->m_files.end() )
+  {
+    fileTocEntry toc = (*it2)->m_tocData;
+    dirs.addFile(entry->relativeFilePath(),(*it2)->m_name,toc);
+    ++it2;
+  }
+}
+
+bool backupDirstruct::convertToTocFile(const QString &tocSummaryFile, dirEntry *rootEntry)
+{
+  backupDirstruct dirs;
+  iterateDirecories(rootEntry,dirs);
+
+  return dirs.writeToFile(tocSummaryFile);
 }

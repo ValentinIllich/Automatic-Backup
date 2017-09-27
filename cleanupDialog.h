@@ -50,8 +50,7 @@ private:
     bool traverseItems(QTreeWidgetItem *startingItem,double &dirSize);
     void openFile( QString const &fn );
 
-//    QMap<QString,struct crcInfo> crcSummary;
-//    QMap<QString,QMap<QString,backupExecuter::fileTocEntry> > archiveContent;
+    void saveDirStruct();
 
     Ui::cleanupDialog *ui;
 
@@ -73,6 +72,9 @@ private:
     QDateTime m_lastmodified;
     int m_dirCount;
     //double m_totalbytes;
+
+    bool m_dirStructValid;
+    bool m_dirStructChanged;
 
     backupEngine *m_engine;
 };
