@@ -4,7 +4,7 @@
 #include "backupExecuter.h"
 #include "backupdirstruct.h"
 
-#include <QtGui/QDialog>
+#include <QDialog>
 #include <qtreewidgetitem>
 
 #include <qmap.h>

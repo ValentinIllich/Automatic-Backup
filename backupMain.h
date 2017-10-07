@@ -3,7 +3,7 @@
 
 #include "ui_mainwindow.h"
 
-#define	BACKUP_VERSION	 "1.20"
+#define	BACKUP_VERSION	 "1.21"
 
 class backupMain : public QDialog, public Ui_mainwindow
 {

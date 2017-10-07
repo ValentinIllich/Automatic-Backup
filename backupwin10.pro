@@ -4,12 +4,18 @@
 TEMPLATE = app
 TARGET = backup
 
+QT       += core gui network
+
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
 # Input
 HEADERS += backupExecuter.h \
     backupMain.h \
     cleanupdialog.h \
     backupSplash.h \
-    utilities.h
+    utilities.h \
+    backupdirstruct.h \
+    backupengine.h
 FORMS += backupwindow.ui \
     mainwindow.ui \
     cleanupdialog.ui
@@ -18,9 +24,12 @@ SOURCES += backupExecuter.cpp \
     main.cpp \
     cleanupdialog.cpp \
     backupSplash.cpp \
-    utilities.cpp
+    utilities.cpp \
+    backupdirstruct.cpp \
+    backupengine.cpp \
+    authexec.c
 RESOURCES += backupwindow.qrc
-win32 { 
+win32 {
     MOC_DIR = c:/tmp/backup_obj
     UI_DIR = c:/tmp/backup_obj
     OBJECTS_DIR = c:/tmp/backup_obj

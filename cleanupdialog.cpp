@@ -337,9 +337,8 @@ bool cleanupDialog::canReadFromTocFile( QString const &path, dirEntry *entry )
     QMap<QString,QMap<QString,fileTocEntry> >::iterator it1 = archiveContent.begin();
     while( it1 != archiveContent.end() )
     {
-      m_engine->setProgressText(it1.key());
-
       QString fullPath = it1.key();
+      m_engine->setProgressText(fullPath);
       m_engine->setProgressText(fullPath);
 
       if( m_sourcePath.length()>0 )
@@ -492,7 +491,7 @@ void cleanupDialog::openFile( QString const &fn )
   QString webbrowser;
 
 #if defined(Q_OS_WIN)
-  ShellExecuteA(winId(), 0, name.toLocal8Bit(), 0, 0, SW_SHOWNORMAL);
+  ShellExecuteA((HWND)winId(), 0, name.toLocal8Bit(), 0, 0, SW_SHOWNORMAL);
 #endif
 #if defined(Q_OS_MAC)
   webbrowser = "open";

@@ -1,6 +1,6 @@
 #include "backupengine.h"
 
-#include <qapplication.h>
+#include <qcoreapplication.h>
 #include <qthread.h>
 #include <qmutex.h>
 //#include <qprogressbar.h>
@@ -24,7 +24,7 @@ protected:
     else
       m_backupHandler.threadedCopyOperation();
 
-    QApplication::postEvent(this,new QEvent(QEvent::User));
+    QCoreApplication::postEvent(this,new QEvent(QEvent::User));
   }
 
   virtual bool event ( QEvent* event )

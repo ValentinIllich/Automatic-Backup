@@ -1,5 +1,12 @@
 Automatic Backup Release Notes (C) Valentin Illich 2011-2017
 
+Release 1.21:
+============
+
+ + added support for NAS destinations: directory structure of backup destination path is stored inside
+   internal data structure. This data structure is read/written from a table of contents file in destination root.
+ + doing all operations within separate threads. So user interface will be fully operable.
+
 Release 1.20:
 ============
 

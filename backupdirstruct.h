@@ -166,11 +166,17 @@ public:
   }
   bool exists(QString const &path, QString const &file)
   {
-    return m_archiveContent.contains(path) && m_archiveContent[path].contains(file);
+    if( path.isEmpty() )
+      return m_archiveContent.contains(".") && m_archiveContent["."].contains(file);
+    else
+      return m_archiveContent.contains(path) && m_archiveContent[path].contains(file);
   }
   qint64 lastModified(QString const &path, QString const &file)
   {
-    return m_archiveContent[path][file].m_modify;
+    if( path.isEmpty() )
+      return m_archiveContent["."][file].m_modify;
+    else
+      return m_archiveContent[path][file].m_modify;
   }
 
   qint64 nextTocId()
