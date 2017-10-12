@@ -121,6 +121,7 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
 , m_background(false)
 , m_closeAfterExecute(false)
 //, m_batchRunning(false)
+, m_askForShutDown(NULL)
 , collectingDeleted(false)
 , dircount(0)
 , kbytes_to_copy(0)
@@ -356,7 +357,18 @@ void backupExecuter::processProgressValue(int value)
 
 void backupExecuter::processProgressText(QString const &text)
 {
-  progresslabel->setText(text);
+  QFontMetrics metrics(progresslabel->font());
+  int chars = 0;
+  if( !text.isEmpty() )
+  {
+    chars = (int)((double)progresslabel->width() / (double)metrics.width(text) * 0.8 * (double)text.length());
+    if( chars<text.length() )
+      progresslabel->setText("..."+text.right(chars));
+    else
+      progresslabel->setText(text);
+  }
+  else
+    progresslabel->setText(text);
 }
 
 void backupExecuter::processFileNameText(QString const &text)
@@ -577,8 +589,10 @@ void backupExecuter::findDirectories( QString const &start )
         if( passed )
         {
           m_engine->setProgressValue(dircount++);
-          directories.append(path);
+          if( dircount>progressbar->maximum() )
+            m_engine->setProgressMaximum(dircount+10);
           m_engine->setFileNameText(path);
+          directories.append(path);
         }
         if( stepinto )
           findDirectories(path);
@@ -691,13 +705,6 @@ void backupExecuter::analyzeDirectories()
             // hier war #if 0
             copy = true;
           }
-          fileTocEntry entry;
-          entry.m_tocId = m_dirs.nextTocId();
-          entry.m_size = srcFile.size();
-          entry.m_modify = modify;
-          entry.m_crc = 0;
-          m_dirs.addFile(filePath.mid(source.length()+1),fileName,entry);
-//          lastModified2[filePath.toLatin1().data()][fileName.toLatin1().data()] = modify;
         }
         else
         {
@@ -999,6 +1006,11 @@ void backupExecuter::copySelectedFiles()
         }
         dst.close();
 
+        QFileInfo srcInfo(srcFile);
+        QString filePath = srcInfo.dir().absolutePath();
+        QString fileName = srcInfo.fileName();
+        qint64 modify = srcInfo.lastModified().toMSecsSinceEpoch();
+
         if( m_running )
         {
           if( getCompress() )
@@ -1009,6 +1021,14 @@ void backupExecuter::copySelectedFiles()
           // finally, fix modification time stamp to src file
           QFileInfo fi(srcFile);
           setTimestamps(dstFile,fi.lastModified());
+
+          fileTocEntry entry;
+          entry.m_tocId = m_dirs.nextTocId();
+          entry.m_size = srcFile.size();
+          entry.m_modify = modify;
+          entry.m_crc = 0;
+          m_dirs.addFile(filePath.mid(source.length()+1),fileName,entry);
+  //          lastModified2[filePath.toLatin1().data()][fileName.toLatin1().data()] = modify;
         }
         else
           dst.remove();
@@ -1088,6 +1108,11 @@ int backupExecuter::getTimeout()
 void backupExecuter::setCloseAfterExecute(bool doIt)
 {
   m_closeAfterExecute = doIt;
+}
+
+void backupExecuter::setAskForShutdown(bool *willShutdown)
+{
+  m_askForShutDown = willShutdown;
 }
 
 void backupExecuter::selSource()
@@ -1187,6 +1212,12 @@ void backupExecuter::operationFinishedEvent()
 
 void backupExecuter::doIt(bool runningInBackground)
 {
+  if( m_askForShutDown )
+  {
+    if( QMessageBox::question(0,"security question","Do you want the system to shut down automatically after execution?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::Yes )
+      *m_askForShutDown = true;
+  }
+
   m_background = runningInBackground || backgroundExec->isChecked();
 
   changeVisibility();
@@ -1198,6 +1229,12 @@ void backupExecuter::doIt(bool runningInBackground)
 
 void backupExecuter::verifyIt(bool runningInBackground)
 {
+  if( m_askForShutDown )
+  {
+    if( QMessageBox::question(0,"security question","Do you want the system to shut down automatically after execution?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::Yes )
+      *m_askForShutDown = true;
+  }
+
   m_background = runningInBackground || backgroundExec->isChecked();
 
   changeVisibility();

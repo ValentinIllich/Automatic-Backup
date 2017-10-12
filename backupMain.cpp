@@ -50,10 +50,11 @@ public:
     delete m_executer;
   }
 
-  void editBackupItem(bool closeAferExecute)
+  void editBackupItem(bool closeAferExecute,bool *askForShutdown)
   {
     backupExecuter executer(m_sText,m_sSrc,m_sDst,m_sFlt,m_bAuto,m_iInterval,m_bKeep,m_iVersions,m_bzlib,m_bsuspend,m_iTimeout);
     executer.setCloseAfterExecute(closeAferExecute);
+    executer.setAskForShutdown(askForShutdown);
     executer.exec();
     m_bexecuted = executer.result()==QDialog::Accepted;
 
@@ -378,12 +379,6 @@ void backupMain::editBackup()
 {
   m_immediateShutdown = false;
 
-  if( shutDown->isChecked()/*&& (m_selected>1)*/ )
-  {
-    if( QMessageBox::question(0,"security question","Do you want the system to shut down automatically after execution?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::Yes )
-      m_immediateShutdown = true;
-  }
-
   QList<QListWidgetItem*> const &list = backupList->selectedItems();
   for( QList<QListWidgetItem*>::const_iterator it=list.begin(); it!=list.end(); ++it )
   {
@@ -391,10 +386,10 @@ void backupMain::editBackup()
 
     if( m_selected==1 )
     {
-      static_cast<backupListItem*>(item)->editBackupItem(m_immediateShutdown);
-      // if user just did an edit then cancel shutdown!
-      if( !static_cast<backupListItem*>(item)->executionDone() )
-        m_immediateShutdown = false;
+      if( shutDown->isChecked() )
+        static_cast<backupListItem*>(item)->editBackupItem(true,&m_immediateShutdown);
+      else
+        static_cast<backupListItem*>(item)->editBackupItem(false,NULL);
     }
     else
     {

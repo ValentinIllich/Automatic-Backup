@@ -55,6 +55,7 @@ public:
   int		getTimeout();
 
   void	setCloseAfterExecute(bool doIt);
+  void  setAskForShutdown(bool *willShutdown);
 
   static QFile *openFile( QString const &filename, bool readOnly = false );
   static void displayResult( QWidget *parent, QString const &text, QString const windowTitle = "" );
@@ -163,6 +164,7 @@ private:
   bool m_closed;
   bool m_background;
   bool m_closeAfterExecute;
+  bool *m_askForShutDown;
 
   bool collectingDeleted;
   QString collectingPath;
