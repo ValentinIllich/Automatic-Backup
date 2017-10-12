@@ -170,6 +170,7 @@ private:
   QString collectingPath;
 
   int dircount;
+  unsigned int files_to_copy;
   unsigned int kbytes_to_copy;
 
   static QString nullStr;

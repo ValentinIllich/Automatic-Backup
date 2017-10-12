@@ -124,6 +124,7 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
 , m_askForShutDown(NULL)
 , collectingDeleted(false)
 , dircount(0)
+, files_to_copy(0)
 , kbytes_to_copy(0)
 , lastVerifiedK(0)
 , verifiedK(0)
@@ -423,6 +424,7 @@ void backupExecuter::startingAction()
 
   directories.clear();
   filelist.clear();
+  files_to_copy = 0;
   kbytes_to_copy = 0;
 
   dircount = 1;
@@ -718,6 +720,7 @@ void backupExecuter::analyzeDirectories()
         qint64 filesize = srcFile.size();
         QString relPath = fullName.mid(source.length());
         filelist.append(relPath);
+        files_to_copy++;
         kbytes_to_copy += (filesize/1024);
         count++;
         dirkbytes += (filesize/1024);
@@ -887,6 +890,7 @@ void backupExecuter::copySelectedFiles()
   QString srcFile;
   QString dstFile;
   char *buffer = NULL;
+  unsigned int copiedFiles = 0;
   unsigned long copiedk = 0;
 
   if( !m_running ) return;
@@ -895,7 +899,6 @@ void backupExecuter::copySelectedFiles()
 
   buffer = new char[buffsize];
 
-  m_engine->setProgressText("processing Files...");
   m_engine->setProgressMaximum(kbytes_to_copy);
 
   QTime startTime = QTime::currentTime();
@@ -903,6 +906,9 @@ void backupExecuter::copySelectedFiles()
   for ( QStringList::Iterator it2=filelist.begin(); m_running && it2!=filelist.end(); ++it2 )
   {
     checkTimeout();
+
+    copiedFiles++;
+    m_engine->setProgressText("processing "+QString::number(copiedFiles)+" of "+QString::number(files_to_copy)+" files...");
 
     if( !m_running )
       break;
