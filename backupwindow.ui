@@ -788,8 +788,8 @@ running, it is used to cancel the backup run.</string>
        </property>
        <property name="maximumSize">
         <size>
-         <width>850</width>
-         <height>17</height>
+         <width>16777215</width>
+         <height>16777215</height>
         </size>
        </property>
        <property name="text">

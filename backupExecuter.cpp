@@ -374,7 +374,18 @@ void backupExecuter::processProgressText(QString const &text)
 
 void backupExecuter::processFileNameText(QString const &text)
 {
-  actualfile->setText(text);
+  QFontMetrics metrics(actualfile->font());
+  int chars = 0;
+  if( !text.isEmpty() )
+  {
+    chars = (int)((double)actualfile->width() / (double)metrics.width(text) * 0.8 * (double)text.length());
+    if( chars<text.length() )
+      actualfile->setText("..."+text.right(chars));
+    else
+      actualfile->setText(text);
+  }
+  else
+    actualfile->setText(text);
 }
 
 void backupExecuter::startingAction()
@@ -590,9 +601,11 @@ void backupExecuter::findDirectories( QString const &start )
 
         if( passed )
         {
-          m_engine->setProgressValue(dircount++);
+          dircount++;
           if( dircount>progressbar->maximum() )
-            m_engine->setProgressMaximum(dircount+10);
+            m_engine->setProgressMaximum(0); // show busy indicator
+          else
+            m_engine->setProgressValue(dircount);
           m_engine->setFileNameText(path);
           directories.append(path);
         }
