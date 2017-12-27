@@ -102,6 +102,10 @@ public:
 QDataStream &operator<<(QDataStream &out, const struct fileTocEntry &src);
 QDataStream &operator>>(QDataStream &in, struct fileTocEntry &dst);
 
+//typedef QMap<QString,std::list<fileTocEntry> > tocDataEntryMap;
+typedef QMap<QString,fileTocEntry> tocDataEntryMap;
+typedef QMap<QString,tocDataEntryMap> tocDataContainerMap;
+
 class backupDirstruct
 {
 public:
@@ -120,15 +124,15 @@ public:
       str >> m_archiveContent;
       tocFile.close();
 
-      QMap<QString,QMap<QString,fileTocEntry> >::iterator it1 = getFirstElement();
+      tocDataContainerMap::iterator it1 = getFirstElement();
       while( it1 != getLastElement() )
       {
-        QMap<QString,fileTocEntry>::iterator it2 = it1.value().begin();
+        tocDataEntryMap::iterator it2 = it1.value().begin();
 
         while( it2!=it1.value().end() )
         {
-          if( it2.value().m_tocId>=m_nextTocId )
-            m_nextTocId = it2.value().m_tocId + 1;
+          if( getEntry(it2).m_tocId>=m_nextTocId )
+            m_nextTocId = getEntry(it2).m_tocId + 1;
           ++it2;
         }
         ++it1;
@@ -151,11 +155,11 @@ public:
     return false;
   }
 
-  QMap< QString,QMap<QString,fileTocEntry> >::iterator getFirstElement()
+  tocDataContainerMap::iterator getFirstElement()
   {
     return m_archiveContent.begin();
   }
-  QMap< QString,QMap<QString,fileTocEntry> >::iterator getLastElement()
+  tocDataContainerMap::iterator getLastElement()
   {
     return m_archiveContent.end();
   }
@@ -177,6 +181,11 @@ public:
       return m_archiveContent["."][file].m_modify;
     else
       return m_archiveContent[path][file].m_modify;
+  }
+
+  fileTocEntry &getEntry(tocDataEntryMap::iterator const &it)
+  {
+    return it.value()/*.front()*/;
   }
 
   qint64 nextTocId()
@@ -203,7 +212,7 @@ public:
   static bool convertToTocFile(QString const &tocSummaryFile, dirEntry *rootEntry);
 
 private:
-  QMap<QString,QMap<QString,fileTocEntry> > m_archiveContent;
+  tocDataContainerMap m_archiveContent;
   qint64 m_nextTocId;
 };
 

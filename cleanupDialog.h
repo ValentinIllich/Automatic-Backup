@@ -44,7 +44,6 @@ protected:
 
 private:
     void scanRelativePath( QString const &path, dirEntry *entry, int &dirCount );
-    bool canReadFromTocFile( QString const &path, dirEntry *entry );
     void populateTree( dirEntry *entry, QTreeWidgetItem *item, int &depth, int &processedDirs );
 
     bool traverseItems(QTreeWidgetItem *startingItem,double &dirSize);

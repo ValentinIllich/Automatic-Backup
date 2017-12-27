@@ -32,7 +32,7 @@ bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry
 
   if( dirs.readFromFile(tocSummaryFile) )
   {
-    QMap<QString,QMap<QString,fileTocEntry> >::iterator it1 = dirs.getFirstElement();
+    tocDataContainerMap::iterator it1 = dirs.getFirstElement();
     while( it1 != dirs.getLastElement() )
     {
       QString fullPath = it1.key();
@@ -69,14 +69,10 @@ bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry
       qint64 fileSizes = 0;
       //if( !exclusions.contains(it1.key()) )
       {
-        QMap<QString,fileTocEntry>::iterator it2 = it1.value().begin();
+        tocDataEntryMap::iterator it2 = it1.value().begin();
         while( it2!=it1.value().end() )
         {
-          fileTocEntry tocentry;
-          tocentry.m_tocId = it2.value().m_tocId;
-          tocentry.m_size = it2.value().m_size;
-          tocentry.m_modify = it2.value().m_modify;
-          tocentry.m_crc = it2.value().m_crc;
+          fileTocEntry tocentry = dirs.getEntry(it2);
 
           dirEntry *newEntry = new dirEntry(currDir,it2.key());
           newEntry->m_tocData = tocentry;
