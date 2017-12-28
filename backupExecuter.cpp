@@ -510,31 +510,6 @@ void backupExecuter::findDirectories( QString const &start )
 {
   if( start.isEmpty() )
   {
-    QFile dir1(destination);
-    if( !dir1.exists() )
-    {
-      mediaMessage msg(this,destination);
-      msg.exec();
-      if( msg.result()!=Accepted )
-      {
-        m_running=false;
-        return;
-      }
-      destination = msg.getPath();
-    }
-    QFile dir2(source);
-    if( !dir2.exists() )
-    {
-      mediaMessage msg(this,source);
-      msg.exec();
-      if( msg.result()!=Accepted )
-      {
-        m_running=false;
-        return;
-      }
-      source = msg.getPath();
-    }
-
     m_engine->setProgressText("Finding Directories...");
     m_engine->setProgressMaximum(m_dirs.size());
 
@@ -754,99 +729,6 @@ void backupExecuter::analyzeDirectories()
     stream << "====> " << totalcount << " changed files with " << totaldirkbytes << " Kbytes\r\n";
   }
 }
-
-#if 0
-            QDir dir(dstpath);
-            // we must avoid the [] characters inside search mask (regexp) so
-            // we replace them by the '?' wildcard and check the src and dst filenames later on
-            QString filter = actualName.replace("[","?").replace("]","?");
-
-            if( getKeep() ) filter = "*" + filter;
-            if( getCompress() ) filter = "_" + filter;
-
-            const QFileInfoList &fl = dir.entryInfoList(QStringList(filter));
-            QFileInfoList::const_iterator it5 = fl.begin();
-
-            QFileInfo fi;
-
-            int n = fl.count();
-            int v = getVersions();
-            int toDelete = n > v ? n-v : 0;
-            int cnt = 0;
-
-            while ( it5!=fl.end() ) {
-              fi = *it5;
-              QString destFilename = fi.fileName();
-              if( getCompress() ) destFilename = cutFilenamePrefix(destFilename,1);
-              if( getKeep() ) destFilename = cutFilenamePrefix(destFilename,9);
-              if( srcFile.fileName()==destFilename )
-              {
-                // first of all, fix src modification time if neccessary (must be greater or equal to creation time)
-  /*              if( srcFile.created()>srcFile.lastModified() )
-                {
-                  if( verboseExecute->isChecked() )
-                    stream << "fix src file(s) "+filter+": "
-                    +"c("+srcFile.created().toString(Qt::ISODate)
-                    +") m("+srcFile.lastModified().toString(Qt::ISODate)
-                    +"'\r\n";
-                  else
-                    setTimestamps(srcFile.absoluteFilePath(),srcFile.created());
-                }*/
-
-                if( srcFile.lastModified()>fi.lastModified() )
-                {
-                  found = true;
-                  copy = true;
-                }
-                else
-                {
-                  found = true;
-                  copy = false;
-                  if( (fi.lastModified()>srcFile.lastModified()) )
-                    fix = true;
-                  break;
-                }
-                if( getKeep() )
-                {
-                  if( (cnt<(n-1)) && (cnt<toDelete) )//never will delete last that means latest backup version
-                  {
-                    if( verboseExecute->isChecked() )
-                      stream << "will delete the "+QString::number(cnt)+"the destination file '"+fi.absoluteFilePath()+"'\r\n";
-                    QFile::remove(fi.absoluteFilePath());
-                  }
-                }
-              }
-              ++it5;
-              cnt++;
-            }
-            if( verboseExecute->isChecked() )
-            {
-              if( found )
-              {
-                if( copy )
-                  stream << "    file(s) "+filter+": "
-                  +"c("+srcFile.created().toString(Qt::ISODate)
-                  +") m("+srcFile.lastModified().toString(Qt::ISODate)
-                  +"), dst c("+fi.created().toString(Qt::ISODate)
-                  +") m("+fi.lastModified().toString(Qt::ISODate)
-                  +"), found dst was '"+fi.absoluteFilePath()+"'\r\n";
-                if( fix )
-                  stream << "fix dst file(s) "+filter+": "
-                  +"c("+srcFile.created().toString(Qt::ISODate)
-                  +") m("+srcFile.lastModified().toString(Qt::ISODate)
-                  +"), dst c("+fi.created().toString(Qt::ISODate)
-                  +") m("+fi.lastModified().toString(Qt::ISODate)
-                  +"), found dst was '"+fi.absoluteFilePath()+"'\r\n";
-              }
-              else
-                stream << "destination file(s) "+dstpath+"/"+filter+": not found.\r\n";
-            }
-            else
-            {
-              if( fix )
-                setTimestamps(fi.absoluteFilePath(),srcFile.lastModified());
-            }
-#endif
 
 QString backupExecuter::ensureDirExists( QString const &fullPath, QString const &srcBase, QString const &dstBase )
 {
@@ -1238,6 +1120,25 @@ void backupExecuter::doIt(bool runningInBackground)
   }
 
   m_background = runningInBackground || backgroundExec->isChecked();
+
+  QFile dir1(destination);
+  if( !dir1.exists() )
+  {
+    mediaMessage msg(this,destination);
+    msg.exec();
+    if( msg.result()!=Accepted )
+      return;
+    destination = msg.getPath();
+  }
+  QFile dir2(source);
+  if( !dir2.exists() )
+  {
+    mediaMessage msg(this,source);
+    msg.exec();
+    if( msg.result()!=Accepted )
+      return;
+    source = msg.getPath();
+  }
 
   changeVisibility();
 
