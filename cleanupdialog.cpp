@@ -201,12 +201,6 @@ void cleanupDialog::doAnalyze()
   }
 }
 
-static QString exclusions = "/Volumes";
-static QDateTime lastTime;
-
-QDataStream &operator<<(QDataStream &out, const struct fileTocEntry &src);
-QDataStream &operator>>(QDataStream &in, struct fileTocEntry &dst);
-
 void cleanupDialog::analyzePath(QString const &path)
 {
   if( m_dirStructValid && m_dirStructChanged )
@@ -299,6 +293,7 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
     else
     {
       fileTocEntry tocentry;
+      tocentry.m_prefix.clear();
       tocentry.m_tocId = 0;//m_nextTocId++;
       tocentry.m_size = fileInfo.size();
       tocentry.m_modify = fileInfo.lastModified().toMSecsSinceEpoch();;

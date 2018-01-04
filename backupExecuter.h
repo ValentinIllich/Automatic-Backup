@@ -125,9 +125,6 @@ private:
   void restoreDirectory(QString const &startPath);
   void copyFile(QString const &srcFile, QString const &dstFile);
 
-  QString addFilenamePrefix(QString const &relPath,QString const &prefix);
-  QString cutFilenamePrefix(QString const &relPath,int prefixLen);
-
   void deletePath(QString const &absolutePath,QString const &indent = "");
   void scanDirectory(QDate const &date, QString const &startPath = QString::null, bool eraseAll = false);
   void findDuplicates(QString const &startPath = QString::null,bool operatingOnSource = false);

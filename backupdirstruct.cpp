@@ -4,15 +4,47 @@
 
 QDataStream &operator<<(QDataStream &out, const struct fileTocEntry &src)
 {
-  out << src.m_tocId << src.m_size << src.m_modify << src.m_crc;
+  out << src.m_prefix << src.m_tocId << src.m_size << src.m_modify << src.m_crc;
   return out;
 }
 QDataStream &operator>>(QDataStream &in, struct fileTocEntry &dst)
 {
+  in >> dst.m_prefix;
   in >> dst.m_tocId;
   in >> dst.m_size;
   in >> dst.m_modify;
   in >> dst.m_crc;
+  return in;
+}
+
+QDataStream &operator<<(QDataStream &out, const std::list<fileTocEntry> &src)
+{
+  std::list<fileTocEntry>::const_iterator it = src.begin();
+  out << (qint64)src.size();
+  while( it!=src.end() )
+  {
+    out << *it;
+    ++it;
+  }
+  return out;
+}
+
+QDataStream &operator>>(QDataStream &in, std::list<fileTocEntry> &dst)
+{
+  qint64 size;
+
+  in >> size;
+  for( qint64 i = 0; i<size; i++ )
+  {
+    struct fileTocEntry entry;
+    in >> entry.m_prefix;
+    in >> entry.m_tocId;
+    in >> entry.m_size;
+    in >> entry.m_modify;
+    in >> entry.m_crc;
+    dst.push_back(entry);
+  }
+
   return in;
 }
 
@@ -53,6 +85,7 @@ bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry
           else
           {
             dirEntry *newEntry = new dirEntry(currDir,currentPath);
+            newEntry->m_tocData.m_prefix.clear();
             newEntry->m_tocData.m_tocId = 0;
             newEntry->m_tocData.m_size = 0;
             newEntry->m_tocData.m_modify = 0;
@@ -122,4 +155,28 @@ bool backupDirstruct::convertToTocFile(const QString &tocSummaryFile, dirEntry *
   iterateDirecories(rootEntry,dirs);
 
   return dirs.writeToFile(tocSummaryFile);
+}
+
+QString backupDirstruct::addFilenamePrefix(const QString &relPath, const QString &prefix)
+{
+  QString result = relPath;
+  int pos = result.lastIndexOf("/");
+  if( pos>=0 )
+    result = result.insert(pos+1,prefix);
+  else
+    result = prefix + result;
+
+  return result;
+}
+
+QString backupDirstruct::cutFilenamePrefix(const QString &relPath, int prefixLen)
+{
+  QString result = relPath;
+  int pos = result.lastIndexOf("/");
+  if( pos>=0 )
+    result = result.remove(pos+1,prefixLen);
+  else
+    result = result.mid(prefixLen);
+
+  return result;
 }

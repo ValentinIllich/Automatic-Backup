@@ -812,11 +812,13 @@ void backupExecuter::copySelectedFiles()
     m_engine->setProgressValue(copiedk);
 
     relPath = *it2;
-    srcFile = source + relPath;
 
-    if( getKeep() ) relPath = addFilenamePrefix(relPath,appendixcpy +".");
-    if( getCompress() ) dstFile = addFilenamePrefix(relPath,"_");
-    dstFile = destination + relPath;
+    QString prefix = "";
+    if( getKeep() ) prefix = appendixcpy +".";
+    if( getCompress() ) prefix = "_" + prefix;
+
+    srcFile = source + relPath;
+    dstFile = destination + (prefix.isEmpty() ? relPath : backupDirstruct::addFilenamePrefix(relPath,prefix));
 
     QFile src(srcFile);
     if( src.open(QIODevice::ReadOnly) )
@@ -924,6 +926,7 @@ void backupExecuter::copySelectedFiles()
           setTimestamps(dstFile,fi.lastModified());
 
           fileTocEntry entry;
+          entry.m_prefix.clear();
           entry.m_tocId = m_dirs.nextTocId();
           entry.m_size = srcFile.size();
           entry.m_modify = modify;
@@ -1300,8 +1303,8 @@ void backupExecuter::restoreDirectory(QString const &startPath)
       else
       {
         QString relfile = srcfile.mid(destination.length());
-        if( getCompress() ) relfile = cutFilenamePrefix(relfile,1);
-        if( getKeep() ) relfile = cutFilenamePrefix(relfile,9);
+        if( getCompress() ) relfile = backupDirstruct::cutFilenamePrefix(relfile,1);
+        if( getKeep() ) relfile = backupDirstruct::cutFilenamePrefix(relfile,9);
         QString destfile = source+relfile;
         if( verboseMaintenance->isChecked() )
           stream << "---> " << "would restore file " << srcfile
@@ -1349,30 +1352,6 @@ void backupExecuter::copyFile(QString const &srcFile, QString const &dstFile)
     }
     src.close();
   }
-}
-
-QString backupExecuter::addFilenamePrefix(const QString &relPath, const QString &prefix)
-{
-  QString result = relPath;
-  int pos = result.lastIndexOf("/");
-  if( pos>=0 )
-    result = result.insert(pos+1,prefix);
-  else
-    result = prefix + result;
-
-  return result;
-}
-
-QString backupExecuter::cutFilenamePrefix(const QString &relPath, int prefixLen)
-{
-  QString result = relPath;
-  int pos = result.lastIndexOf("/");
-  if( pos>=0 )
-    result = result.remove(pos+1,prefixLen);
-  else
-    result = result.mid(prefixLen);
-
-  return result;
 }
 
 void backupExecuter::cleanup()
@@ -1700,8 +1679,8 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
             //QString srcfile = source + fi.absoluteFilePath().remove(destination);//VIL
 
             QString filename = fi.fileName();
-            if( getCompress() ) filename = cutFilenamePrefix(filename,1);
-            if( getKeep() )     filename = cutFilenamePrefix(filename,9);
+            if( getCompress() ) filename = backupDirstruct::cutFilenamePrefix(filename,1);
+            if( getKeep() )     filename = backupDirstruct::cutFilenamePrefix(filename,9);
 
             QString srcfile = source + (fi.absolutePath()+"/"+filename).mid(destination.length());
 
@@ -1898,8 +1877,8 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             //QDate today = QDate::currentDate();
 
             QString filename = fi.fileName();
-            if( getCompress() ) filename = cutFilenamePrefix(filename,1);
-            if( getKeep() )     filename = cutFilenamePrefix(filename,9);
+            if( getCompress() ) filename = backupDirstruct::cutFilenamePrefix(filename,1);
+            if( getKeep() )     filename = backupDirstruct::cutFilenamePrefix(filename,9);
 
             QString srcfile = source + (fi.absolutePath()+"/"+filename).mid(destination.length());
             //stream << "source file is " << srcfile << " \r\n";
@@ -2078,7 +2057,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
         }
         else if( getCompress() )
         {
-          fileToDelete = addFilenamePrefix(fileToDelete,"_");
+          fileToDelete = backupDirstruct::addFilenamePrefix(fileToDelete,"_");
           deletePath(fileToDelete);
         }
         else
@@ -2151,8 +2130,8 @@ void backupExecuter::verifyBackup(QString const &startPath)
         else
         {
           QString filename = fi.fileName();
-          if( getCompress() ) filename = cutFilenamePrefix(filename,1);
-          if( getKeep() )     filename = cutFilenamePrefix(filename,9);
+          if( getCompress() ) filename = backupDirstruct::cutFilenamePrefix(filename,1);
+          if( getKeep() )     filename = backupDirstruct::cutFilenamePrefix(filename,9);
 
           QString verifyFile = fi.absolutePath()+"/"+fi.fileName();
           //QString dstFile = fi.absolutePath()+"/"+filename;
