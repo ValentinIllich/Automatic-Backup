@@ -136,7 +136,6 @@ private:
   QString source;
   QString destination;
   QString filter;
-  QString appendixcpy;
 
   QStringList directories;
   QStringList filelist;

@@ -392,8 +392,6 @@ void backupExecuter::startingAction()
 {
   if( m_isBatch ) return;
 
-  QDateTime dt = QDateTime::currentDateTime();
-  appendixcpy = dt.toString("yyyyMMdd");
   m_running=true;
   m_error=false;
   m_dirsCreated = false;
@@ -796,6 +794,8 @@ void backupExecuter::copySelectedFiles()
 
   m_engine->setProgressMaximum(kbytes_to_copy);
 
+  QString prefix = backupDirstruct::createFileNamePrefix(getKeep(),getCompress());
+
   QTime startTime = QTime::currentTime();
 
   for ( QStringList::Iterator it2=filelist.begin(); m_running && it2!=filelist.end(); ++it2 )
@@ -812,10 +812,6 @@ void backupExecuter::copySelectedFiles()
     m_engine->setProgressValue(copiedk);
 
     relPath = *it2;
-
-    QString prefix = "";
-    if( getKeep() ) prefix = appendixcpy +".";
-    if( getCompress() ) prefix = "_" + prefix;
 
     srcFile = source + relPath;
     dstFile = destination + (prefix.isEmpty() ? relPath : backupDirstruct::addFilenamePrefix(relPath,prefix));
@@ -931,7 +927,7 @@ void backupExecuter::copySelectedFiles()
           entry.m_size = srcFile.size();
           entry.m_modify = modify;
           entry.m_crc = 0;
-          m_dirs.addFile(filePath.mid(source.length()+1),fileName,entry);
+          m_dirs.addFile(filePath.mid(source.length()+1),prefix+fileName,entry);
   //          lastModified2[filePath.toLatin1().data()][fileName.toLatin1().data()] = modify;
         }
         else
@@ -1077,7 +1073,7 @@ void backupExecuter::threadedCopyOperation()
     if( tst.open(QIODevice::WriteOnly) )
     {
       QTextStream stream(&tst);
-      stream << appendixcpy;
+      stream << QDateTime::currentDateTime().toString("yyyyMMddhhmmss");
       tst.close();
     }
     else
@@ -1096,7 +1092,7 @@ void backupExecuter::threadedVerifyOperation()
     if( tst.open(QIODevice::WriteOnly) )
     {
       QTextStream stream(&tst);
-      stream << appendixcpy;
+      stream << QDateTime::currentDateTime().toString("yyyyMMddhhmmss");
       tst.close();
     }
     else
@@ -1303,8 +1299,7 @@ void backupExecuter::restoreDirectory(QString const &startPath)
       else
       {
         QString relfile = srcfile.mid(destination.length());
-        if( getCompress() ) relfile = backupDirstruct::cutFilenamePrefix(relfile,1);
-        if( getKeep() ) relfile = backupDirstruct::cutFilenamePrefix(relfile,9);
+        relfile = backupDirstruct::cutFilenamePrefix(relfile);
         QString destfile = source+relfile;
         if( verboseMaintenance->isChecked() )
           stream << "---> " << "would restore file " << srcfile
@@ -1679,8 +1674,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
             //QString srcfile = source + fi.absoluteFilePath().remove(destination);//VIL
 
             QString filename = fi.fileName();
-            if( getCompress() ) filename = backupDirstruct::cutFilenamePrefix(filename,1);
-            if( getKeep() )     filename = backupDirstruct::cutFilenamePrefix(filename,9);
+            filename = backupDirstruct::cutFilenamePrefix(filename);
 
             QString srcfile = source + (fi.absolutePath()+"/"+filename).mid(destination.length());
 
@@ -1877,8 +1871,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             //QDate today = QDate::currentDate();
 
             QString filename = fi.fileName();
-            if( getCompress() ) filename = backupDirstruct::cutFilenamePrefix(filename,1);
-            if( getKeep() )     filename = backupDirstruct::cutFilenamePrefix(filename,9);
+            filename = backupDirstruct::cutFilenamePrefix(filename);
 
             QString srcfile = source + (fi.absolutePath()+"/"+filename).mid(destination.length());
             //stream << "source file is " << srcfile << " \r\n";
@@ -2130,8 +2123,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
         else
         {
           QString filename = fi.fileName();
-          if( getCompress() ) filename = backupDirstruct::cutFilenamePrefix(filename,1);
-          if( getKeep() )     filename = backupDirstruct::cutFilenamePrefix(filename,9);
+          filename = backupDirstruct::cutFilenamePrefix(filename);
 
           QString verifyFile = fi.absolutePath()+"/"+fi.fileName();
           //QString dstFile = fi.absolutePath()+"/"+filename;

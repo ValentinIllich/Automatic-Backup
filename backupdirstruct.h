@@ -10,6 +10,7 @@
 #include <QList>
 #include <QFile>
 #include <QDataStream>
+#include <QStringList>
 
 struct fileTocEntry
 {
@@ -107,8 +108,8 @@ QDataStream &operator>>(QDataStream &in, struct fileTocEntry &dst);
 QDataStream &operator<<(QDataStream &out, const std::list<fileTocEntry> &src);
 QDataStream &operator>>(QDataStream &in, std::list<fileTocEntry> &dst);
 
-typedef QMap<QString,std::list<fileTocEntry> > tocDataEntryMap;
-//typedef QMap<QString,fileTocEntry> tocDataEntryMap;
+typedef std::list<fileTocEntry> tocDataEntryList;
+typedef QMap<QString,tocDataEntryList> tocDataEntryMap;
 typedef QMap<QString,tocDataEntryMap> tocDataContainerMap;
 
 class backupDirstruct
@@ -198,18 +199,20 @@ public:
     return m_nextTocId++;
   }
 
-  void addFile(QString const &path, QString const &file, fileTocEntry const &entry)
+  void addFile(QString const &path, QString const &file, fileTocEntry &entry)
   {
+    QString basePath = "";
+    QString prefix = "";
+    QString baseFile = backupDirstruct::cutFilenamePrefix(file,&prefix);
+
     if( path.isEmpty() )
-    {
-      if( entry.m_prefix.isEmpty() ) m_archiveContent["."][file].clear();
-      m_archiveContent["."][file].push_front(entry);
-    }
+      basePath = ".";
     else
-    {
-      if( entry.m_prefix.isEmpty() ) m_archiveContent[path][file].clear();
-      m_archiveContent[path][file].push_front(entry);
-    }
+      basePath = path;
+
+    if( prefix.isEmpty() )
+      m_archiveContent[basePath][baseFile].clear();
+    m_archiveContent[basePath][baseFile].push_front(entry);
   }
   void removeFile(QString const &path, QString const &file)
   {
@@ -218,12 +221,41 @@ public:
     else
       m_archiveContent[path].remove(file);
   }
+  void keepFiles( size_t numberOfFiles, QStringList &toBeDeleted )
+  {
+    tocDataContainerMap::iterator it1 = m_archiveContent.begin();
+    while( it1!=m_archiveContent.end() )
+    {
+      tocDataEntryMap::iterator it2 = it1.value().begin();
+      while( it2!=it1.value().end() )
+      {
+        std::list<fileTocEntry> &entries = it2.value();
+
+        while( entries.size()>numberOfFiles )
+        {
+          fileTocEntry entry = entries.back();
+          entries.pop_back();
+
+          QString relPath = it1.key();
+          if( !relPath.isEmpty() ) relPath += "/";
+          relPath += entry.m_prefix+it2.key();
+
+          toBeDeleted.push_back(relPath);
+        }
+        ++it2;
+      }
+      ++it1;
+    }
+
+  }
 
   static bool convertFromTocFile(QString const &tocSummaryFile, dirEntry *rootEntry, int &dirCount);
   static bool convertToTocFile(QString const &tocSummaryFile, dirEntry *rootEntry);
 
+  static QString createFileNamePrefix(bool keepCopies, bool compressFile);
+
   static QString addFilenamePrefix(QString const &relPath,QString const &prefix);
-  static QString cutFilenamePrefix(QString const &relPath,int prefixLen);
+  static QString cutFilenamePrefix(QString const &relPath,QString *prefixFound = NULL);
 
 private:
   tocDataContainerMap m_archiveContent;

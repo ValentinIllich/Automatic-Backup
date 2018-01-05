@@ -1,6 +1,7 @@
 #include "backupdirstruct.h"
 
 #include <QStringList>
+#include <QDateTime>
 
 QDataStream &operator<<(QDataStream &out, const struct fileTocEntry &src)
 {
@@ -157,6 +158,22 @@ bool backupDirstruct::convertToTocFile(const QString &tocSummaryFile, dirEntry *
   return dirs.writeToFile(tocSummaryFile);
 }
 
+QString backupDirstruct::createFileNamePrefix(bool keepCopies, bool compressFile)
+{
+  QString prefix;
+
+  QDateTime dt = QDateTime::currentDateTime();
+  QString appendixcpy = dt.toString("yyyyMMddhhmmss");
+
+  if( keepCopies ) prefix = "_vibupdttm_" + appendixcpy;
+  if( compressFile ) prefix = "_vibupcprs_" + prefix;
+
+  if( !prefix.isEmpty() )
+    prefix += ".";
+
+  return prefix;
+}
+
 QString backupDirstruct::addFilenamePrefix(const QString &relPath, const QString &prefix)
 {
   QString result = relPath;
@@ -169,14 +186,33 @@ QString backupDirstruct::addFilenamePrefix(const QString &relPath, const QString
   return result;
 }
 
-QString backupDirstruct::cutFilenamePrefix(const QString &relPath, int prefixLen)
+QString backupDirstruct::cutFilenamePrefix(const QString &relPath, QString *prefixFound /*= NULL*/)
 {
   QString result = relPath;
+  QString name = "";
+  int prefixlen = 0;
   int pos = result.lastIndexOf("/");
   if( pos>=0 )
-    result = result.remove(pos+1,prefixLen);
+    name = result.mid(pos+1);
   else
-    result = result.mid(prefixLen);
+    name = relPath;
+
+  if( name.startsWith("_vibupcprs_") )
+  {
+    name = name.mid(11);
+    prefixlen += 11;
+  }
+  if( name.startsWith("_vibupdttm_") )
+  {
+    name = name.mid(25);
+    prefixlen += 25;
+  }
+  if( prefixlen>0 )
+  {
+    if( prefixFound )
+      *prefixFound = result.mid(pos+1,prefixlen+1);
+    result.remove(pos+1,prefixlen+1);
+  }
 
   return result;
 }
