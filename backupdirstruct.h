@@ -212,41 +212,59 @@ public:
 
     if( prefix.isEmpty() )
       m_archiveContent[basePath][baseFile].clear();
+    else
+      entry.m_prefix = prefix;
     m_archiveContent[basePath][baseFile].push_front(entry);
   }
-  void removeFile(QString const &path, QString const &file)
+  void removeFile(QString const &path, QString const &file, QStringList &toBeDeleted)
   {
+    QString basePath = "";
+    QString prefix = "";
+    QString baseFile = backupDirstruct::cutFilenamePrefix(file,&prefix);
+
     if( path.isEmpty() )
-      m_archiveContent["."].remove(file);
+      basePath = ".";
     else
-      m_archiveContent[path].remove(file);
-  }
-  void keepFiles( size_t numberOfFiles, QStringList &toBeDeleted )
-  {
-    tocDataContainerMap::iterator it1 = m_archiveContent.begin();
-    while( it1!=m_archiveContent.end() )
+      basePath = path;
+
+    std::list<fileTocEntry> &entries = m_archiveContent[basePath][baseFile];
+    std::list<fileTocEntry>::iterator it = entries.begin();
+    while( it!=entries.end() )
     {
-      tocDataEntryMap::iterator it2 = it1.value().begin();
-      while( it2!=it1.value().end() )
-      {
-        std::list<fileTocEntry> &entries = it2.value();
+      QString relPath = path;
+      if( !relPath.isEmpty() ) relPath += "/";
+      relPath += (*it).m_prefix+file;
 
-        while( entries.size()>numberOfFiles )
-        {
-          fileTocEntry entry = entries.back();
-          entries.pop_back();
-
-          QString relPath = it1.key();
-          if( !relPath.isEmpty() ) relPath += "/";
-          relPath += entry.m_prefix+it2.key();
-
-          toBeDeleted.push_back(relPath);
-        }
-        ++it2;
-      }
-      ++it1;
+      toBeDeleted.push_back(relPath);
+      ++it;
     }
 
+    m_archiveContent[basePath].remove(baseFile);
+  }
+  void keepFiles( QString const &path, QString const &file, size_t numberOfFiles, QStringList &toBeDeleted )
+  {
+    QString basePath = "";
+    QString prefix = "";
+    QString baseFile = backupDirstruct::cutFilenamePrefix(file,&prefix);
+
+    if( path.isEmpty() )
+      basePath = ".";
+    else
+      basePath = path;
+
+    std::list<fileTocEntry> &entries = m_archiveContent[basePath][baseFile];
+
+    while( entries.size()>numberOfFiles )
+    {
+      fileTocEntry entry = entries.back();
+      entries.pop_back();
+
+      QString relPath = path;
+      if( !relPath.isEmpty() ) relPath += "/";
+      relPath += entry.m_prefix+file;
+
+      toBeDeleted.push_back(relPath);
+    }
   }
 
   static bool convertFromTocFile(QString const &tocSummaryFile, dirEntry *rootEntry, int &dirCount);

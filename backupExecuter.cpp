@@ -671,18 +671,10 @@ void backupExecuter::analyzeDirectories()
           qint64 modify = srcFile.lastModified().toMSecsSinceEpoch();
 
           m_engine->setFileNameText(filePath+"/"+fileName);
-/*          if( lastModified2.find(filePath.toLatin1().data())!=lastModified2.end()
-              && lastModified2[filePath.toLatin1().data()].find(fileName.toLatin1().data())!=lastModified2[filePath.toLatin1().data()].end() )
+          QString relPath = filePath.mid(source.length()+1);
+          if( m_dirs.exists(relPath,fileName) )
           {
-            qint64 lastm = lastModified2[filePath.toLatin1().data()][fileName.toLatin1().data()];
-            if( modify>lastm )
-              copy = true;
-            else
-              copy = false;
-          }
-          else*/ if( m_dirs.exists(filePath.mid(source.length()+1),fileName) )
-          {
-            qint64 lastm = m_dirs.lastModified(filePath.mid(source.length()+1),fileName);
+            qint64 lastm = m_dirs.lastModified(relPath,fileName);
             if( modify>lastm )
               copy = true;
             else
@@ -690,7 +682,6 @@ void backupExecuter::analyzeDirectories()
           }
           else
           {
-            // hier war #if 0
             copy = true;
           }
         }
@@ -704,8 +695,8 @@ void backupExecuter::analyzeDirectories()
       if( copy )
       {
         qint64 filesize = srcFile.size();
-        QString relPath = fullName.mid(source.length());
-        filelist.append(relPath);
+        QString relName = fullName.mid(source.length());
+        filelist.append(relName);
         files_to_copy++;
         kbytes_to_copy += (filesize/1024);
         count++;
@@ -779,7 +770,6 @@ QString backupExecuter::ensureDirExists( QString const &fullPath, QString const 
 
 void backupExecuter::copySelectedFiles()
 {
-  QString relPath;
   QString srcFile;
   QString dstFile;
   char *buffer = NULL;
@@ -811,10 +801,29 @@ void backupExecuter::copySelectedFiles()
     m_engine->setFileNameText(*it2);
     m_engine->setProgressValue(copiedk);
 
-    relPath = *it2;
+    QString relName = *it2;
+    srcFile = source + relName;
+    dstFile = destination + (prefix.isEmpty() ? relName : backupDirstruct::addFilenamePrefix(relName,prefix));
 
-    srcFile = source + relPath;
-    dstFile = destination + (prefix.isEmpty() ? relPath : backupDirstruct::addFilenamePrefix(relPath,prefix));
+    QFileInfo srcInfo(srcFile);
+    QString filePath = srcInfo.dir().absolutePath();
+    QString relPath = filePath.mid(source.length()+1);
+    QString fileName = srcInfo.fileName();
+    qint64 modify = srcInfo.lastModified().toMSecsSinceEpoch();
+
+    if( getKeep() )
+    {
+      QStringList toBeDeleted;
+      m_dirs.keepFiles(relPath,fileName,getVersions()-1,toBeDeleted);
+
+      QStringList::iterator it = toBeDeleted.begin();
+      while (it!=toBeDeleted.end())
+      {
+        QString fullName = destination + "/" + *it;
+        QFile::remove(fullName);
+        ++it;
+      }
+    }
 
     QFile src(srcFile);
     if( src.open(QIODevice::ReadOnly) )
@@ -905,11 +914,6 @@ void backupExecuter::copySelectedFiles()
         }
         dst.close();
 
-        QFileInfo srcInfo(srcFile);
-        QString filePath = srcInfo.dir().absolutePath();
-        QString fileName = srcInfo.fileName();
-        qint64 modify = srcInfo.lastModified().toMSecsSinceEpoch();
-
         if( m_running )
         {
           if( getCompress() )
@@ -927,7 +931,7 @@ void backupExecuter::copySelectedFiles()
           entry.m_size = srcFile.size();
           entry.m_modify = modify;
           entry.m_crc = 0;
-          m_dirs.addFile(filePath.mid(source.length()+1),prefix+fileName,entry);
+          m_dirs.addFile(relPath,prefix+fileName,entry);
   //          lastModified2[filePath.toLatin1().data()][fileName.toLatin1().data()] = modify;
         }
         else
@@ -1640,7 +1644,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
           stream << "+- ";
         indent.append("|  ");
       }
-      QString relPath = actPath.mid(destination.length());
+      QString relPath = actPath.mid(destination.length()+1);
       stream << "." << relPath << "\r\n";
     }
 
@@ -2016,6 +2020,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
       {
         QString path = (*it3).first;
         QString file = (*it3).second;
+        QString relPath = path.mid(source.length()+1);
 
         QString sourceFileRemoved = getKeep() ? path : path + "/" + file;
         QString fileToDelete = destination + sourceFileRemoved.mid(source.length());
@@ -2060,7 +2065,18 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
         totaldirkbytes += m_dirs.getEntry(it2)
             .m_size / 1024;
         totalcount++;
-        m_dirs.removeFile(path.mid(source.length()+1),file);
+
+        QStringList toBeDeleted;
+        m_dirs.removeFile(relPath,file,toBeDeleted);
+
+        QStringList::iterator it = toBeDeleted.begin();
+        while (it!=toBeDeleted.end())
+        {
+          QString fullName = destination + "/" + *it;
+          QFile::remove(fullName);
+          ++it;
+        }
+
         ++it3;
       }
       ++it1;
