@@ -53,7 +53,7 @@ public:
     while( current )
     {
       if( !path.isEmpty() ) path.prepend("/");
-      path = current->m_name + path;
+      path = current->m_tocData.m_prefix+current->m_name + path;
       current = current->m_parent;
     }
 
@@ -137,8 +137,14 @@ public:
 
         while( it2!=it1.value().end() )
         {
-          if( getEntry(it2).m_tocId>=m_nextTocId )
-            m_nextTocId = getEntry(it2).m_tocId + 1;
+          tocDataEntryList entries = it2.value();
+          tocDataEntryList::iterator it3 = entries.begin();
+          while( it3!=entries.end() )
+          {
+            if( (*it3).m_tocId>=m_nextTocId )
+              m_nextTocId = (*it3).m_tocId + 1;
+            ++it3;
+          }
           ++it2;
         }
         ++it1;
@@ -189,7 +195,7 @@ public:
       return m_archiveContent[path][file].front().m_modify;
   }
 
-  fileTocEntry &getEntry(tocDataEntryMap::iterator const &it)
+  fileTocEntry &getNewestEntry(tocDataEntryMap::iterator const &it)
   {
     return it.value().front();
   }
@@ -210,9 +216,9 @@ public:
     else
       basePath = path;
 
-    if( prefix.isEmpty() )
+    if( prefix.isEmpty() && entry.m_prefix.isEmpty() )
       m_archiveContent[basePath][baseFile].clear();
-    else
+    else if( entry.m_prefix.isEmpty() )
       entry.m_prefix = prefix;
     m_archiveContent[basePath][baseFile].push_front(entry);
   }

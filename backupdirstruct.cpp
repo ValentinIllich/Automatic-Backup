@@ -106,15 +106,21 @@ bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry
         tocDataEntryMap::iterator it2 = it1.value().begin();
         while( it2!=it1.value().end() )
         {
-          fileTocEntry tocentry = dirs.getEntry(it2);
+          tocDataEntryList entries = it2.value();
+          tocDataEntryList::iterator it3 = entries.begin();
+          while( it3!=entries.end() )
+          {
+            fileTocEntry tocentry = (*it3);
 
-          dirEntry *newEntry = new dirEntry(currDir,it2.key());
-          newEntry->m_tocData = tocentry;
+            dirEntry *newEntry = new dirEntry(currDir,it2.key());
+            newEntry->m_tocData = tocentry;
 
-          currDir->m_files.append(newEntry);
+            currDir->m_files.append(newEntry);
 
-          fileSizes += tocentry.m_size;
-          if( tocentry.m_modify>lastModifiedFile ) lastModifiedFile = tocentry.m_modify;
+            fileSizes += tocentry.m_size;
+            if( tocentry.m_modify>lastModifiedFile ) lastModifiedFile = tocentry.m_modify;
+            ++it3;
+          }
           ++it2;
         }
       }

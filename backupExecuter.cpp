@@ -922,13 +922,13 @@ void backupExecuter::copySelectedFiles()
             stream << "\r\n";
 
           // finally, fix modification time stamp to src file
-          QFileInfo fi(srcFile);
-          setTimestamps(dstFile,fi.lastModified());
+          //QFileInfo fi(srcFile);
+          setTimestamps(dstFile,srcInfo.lastModified());
 
           fileTocEntry entry;
           entry.m_prefix.clear();
           entry.m_tocId = m_dirs.nextTocId();
-          entry.m_size = srcFile.size();
+          entry.m_size = srcInfo.size();
           entry.m_modify = modify;
           entry.m_crc = 0;
           m_dirs.addFile(relPath,prefix+fileName,entry);
@@ -1577,14 +1577,20 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
         while( m_running && (it2!=it1.value().end()) )
         {
-          QDate filemodified = QDateTime::fromMSecsSinceEpoch(m_dirs.getEntry(it2).m_modify).date();
-          QString srcfile = path+"/"+it2.key();
+          tocDataEntryList entries = it2.value();
+          tocDataEntryList::iterator it3 = entries.begin();
+          while( it3!=entries.end() )
+          {
+            QDate filemodified = QDateTime::fromMSecsSinceEpoch((*it3).m_modify).date();
+            QString srcfile = path+"/"+it2.key();
 
-          results = getStatistics(date,srcfile,filemodified,m_dirs.getEntry(it2).m_size,eraseAll);
-          totalCounts += results;
+            results = getStatistics(date,srcfile,filemodified,(*it3).m_size,eraseAll);
+            totalCounts += results;
 
-          found++;
-          foundkbytes += (m_dirs.getEntry(it2).m_size/1024);
+            found++;
+            foundkbytes += ((*it3).m_size/1024);
+            ++it3;
+          }
           ++it2;
         }
 
@@ -1989,7 +1995,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
           QString sourceFileRemoved;
           QString mappedFile;
 
-          if( listSize==m_dirs.getEntry(it2).m_size )
+          if( listSize==m_dirs.getNewestEntry(it2).m_size )
           {
             tobeRemovedFromToc.append(qMakePair(listPath,listFile));
             tobeRemovedFromToc.append(qMakePair(path,filename));
@@ -2000,7 +2006,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             mappedFile = listPath+"/"+filename;
             stream << ""/*indent*/ << "     " << "  found file " << sourceFileRemoved
             << " but sizes are different (" << QString::number(listSize)
-            << "/" << QString::number(m_dirs.getEntry(it2).m_size) << ")"
+            << "/" << QString::number(m_dirs.getNewestEntry(it2).m_size) << ")"
             << "\r\n";
             stream << ""/*indent*/ << "     " << "(mapped file " << mappedFile << "/" << filename << ")"
             << "\r\n";
@@ -2008,8 +2014,8 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
         }
         else
         {
-          filemap.insert(filename,path+";"+it2.key()+";"+QString::number(m_dirs.getEntry(it2).m_modify)+";"
-            +QString::number(m_dirs.getEntry(it2).m_size));
+          filemap.insert(filename,path+";"+it2.key()+";"+QString::number(m_dirs.getNewestEntry(it2).m_modify)+";"
+            +QString::number(m_dirs.getNewestEntry(it2).m_size));
         }
         // hier war #if 0
         ++it2;
@@ -2062,8 +2068,13 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
           deletePath(fileToDelete);
 //        stream << ""/*indent*/ << "     " << "    (keeping file " << mappedFile << ") \r\n";
 
-        totaldirkbytes += m_dirs.getEntry(it2)
-            .m_size / 1024;
+        tocDataEntryList entries = it2.value();
+        tocDataEntryList::iterator it4 = entries.begin();
+        while( it4!=entries.end() )
+        {
+          totaldirkbytes += (*it4).m_size / 1024;
+          ++it4;
+        }
         totalcount++;
 
         QStringList toBeDeleted;

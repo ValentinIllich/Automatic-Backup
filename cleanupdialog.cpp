@@ -278,7 +278,8 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
   for (int i = 0; m_run && (i < list.size()); ++i)
   {
     QFileInfo fileInfo = list.at(i);
-    QString name = fileInfo.fileName();
+    QString prefix = "";
+    QString name = backupDirstruct::cutFilenamePrefix(fileInfo.fileName(),&prefix);
     if( fileInfo.isDir() )
     {
       if( (name!="." && name!="..") )
@@ -293,7 +294,7 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
     else
     {
       fileTocEntry tocentry;
-      tocentry.m_prefix.clear();
+      tocentry.m_prefix = prefix;
       tocentry.m_tocId = 0;//m_nextTocId++;
       tocentry.m_size = fileInfo.size();
       tocentry.m_modify = fileInfo.lastModified().toMSecsSinceEpoch();;
@@ -371,7 +372,7 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
     {
       QTreeWidgetItem *fileItem = new QTreeWidgetItem(item);
 
-      fileItem->setText(0,(*it2)->m_name);
+      fileItem->setText(0,(*it2)->m_tocData.m_prefix+(*it2)->m_name);
       fileItem->setText(1,formatSize((*it2)->m_tocData.m_size));
       fileItem->setText(2,filedate.toString("yyyy/MM/dd-hh:mm"));
       fileItem->setText(3,(*it2)->absoluteFilePath());
