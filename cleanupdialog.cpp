@@ -54,7 +54,7 @@ cleanupDialog::~cleanupDialog()
 
 void cleanupDialog::saveDirStruct()
 {
-  QString tocSummaryFile = m_path+"/tocsummary.crcs";
+  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_path);
   if( !backupDirstruct::convertToTocFile(tocSummaryFile,m_rootEntry ) )
       ;
 }
@@ -82,7 +82,7 @@ void cleanupDialog::threadedVerifyOperation()
   m_dirStructChanged = false;
   m_dirCount = 0;
 
-  QString tocSummaryFile = m_path+"/tocsummary.crcs";
+  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_path);
   if( backupDirstruct::convertFromTocFile(tocSummaryFile,m_rootEntry,m_dirCount)/*canReadFromTocFile(path,entry)*/ )
     m_dirStructValid = true;
   else

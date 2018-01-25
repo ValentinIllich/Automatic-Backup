@@ -151,7 +151,8 @@ void iterateDirecories(dirEntry *entry,backupDirstruct &dirs)
   while( it2!=entry->m_files.end() )
   {
     fileTocEntry toc = (*it2)->m_tocData;
-    dirs.addFile(entry->relativeFilePath(),(*it2)->m_name,toc);
+    dirs.addFile(entry->relativeFilePath(),toc.m_prefix+
+                 (*it2)->m_name,toc);
     ++it2;
   }
 }
@@ -221,4 +222,14 @@ QString backupDirstruct::cutFilenamePrefix(const QString &relPath, QString *pref
   }
 
   return result;
+}
+
+QString backupDirstruct::getTocSummaryFile(QString const &filePath)
+{
+  return filePath + "/tocsummary.crcs";
+}
+
+bool backupDirstruct::isTocSummaryFile(const QString &filePath)
+{
+  return filePath.contains("tocsummary.crcs");
 }

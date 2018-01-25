@@ -281,6 +281,9 @@ public:
   static QString addFilenamePrefix(QString const &relPath,QString const &prefix);
   static QString cutFilenamePrefix(QString const &relPath,QString *prefixFound = NULL);
 
+  static QString getTocSummaryFile(QString const &filePath);
+  static bool isTocSummaryFile(QString const &filePath);
+
 private:
   tocDataContainerMap m_archiveContent;
   qint64 m_nextTocId;
