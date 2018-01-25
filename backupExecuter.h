@@ -20,6 +20,22 @@
 
 typedef QVector<quint16> crcSums;
 
+struct backupConfigData
+{
+  QString			m_sText;
+  QString			m_sSrc;
+  QString			m_sDst;
+  QString			m_sFlt;
+  bool			m_bAuto;
+  int				m_iInterval;
+  bool			m_bKeep;
+  int				m_iVersions;
+  bool			m_bzlib;
+  bool      m_bsuspend;
+  int       m_iTimeout;
+  bool			m_bexecuted;
+};
+
 struct crcInfo
 {
   time_t lastScan;
@@ -40,6 +56,9 @@ public:
   void stopBatchProcessing();
   void findDirectories( QString const &start = "" );
   void verifyBackup(QString const &startPath = QString::null);
+
+  QString getAutobackupCheckFile(QString const &suffix);
+  bool isAutoBackupCreatedFile(QString const &file);
 
   QString getTitle();
   QString getSrc();

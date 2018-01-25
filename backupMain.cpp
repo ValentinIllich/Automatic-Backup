@@ -26,21 +26,23 @@ public:
                   bool autoStart,int interval,bool keep,int versions,bool zlib,
                   bool suspend, int timeout) : QListWidgetItem(name,listbox)
   , m_executer(NULL)
-  , m_sText(name)
-  , m_sSrc(src)
-  , m_sDst(dst)
-  , m_sFlt(flt)
-  , m_bAuto(autoStart)
-  , m_iInterval(interval)
-  , m_bKeep(keep)
-  , m_iVersions(versions)
-  , m_bzlib(zlib)
-  , m_bsuspend(suspend)
-  , m_iTimeout(timeout)
-  , m_bexecuted(false)
+  , m_config()
   {
+    m_config.m_sText=name;
+    m_config.m_sSrc=src;
+    m_config.m_sDst=dst;
+    m_config.m_sFlt=flt;
+    m_config.m_bAuto=autoStart;
+    m_config.m_iInterval=interval;
+    m_config.m_bKeep=keep;
+    m_config.m_iVersions=versions;
+    m_config.m_bzlib=zlib;
+    m_config.m_bsuspend=suspend;
+    m_config.m_iTimeout=timeout;
+    m_config.m_bexecuted=false;
+
     setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled|Qt::ItemIsTristate);
-    if( m_bAuto )
+    if( m_config.m_bAuto )
       setCheckState(Qt::Checked);
     else
       setCheckState(Qt::Unchecked);
@@ -50,28 +52,34 @@ public:
     delete m_executer;
   }
 
+  backupConfigData &getConfigData()
+  {
+    return m_config;
+  }
+
   void editBackupItem(bool closeAferExecute,bool *askForShutdown)
   {
-    backupExecuter executer(m_sText,m_sSrc,m_sDst,m_sFlt,m_bAuto,m_iInterval,m_bKeep,m_iVersions,m_bzlib,m_bsuspend,m_iTimeout);
+    backupExecuter executer(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
+                            m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
     executer.setCloseAfterExecute(closeAferExecute);
     executer.setAskForShutdown(askForShutdown);
     executer.exec();
-    m_bexecuted = executer.result()==QDialog::Accepted;
+    m_config.m_bexecuted = executer.result()==QDialog::Accepted;
 
-    m_sText = executer.getTitle();
-    m_sSrc = executer.getSrc();
-    m_sDst = executer.getDst();
-    m_sFlt = executer.getFlt();
-    m_bAuto = executer.getAuto();
-    m_iInterval = executer.getInterval();
-    m_bKeep = executer.getKeep();
-    m_iVersions = executer.getVersions();
-    m_bzlib = executer.getCompress();
-    m_bsuspend = executer.getSuspend();
-    m_iTimeout = executer.getTimeout();
+    m_config.m_sText = executer.getTitle();
+    m_config.m_sSrc = executer.getSrc();
+    m_config.m_sDst = executer.getDst();
+    m_config.m_sFlt = executer.getFlt();
+    m_config.m_bAuto = executer.getAuto();
+    m_config.m_iInterval = executer.getInterval();
+    m_config.m_bKeep = executer.getKeep();
+    m_config.m_iVersions = executer.getVersions();
+    m_config.m_bzlib = executer.getCompress();
+    m_config.m_bsuspend = executer.getSuspend();
+    m_config.m_iTimeout = executer.getTimeout();
 
-    setText(m_sText);
-    if( m_bAuto )
+    setText(m_config.m_sText);
+    if( m_config.m_bAuto )
       setCheckState(Qt::Checked);
     else
       setCheckState(Qt::Unchecked);
@@ -82,32 +90,36 @@ public:
   void startBatchExecution()
   {
     if( m_executer==NULL )
-      m_executer = new backupExecuter(m_sText,m_sSrc,m_sDst,m_sFlt,m_bAuto,m_iInterval,m_bKeep,m_iVersions,m_bzlib,m_bsuspend,m_iTimeout);
+      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
+                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
     m_executer->startBatchProcessing();
   }
 
   void stopBatchExecution()
   {
     if( m_executer==NULL )
-      m_executer = new backupExecuter(m_sText,m_sSrc,m_sDst,m_sFlt,m_bAuto,m_iInterval,m_bKeep,m_iVersions,m_bzlib,m_bsuspend,m_iTimeout);
+      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
+                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
     m_executer->stopBatchProcessing();
   }
 
   void executebackupItem(bool closeAferExecute,bool runningInBackground)
   {
     if( m_executer==NULL )
-      m_executer = new backupExecuter(m_sText,m_sSrc,m_sDst,m_sFlt,m_bAuto,m_iInterval,m_bKeep,m_iVersions,m_bzlib,m_bsuspend,m_iTimeout);
+      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
+                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
     m_executer->setCloseAfterExecute(closeAferExecute);
 //    m_executer->startBatchProcessing();
     m_executer->show();
     m_executer->doIt(runningInBackground);
-    m_bexecuted = true;
+    m_config.m_bexecuted = true;
   }
 
   void verifyBackupItem(bool closeAferExecute,bool runningInBackground)
   {
     if( m_executer==NULL )
-      m_executer = new backupExecuter(m_sText,m_sSrc,m_sDst,m_sFlt,m_bAuto,m_iInterval,m_bKeep,m_iVersions,m_bzlib,m_bsuspend,m_iTimeout);
+      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
+                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
     m_executer->setCloseAfterExecute(closeAferExecute);
 //    m_executer->startBatchProcessing();
     m_executer->show();
@@ -116,23 +128,11 @@ public:
 
   bool executionDone()
   {
-    return m_bexecuted;
+    return m_config.m_bexecuted;
   }
 
   backupExecuter    *m_executer;
-
-  QString			m_sText;
-  QString			m_sSrc;
-  QString			m_sDst;
-  QString			m_sFlt;
-  bool			m_bAuto;
-  int				m_iInterval;
-  bool			m_bKeep;
-  int				m_iVersions;
-  bool			m_bzlib;
-  bool      m_bsuspend;
-  int       m_iTimeout;
-  bool			m_bexecuted;
+  backupConfigData  m_config;
 };
 
 void do_log( QString const &txt )
@@ -306,17 +306,17 @@ void backupMain::saveConfig(QString const &configFile)
     for( int i=0; i<backupList->count(); i++ )
     {
       backupListItem *item = static_cast<backupListItem*>(backupList->item(i));
-      stream	<< item->m_sText << "\t"
-      << item->m_sSrc << "\t"
-      << item->m_sDst << "\t"
-      << item->m_sFlt << "\t"
-      << item->m_bAuto << "\t"
-      << item->m_iInterval << "\t"
-      << item->m_bKeep << "\t"
-      << item->m_iVersions << "\t"
-      << item->m_bzlib << "\t"
-      << item->m_bsuspend << "\t"
-      << item->m_iTimeout << "\n";
+      stream	<< item->m_config.m_sText << "\t"
+      << item->m_config.m_sSrc << "\t"
+      << item->m_config.m_sDst << "\t"
+      << item->m_config.m_sFlt << "\t"
+      << item->m_config.m_bAuto << "\t"
+      << item->m_config.m_iInterval << "\t"
+      << item->m_config.m_bKeep << "\t"
+      << item->m_config.m_iVersions << "\t"
+      << item->m_config.m_bzlib << "\t"
+      << item->m_config.m_bsuspend << "\t"
+      << item->m_config.m_iTimeout << "\n";
     }
     config.close();
   }
@@ -413,10 +413,10 @@ void backupMain::cleanupBackup()
     if( m_selected==1 )
     {
       backupListItem* selected = static_cast<backupListItem*>(item);
-      QString path = selected->m_sDst;
+      QString path = selected->m_config.m_sDst;
 
       cleanupDialog dlg(0);
-      dlg.setPaths(selected->m_sSrc,selected->m_sDst);
+      dlg.setPaths(selected->m_config.m_sSrc,selected->m_config.m_sDst);
       dlg.show();
       dlg.activateWindow();
       dlg.doAnalyze();
@@ -441,7 +441,7 @@ void backupMain::deleteBackup()
     QListWidgetItem *item = *it;
 
     if( QMessageBox::information(this,"confirmation","Do you really want to delete '"
-    +static_cast<backupListItem*>(item)->m_sText+"' ?",
+    +static_cast<backupListItem*>(item)->m_config.m_sText+"' ?",
     QMessageBox::Yes,QMessageBox::No|QMessageBox::Default)==QMessageBox::Yes )
       delete item;
   }
@@ -452,17 +452,17 @@ void backupMain::autoExecute(bool runningInBackground)
   for( int i=0; i<backupList->count(); i++ )
   {
     backupListItem *item = static_cast<backupListItem*>(backupList->item(i));
-    do_log("autoExecute found item '"+item->m_sText+"'");
-    if( item->m_bAuto )
+    do_log("autoExecute found item '"+item->m_config.m_sText+"'");
+    if( item->m_config.m_bAuto )
     {
-      do_log("autoExecute testing automatic item '"+item->m_sText+"'");
-      QFileInfo tstbackup(item->m_sSrc+"/"+item->m_sText.remove(" "));
-      QFileInfo tstverify(item->m_sSrc+"/"+item->m_sText.remove(" ")+"_chk");
+      do_log("autoExecute testing automatic item '"+item->m_config.m_sText+"'");
+      QFileInfo tstbackup(item->m_executer->getAutobackupCheckFile(""));
+      QFileInfo tstverify(item->m_executer->getAutobackupCheckFile("_chk"));
       bool doItBackup = true;
       bool doItVerify = true;
       int backupdays = 0;
       int verifydays = 0;
-      switch( item->m_iInterval )
+      switch( item->m_config.m_iInterval )
       {
         case 0://daily
           backupdays = 1;
