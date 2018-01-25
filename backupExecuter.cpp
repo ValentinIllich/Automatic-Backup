@@ -168,7 +168,7 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
   else
     lastVerifiedK = 0;
 
-  QString tocSummaryFile = destination+"/tocsummary.crcs";
+  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(destination);
   m_dirs.readFromFile(tocSummaryFile);
 
   startTimer(100);
@@ -218,7 +218,7 @@ void backupExecuter::saveData()
   }
   checksumsChanged = false;
 
-  QString tocSummaryFile = destination+"/tocsummary.crcs";
+  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(destination);
   m_dirs.writeToFile(tocSummaryFile);
 }
 
@@ -662,7 +662,7 @@ void backupExecuter::analyzeDirectories()
           passed = false;
       }
 
-      if( !srcFile.isSymLink() && actualName!="." && actualName!=".." )
+      if( !srcFile.isSymLink() && actualName!="." && actualName!=".." && !isAutoBackupCreatedFile(actualName) )
       {
         if( passed )
         {
@@ -1073,7 +1073,7 @@ void backupExecuter::threadedCopyOperation()
   if( m_running /*&& m_isBatch*/ )
   {
     stream << "updating backup time of automatic item '"+getTitle()+"'\r\n";
-    QFile tst(getSrc()+"/"+getTitle().remove(" "));
+    QFile tst(getAutobackupCheckFile(""));
     if( tst.open(QIODevice::WriteOnly) )
     {
       QTextStream stream(&tst);
@@ -1092,7 +1092,7 @@ void backupExecuter::threadedVerifyOperation()
   if( m_running /*&& m_isBatch*/ )
   {
     stream << "updating verify time of automatic item '"+getTitle()+"'\r\n";
-    QFile tst(getSrc()+"/"+getTitle().remove(" ")+"_chk");
+    QFile tst(getAutobackupCheckFile("_chk"));
     if( tst.open(QIODevice::WriteOnly) )
     {
       QTextStream stream(&tst);
@@ -1907,7 +1907,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
                 if( listSize==size )
                 {
                   // kepping actual file if it has source or if it is newer than list entry
-                  if( !QFile::exists(srcfile) && listDate>=fi.lastModified() )
+                  if( (operatingOnSource || !QFile::exists(srcfile)) && listDate>=fi.lastModified() )
                   {
                     fileToDelete = fi.absoluteFilePath();
                     mappedFile = listPath+"/"+filename;
@@ -1941,7 +1941,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
                   << "\r\n";
                 }
               }
-              else if( !QFile::exists(srcfile) )
+              else if( operatingOnSource || !QFile::exists(srcfile) )
               {
                 //if( showTreeStruct->isChecked() )
                 //    stream << indent << "---> " << "mapping " << fi.absolutePath()+"/"+filename << "\r\n";
@@ -1973,16 +1973,14 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
 
       QList< QPair<QString,QString> > tobeRemovedFromToc;
 
-      QString path = source;
-      if( it1.key()!="." )
-          path += "/" + it1.key();
-      m_engine->setFileNameText(path);
+      QString relpath = it1.key();
+      m_engine->setFileNameText(destination + "/" + relpath);
       m_engine->setProgressValue(scanned++);
 
       while( m_running && (it2!=it1.value().end()) )
       {
         QString filename = it2.key();
-        QString srcfile = (path+"/"+filename);
+        //QString srcfile = (path+"/"+filename);
 
         if( filemap.contains(filename) )
         {
@@ -1990,7 +1988,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
           QString listPath = fileinfs.at(0);
           QString listFile = fileinfs.at(1);
           //qint64 listDate = (fileinfs.at(2).toLongLong());
-          int listSize = fileinfs.at(3).toInt();
+          int listSize = fileinfs.at(3).toLongLong();
 
           QString sourceFileRemoved;
           QString mappedFile;
@@ -1998,11 +1996,11 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
           if( listSize==m_dirs.getNewestEntry(it2).m_size )
           {
             tobeRemovedFromToc.append(qMakePair(listPath,listFile));
-            tobeRemovedFromToc.append(qMakePair(path,filename));
+            tobeRemovedFromToc.append(qMakePair(relpath,filename));
           }
-          else
+          else if( showTreeStruct->isChecked() )
           {
-            sourceFileRemoved = path+"/"+it2.key();
+            sourceFileRemoved = destination + "/" + relpath+"/"+it2.key();
             mappedFile = listPath+"/"+filename;
             stream << ""/*indent*/ << "     " << "  found file " << sourceFileRemoved
             << " but sizes are different (" << QString::number(listSize)
@@ -2014,7 +2012,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
         }
         else
         {
-          filemap.insert(filename,path+";"+it2.key()+";"+QString::number(m_dirs.getNewestEntry(it2).m_modify)+";"
+          filemap.insert(filename,relpath+";"+filename+";"+QString::number(m_dirs.getNewestEntry(it2).m_modify)+";"
             +QString::number(m_dirs.getNewestEntry(it2).m_size));
         }
         // hier war #if 0
@@ -2024,49 +2022,24 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
       QList< QPair<QString,QString> >::iterator it3 = tobeRemovedFromToc.begin();
       while( it3!=tobeRemovedFromToc.end() )
       {
-        QString path = (*it3).first;
+        QString relPath = (*it3).first;
         QString file = (*it3).second;
-        QString relPath = path.mid(source.length()+1);
+        QString srcPath = "";
 
-        QString sourceFileRemoved = getKeep() ? path : path + "/" + file;
-        QString fileToDelete = destination + sourceFileRemoved.mid(source.length());
+        if( relPath=="." )
+        {
+            srcPath = source + "/" + file;
+            relPath = "";
+        }
+        else
+            srcPath = source + "/" + relPath + "/" + file;
 
-        if( QFile::exists(path + "/" + file) )
+
+        if( QFile::exists(srcPath) )
         {
           ++it3;
           continue;
         }
-
-        if( getKeep() )
-        {
-          QDir dir(fileToDelete);
-          dir.setSorting(QDir::Name);
-          const QFileInfoList &list = dir.entryInfoList();
-          QFileInfoList::const_iterator it=list.begin();
-          QFileInfo fi;
-
-          while ( m_running && (it!=list.end()) )
-          {
-            checkTimeout();
-
-            fi = *it;
-            QString fileFound = fi.fileName();
-            if( fileFound.endsWith(file))
-            {
-              deletePath(fileToDelete+"/"+fileFound);
-              break;
-            }
-            ++it;
-          }
-        }
-        else if( getCompress() )
-        {
-          fileToDelete = backupDirstruct::addFilenamePrefix(fileToDelete,"_");
-          deletePath(fileToDelete);
-        }
-        else
-          deletePath(fileToDelete);
-//        stream << ""/*indent*/ << "     " << "    (keeping file " << mappedFile << ") \r\n";
 
         tocDataEntryList entries = it2.value();
         tocDataEntryList::iterator it4 = entries.begin();
@@ -2344,4 +2317,14 @@ void backupExecuter::verifyBackup(QString const &startPath)
     }
   }
   //}
+}
+
+QString backupExecuter::getAutobackupCheckFile(QString const &suffix)
+{
+  return getSrc()+"/"+getTitle().remove(" ") + suffix + ".vibup";
+}
+
+bool backupExecuter::isAutoBackupCreatedFile(const QString &file)
+{
+  return backupDirstruct::isTocSummaryFile(file) || file.contains(".vibup");
 }
