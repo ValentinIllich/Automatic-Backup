@@ -1,0 +1,7 @@
+Automatic Backup Release Notes (C) Valentin Illich 2011-2017
+
+Release 1.22:
+=============
+
+- properties konsequent in Struktur halten
+- Compress entfernen, dafür NAS: kein Verify

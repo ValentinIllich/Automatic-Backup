@@ -47,3 +47,6 @@ OTHER_FILES += distribute/welcome.html \
     ReleaseNotes.txt \
     ressources/backup.rc \
     ressources/Info_mac.plist
+
+DISTFILES += \
+    Issues-todo.txt
