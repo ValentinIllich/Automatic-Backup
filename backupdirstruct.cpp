@@ -86,12 +86,6 @@ bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry
           else
           {
             dirEntry *newEntry = new dirEntry(currDir,currentPath);
-            newEntry->m_tocData.m_prefix.clear();
-            newEntry->m_tocData.m_tocId = 0;
-            newEntry->m_tocData.m_size = 0;
-            newEntry->m_tocData.m_modify = 0;
-            newEntry->m_tocData.m_crc = 0;
-
             currDir->m_dirs[currentPath] = newEntry;
             currDir = newEntry;
           }
