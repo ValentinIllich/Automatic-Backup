@@ -194,6 +194,13 @@ public:
     else
       return m_archiveContent[path][file].front().m_modify;
   }
+  tocDataEntryList &getEntryList(QString const &path, QString const &file)
+  {
+    if( path.isEmpty() )
+      return m_archiveContent["."][file];
+    else
+      return m_archiveContent[path][file];
+  }
 
   fileTocEntry &getNewestEntry(tocDataEntryMap::iterator const &it)
   {

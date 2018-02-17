@@ -87,6 +87,14 @@ public:
     listWidget()->repaint();
   }
 
+  backupExecuter *getBackupExecuter()
+  {
+    if( m_executer==NULL )
+      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
+                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
+    return m_executer;
+  }
+
   void startBatchExecution()
   {
     if( m_executer==NULL )
@@ -456,8 +464,8 @@ void backupMain::autoExecute(bool runningInBackground)
     if( item->m_config.m_bAuto )
     {
       do_log("autoExecute testing automatic item '"+item->m_config.m_sText+"'");
-      QFileInfo tstbackup(item->m_executer->getAutobackupCheckFile(""));
-      QFileInfo tstverify(item->m_executer->getAutobackupCheckFile("_chk"));
+      QFileInfo tstbackup(item->getBackupExecuter()->getAutobackupCheckFile(""));
+      QFileInfo tstverify(item->getBackupExecuter()->getAutobackupCheckFile("_chk"));
       bool doItBackup = true;
       bool doItVerify = true;
       int backupdays = 0;
@@ -513,12 +521,14 @@ void backupMain::autoExecute(bool runningInBackground)
       {
         item->startBatchExecution();
         item->executebackupItem(true,runningInBackground);
+        item->getBackupExecuter()->processEventsAndWait();
       }
 
       if( doItVerify )
       {
         if( !doItBackup ) item->startBatchExecution();
         item->verifyBackupItem(true,runningInBackground);
+        item->getBackupExecuter()->processEventsAndWait();
       }
 
       if( doItBackup || doItVerify )

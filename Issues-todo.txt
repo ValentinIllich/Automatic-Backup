@@ -3,5 +3,7 @@ Automatic Backup Release Notes (C) Valentin Illich 2011-2017
 Release 1.22:
 =============
 
+- tocsummary und checksumsummary mit einheitlicher Dateiendung
+- eigene Dateien (.vibup) nicht kopieren
 - properties konsequent in Struktur halten
 - Compress entfernen, dafür NAS: kein Verify

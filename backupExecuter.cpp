@@ -234,7 +234,7 @@ void backupExecuter::changeVisibility()
     {
       actualfile->hide();
       cancelButt->hide();
-      setToolTip(QString("Automatic Backup V")+BACKUP_VERSION+" running.\nProcessing Configuration '"+getTitle()+"'");
+      m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_VERSION+" running.\nProcessing Configuration '"+getTitle()+"'");
     }
     else
     {
@@ -606,7 +606,7 @@ void backupExecuter::analyzeDirectories()
     checkTimeout();
 
     if( m_isBatch )
-      setToolTip(QString("Automatic Backup V")+BACKUP_VERSION+" running.\nProcessing Directory '"+*it+"'");
+        m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_VERSION+" running.\nProcessing Directory '"+*it+"'");
     m_engine->setFileNameText(*it);
     m_engine->setProgressValue(i);
     if( getBackground() )
@@ -1112,6 +1112,8 @@ void backupExecuter::operationFinishedEvent()
     cancel();
   else if( m_closeAfterExecute )
     accept();								// this means: execution done, return to main window
+
+  m_taskFinished = true;
 }
 
 void backupExecuter::doIt(bool runningInBackground)
@@ -1165,6 +1167,16 @@ void backupExecuter::verifyIt(bool runningInBackground)
   startingAction(); // do verify only if not cancelled in batch
 
   m_engine->start(true);
+}
+
+void backupExecuter::processEventsAndWait()
+{
+    m_taskFinished = false;
+    while( !m_taskFinished )
+    {
+        m_waiter.wait(50);
+        qApp->processEvents();
+    }
 }
 
 void backupExecuter::cancel() // OK (Cancel when running) pressed
@@ -2041,7 +2053,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
           continue;
         }
 
-        tocDataEntryList entries = it2.value();
+        tocDataEntryList &entries = m_dirs.getEntryList(relPath,file);
         tocDataEntryList::iterator it4 = entries.begin();
         while( it4!=entries.end() )
         {

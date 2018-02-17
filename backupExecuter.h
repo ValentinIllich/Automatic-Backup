@@ -13,10 +13,10 @@
 #include <qvector.h>
 #include <qmap.h>
 #include <qmutex.h>
-
 #include <stdlib.h>
 #include <map>
 #include <string>
+#include <qwaitcondition.h>
 
 typedef QVector<quint16> crcSums;
 
@@ -95,6 +95,7 @@ public slots:
   virtual void selAuto();
   virtual void doIt(bool runningInBackground = false);
   virtual void verifyIt(bool runningInBackground = false);
+  virtual void processEventsAndWait();
   virtual void restoreDir();
   virtual void restoreFile();
   virtual void cancel();
@@ -202,6 +203,7 @@ private:
   QDateTime startTime;
 
   backupEngine *m_engine;
+  bool m_taskFinished;
 };
 
 #endif
