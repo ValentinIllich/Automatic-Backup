@@ -166,8 +166,8 @@ QString backupDirstruct::createFileNamePrefix(bool keepCopies, bool compressFile
   QDateTime dt = QDateTime::currentDateTime();
   QString appendixcpy = dt.toString("yyyyMMddhhmmss");
 
-  if( keepCopies ) prefix = "_vibupdttm_" + appendixcpy;
-  if( compressFile ) prefix = "_vibupcprs_" + prefix;
+  if( keepCopies ) prefix = "_#" + appendixcpy;
+  if( compressFile ) prefix = "_@" + prefix;
 
   if( !prefix.isEmpty() )
     prefix += ".";
@@ -198,15 +198,15 @@ QString backupDirstruct::cutFilenamePrefix(const QString &relPath, QString *pref
   else
     name = relPath;
 
-  if( name.startsWith("_vibupcprs_") )
+  if( name.startsWith("_@") )
   {
-    name = name.mid(11);
-    prefixlen += 11;
+    name = name.mid(2);
+    prefixlen += 2;
   }
-  if( name.startsWith("_vibupdttm_") )
+  if( name.startsWith("_#") )
   {
-    name = name.mid(25);
-    prefixlen += 25;
+    name = name.mid(16);
+    prefixlen += 16;
   }
   if( prefixlen>0 )
   {
@@ -226,4 +226,14 @@ QString backupDirstruct::getTocSummaryFile(QString const &filePath)
 bool backupDirstruct::isTocSummaryFile(const QString &filePath)
 {
   return filePath.contains("tocsummary.crcs");
+}
+
+QString backupDirstruct::getChecksumSummaryFile(QString const &filePath)
+{
+  return filePath + "/checksumsummary.crcs";
+}
+
+bool backupDirstruct::isChecksumSummaryFile(const QString &filePath)
+{
+  return filePath.contains("checksumsummary.crcs");
 }
