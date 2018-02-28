@@ -151,7 +151,7 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
 
   connect(qApp->desktop(),SIGNAL(resized(int)),this,SLOT(screenResizedSlot(int)));
 
-  QString summaryFile = destination+"/checksumsummary.crcs";
+  QString summaryFile = backupDirstruct::getChecksumSummaryFile(destination);
   QFile crcfile(summaryFile);
   if( QFile::exists(summaryFile) )
   {
@@ -207,7 +207,7 @@ void backupExecuter::saveData()
 {
   if( checksumsChanged )
   {
-    QString summaryFile = destination+"/checksumsummary.crcs";
+    QString summaryFile = backupDirstruct::getChecksumSummaryFile(destination);
     QFile crcfile(summaryFile);
     crcfile.open(QIODevice::WriteOnly | QIODevice::Truncate);
     QDataStream str(&crcfile);
@@ -661,6 +661,8 @@ void backupExecuter::analyzeDirectories()
         if( !(*it4).isEmpty() && fullName.contains(*it4) )
           passed = false;
       }
+      if( backupDirstruct::isTocSummaryFile(actualName) || backupDirstruct::isChecksumSummaryFile(actualName) )
+        passed = false;
 
       if( !srcFile.isSymLink() && actualName!="." && actualName!=".." && !isAutoBackupCreatedFile(actualName) )
       {
