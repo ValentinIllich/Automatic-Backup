@@ -362,9 +362,9 @@ void backupExecuter::processProgressText(QString const &text)
   int chars = 0;
   if( !text.isEmpty() )
   {
-    chars = (int)((double)progresslabel->width() / (double)metrics.width(text) * 0.8 * (double)text.length());
+    chars = (int)((double)progresslabel->width() / (double)metrics.width(text) /* * 0.8*/ * (double)text.length());
     if( chars<text.length() )
-      progresslabel->setText("..."+text.right(chars));
+      progresslabel->setText(text.left(chars/2)+"..."+text.right(chars/2));
     else
       progresslabel->setText(text);
   }
@@ -378,9 +378,9 @@ void backupExecuter::processFileNameText(QString const &text)
   int chars = 0;
   if( !text.isEmpty() )
   {
-    chars = (int)((double)actualfile->width() / (double)metrics.width(text) * 0.8 * (double)text.length());
+    chars = (int)((double)actualfile->width() / (double)metrics.width(text) /* * 0.8*/ * (double)text.length());
     if( chars<text.length() )
-      actualfile->setText("..."+text.right(chars));
+      actualfile->setText(text.left(chars/2)+"..."+text.right(chars/2));
     else
       actualfile->setText(text);
   }

@@ -109,9 +109,9 @@ void cleanupDialog::processProgressText(const QString &text)
   int chars = 0;
   if( !text.isEmpty() )
   {
-    chars = (int)((double)ui->label->width() / (double)metrics.width(text) * 0.8 * (double)text.length());
+    chars = (int)((double)ui->label->width() / (double)metrics.width(text) /* * 0.8*/ * (double)text.length());
     if( chars<text.length() )
-      ui->label->setText("..."+text.right(chars));
+      ui->label->setText(text.left(chars/2)+"..."+text.right(chars/2));
     else
       ui->label->setText(text);
   }
