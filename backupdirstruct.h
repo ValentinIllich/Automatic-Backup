@@ -294,6 +294,8 @@ public:
   static QString getChecksumSummaryFile(QString const &filePath);
   static bool isChecksumSummaryFile(const QString &filePath);
 
+  static bool isSummaryFile(const QString &filePath);
+
 private:
   tocDataContainerMap m_archiveContent;
   qint64 m_nextTocId;

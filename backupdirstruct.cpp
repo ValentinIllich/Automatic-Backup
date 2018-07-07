@@ -237,3 +237,8 @@ bool backupDirstruct::isChecksumSummaryFile(const QString &filePath)
 {
   return filePath.contains("checksumsummary.crcs");
 }
+
+bool backupDirstruct::isSummaryFile(const QString &filePath)
+{
+  return filePath.endsWith(".crcs");
+}
