@@ -106,14 +106,15 @@ void cleanupDialog::processProgressValue(int value)
 void cleanupDialog::processProgressText(const QString &text)
 {
   QFontMetrics metrics(ui->label->font());
-  int chars = 0;
   if( !text.isEmpty() )
   {
-    chars = (int)((double)ui->label->width() / (double)metrics.width(text) /* * 0.8*/ * (double)text.length());
-    if( chars<text.length() )
-      ui->label->setText(text.left(chars/2)+"..."+text.right(chars/2));
-    else
-      ui->label->setText(text);
+    QString messagetext = text;
+    while( ui->label->width()<metrics.width(messagetext) )
+    {
+      int len = messagetext.length() - 4;
+      messagetext = text.left(len/2)+"..."+messagetext.right(len/2);
+    }
+      ui->label->setText(messagetext);
   }
   else
     ui->label->setText(text);
@@ -282,7 +283,7 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
     QString name = backupDirstruct::cutFilenamePrefix(fileInfo.fileName(),&prefix);
     if( fileInfo.isDir() )
     {
-      if( (name!="." && name!="..") )
+      if( name!="." && name!=".." && !backupDirstruct::isSummaryFile(name) )
       {
         dirEntry *newEntry = new dirEntry(entry,name);
         entry->m_dirs[name] = newEntry;

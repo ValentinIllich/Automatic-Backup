@@ -359,14 +359,15 @@ void backupExecuter::processProgressValue(int value)
 void backupExecuter::processProgressText(QString const &text)
 {
   QFontMetrics metrics(progresslabel->font());
-  int chars = 0;
   if( !text.isEmpty() )
   {
-    chars = (int)((double)progresslabel->width() / (double)metrics.width(text) /* * 0.8*/ * (double)text.length());
-    if( chars<text.length() )
-      progresslabel->setText(text.left(chars/2)+"..."+text.right(chars/2));
-    else
-      progresslabel->setText(text);
+    QString messagetext = text;
+    while( progresslabel->width()<metrics.width(messagetext) )
+    {
+      int len = messagetext.length() - 4;
+      messagetext = text.left(len/2)+"..."+messagetext.right(len/2);
+    }
+      progresslabel->setText(messagetext);
   }
   else
     progresslabel->setText(text);
@@ -375,14 +376,15 @@ void backupExecuter::processProgressText(QString const &text)
 void backupExecuter::processFileNameText(QString const &text)
 {
   QFontMetrics metrics(actualfile->font());
-  int chars = 0;
   if( !text.isEmpty() )
   {
-    chars = (int)((double)actualfile->width() / (double)metrics.width(text) /* * 0.8*/ * (double)text.length());
-    if( chars<text.length() )
-      actualfile->setText(text.left(chars/2)+"..."+text.right(chars/2));
-    else
-      actualfile->setText(text);
+    QString messagetext = text;
+    while( actualfile->width()<metrics.width(messagetext) )
+    {
+      int len = messagetext.length() - 4;
+      messagetext = text.left(len/2)+"..."+messagetext.right(len/2);
+    }
+      actualfile->setText(messagetext);
   }
   else
     actualfile->setText(text);
@@ -1674,7 +1676,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
       fi = *it;
       QString name = fi.fileName();
-      if( name!=".." && name!="." && name!=configfile && !name.endsWith(".crcs") )
+      if( name!=".." && name!="." && name!=configfile && !backupDirstruct::isSummaryFile(name) )
       {
         if( fi.isDir() )
         {
@@ -2087,6 +2089,8 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
 
 void backupExecuter::verifyBackup(QString const &startPath)
 {
+  static int scanned;
+
   if( startPath.isNull() )
   {
     if( verboseExecute->isChecked() )
@@ -2094,9 +2098,9 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
     m_engine->setProgressText("verifying files in backup...");
     m_engine->setProgressMaximum(lastVerifiedK);
+    scanned = 0;
     verifiedK = 0;
     verifyBackup(destination);
-    m_engine->setProgressMaximum(1);
     m_engine->setProgressValue(0);
     if ( m_running )
       lastVerifiedK = verifiedK;
@@ -2128,7 +2132,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
       fi = *it;
       QString name = fi.fileName();
-      if( name!=".." && name!="." && name!=configfile && !name.endsWith(".crcs") )
+      if( name!=".." && name!="." && name!=configfile && !backupDirstruct::isSummaryFile(name) )
       {
         if( fi.isDir() )
         {
@@ -2281,27 +2285,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                 crcSummary[verifyFile].lastScan = startTime.toTime_t();
                 checksumsChanged = true;
               }
-              /*
-                if( QFile::exists(verifyFile+".crcs") )
-                {
-                  QFile crcfile(verifyFile+".crcs");
-                  crcfile.open(QIODevice::ReadOnly);
-                  QDataStream str(&crcfile);
-                  QVector<quint16> verify;
-                  str >> verify;
-                  crcfile.close();
-                  if( verify!=crclist )
-                    errFound = true;
-                }
-                else
-                {
-                  QFile crcfile(verifyFile+".crcs");
-                  crcfile.open(QIODevice::WriteOnly | QIODevice::Truncate);
-                  QDataStream str(&crcfile);
-                  str << crclist;
-                  crcfile.close();
-                }
-*/
+
               if( errFound )
               {
                 m_error = true;
@@ -2319,6 +2303,8 @@ void backupExecuter::verifyBackup(QString const &startPath)
               stream << str; errstream.append(str);
             }
             //src.close();
+
+            m_engine->setProgressText("verifying file " + QString::number(scanned++) + " of " + QString::number(crcSummary.size()) + "...");
           }
           else
           {
