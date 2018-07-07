@@ -61,8 +61,9 @@ void setTimestamps( QString const &filename, QDateTime const &modified )
   CloseHandle(filehndl);
   delete[] _wfilename;
 #elif defined(Q_OS_MAC) || defined(Q_WS_X11)
-  QString command = "touch -t " + modified.toString("yyyyMMddhhmm.ss") + " \"" + filename +"\"";
-  QProcess::execute(command);
+  QStringList args;
+  args << "-t" << modified.toString("yyyyMMddhhmm.ss") << filename;
+  QProcess::execute("touch",args);
 #endif
 }
 
