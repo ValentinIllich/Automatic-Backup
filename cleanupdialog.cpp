@@ -338,14 +338,16 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
   {
     QTreeWidgetItem *dirItem = new QTreeWidgetItem(item);
     dirItem->setText(0,it.key());
-    dirItem->setText(1,formatSize(it.value()->m_tocData.m_size));
-    dirItem->setText(2,QDateTime::fromMSecsSinceEpoch(it.value()->m_tocData.m_modify).toString("yyyy/MM/dd-hh:mm"));
     dirItem->setText(3,it.value()->absoluteFilePath());
     dirItem->setData(3,Qt::UserRole,QVariant(qint64(it.value())));
-    //dirItem->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
+
+    populateTree(it.value(),dirItem,depth,processedDirs);
+    processedDirs++;
+
     dirItem->setBackgroundColor(0,Qt::lightGray);
     dirItem->setBackgroundColor(1,Qt::lightGray);
-
+    dirItem->setText(1,formatSize(it.value()->m_tocData.m_size));
+    dirItem->setText(2,QDateTime::fromMSecsSinceEpoch(it.value()->m_tocData.m_modify).toString("yyyy/MM/dd-hh:mm"));
     if( depth>1 )
       dirItem->setExpanded(false);
     else
@@ -354,8 +356,6 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
       dirItem->treeWidget()->scrollToItem(dirItem);
       ui->treeView->resizeColumnToContents(0);
     }
-    populateTree(it.value(),dirItem,depth,processedDirs);
-    processedDirs++;
 
     if( dirItem->childCount()==0 ) delete dirItem;
 
