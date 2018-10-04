@@ -542,7 +542,7 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
 //      else
 //        QMessageBox::warning(0,"dir error","directory\n"+startingItem->text(3)+"\nseems to have (hidden) content.");
     }
-    if( !ret )
+    if( ret )
     {
       dirEntry *entry = (dirEntry*)startingItem->data(3,Qt::UserRole).toLongLong();
       startingItem->setText(1,formatSize(entry->m_tocData.m_size));
