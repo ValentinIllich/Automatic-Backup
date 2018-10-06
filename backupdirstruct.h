@@ -35,6 +35,22 @@ public:
     m_tocData.m_crc = 0;
   }
 
+  virtual ~dirEntry()
+  {
+    QMap<QString, dirEntry*>::const_iterator it1 = m_dirs.constBegin();
+    while (it1 != m_dirs.constEnd())
+    {
+      delete it1.value();
+      ++it1;
+    }
+    QList<dirEntry*>::const_iterator it2 = m_files.constBegin();
+    while (it2 != m_files.constEnd())
+    {
+      delete *it2;
+      ++it2;
+    }
+  }
+
   void updateDirInfos(qint64 sizeOfFiles,qint64 lastModified)
   {
     dirEntry *parent = this;

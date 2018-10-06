@@ -49,6 +49,8 @@ cleanupDialog::~cleanupDialog()
     saveDirStruct();
 
   delete m_metrics;
+  delete m_rootEntry;
+  delete m_engine;
   delete ui;
 }
 
