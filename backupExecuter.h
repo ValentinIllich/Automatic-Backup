@@ -111,7 +111,8 @@ protected:
 private:
   struct backupStatistics
   {
-    backupStatistics() : count(0), dirkbytes(0) {}
+    backupStatistics() : count(0), dirkbytes(0), yearcount(0), yearkbytes(0), halfcount(0), halfkbytes(0), quartercount(0),
+    quarterkbytes(0), monthcount(0), monthkbytes(0), daycount(0), daykbytes(0) {}
     unsigned count;
     unsigned long dirkbytes;
 
@@ -129,6 +130,17 @@ private:
     backupStatistics & operator += ( backupStatistics const &a1)
     {
       this->count += a1.count;
+      this->dirkbytes += a1.dirkbytes;
+      this->yearcount += a1.yearcount;
+      this->yearkbytes += a1.yearkbytes;
+      this->halfcount += a1.halfcount;
+      this->halfkbytes += a1.halfkbytes;
+      this->quartercount += a1.quartercount;
+      this->quarterkbytes += a1.quarterkbytes;
+      this->monthcount += a1.monthcount;
+      this->monthkbytes += a1.monthkbytes;
+      this->daycount += a1.daycount;
+      this->daykbytes += a1.daykbytes;
       return *this;
     }
   };
