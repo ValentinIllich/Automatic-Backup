@@ -25,3 +25,5 @@ test.qip
 backup.cfg
 
 backupMini.pro
+
+.qmake.stash
