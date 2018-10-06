@@ -194,6 +194,8 @@ void cleanupDialog::doAnalyze()
 
     if( startingPath!=m_path )
     {
+      ui->treeView->clear();
+
       analyzePath(startingPath);
       m_path = startingPath;
     }
@@ -313,7 +315,13 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
 
   entry->updateDirInfos(fileSizes,lastModifiedFile);
 
-  if( m_run ) m_dirStructValid = m_dirStructChanged = true;
+  if( m_run )
+    m_dirStructValid = m_dirStructChanged = true;
+  else
+  {
+    delete m_rootEntry;
+    m_rootEntry = new dirEntry(0,m_path);
+  }
 }
 
 void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &depth, int &processedDirs )
