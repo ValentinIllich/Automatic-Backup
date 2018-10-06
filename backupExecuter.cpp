@@ -1548,6 +1548,7 @@ backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date
   if( eraseIt )
   {
     deletePath(srcfile);
+    stream << "     " << "    (file was filtered out or source does not exist any more) \r\n";
   }
 
   return result;
@@ -1568,6 +1569,8 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
   {
     m_engine->setProgressText("Cleaning up Directories...");
     scanned = 0;
+    totalcount = 0;
+    totaldirkbytes = 0;
     backupStatistics results;
     totalCounts = results;
 //    totalcount = yearcount = halfcount = quartercount = monthcount = daycount = 0;
@@ -1786,6 +1789,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
           if( eraseIt )
           {
             deletePath(actPath+"/"+name,indent);
+            stream << "     " << "    (file was filtered out or source does not exist any more) \r\n";
           }
         }
       }
@@ -1940,7 +1944,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
                   }
 
                   deletePath(fileToDelete);
-                  stream << indent << "     " << "    (keeping file " << mappedFile << ") \r\n";
+                  stream << indent << "     " << "    (was duplicate, keeping file " << mappedFile << ") \r\n";
 
                   totaldirkbytes += size / 1024;
                   totalcount++;
