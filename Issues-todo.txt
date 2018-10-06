@@ -1,5 +1,16 @@
 Automatic Backup Release Notes (C) Valentin Illich 2011-2018
 
+Bugs:
+=====
+
+- kann Cleanup symbolische Links erkennen / löschen?
+- was passiert beim „CLeanup“ Button in Maintenance?
+
+- Cleanup-Daten zurücksetzen, wenn Cancel gedrückt wird
+- prüfen: werden *alle* Files im tocsummary eingetragen, auch wenn Datumsfilter sie ignoriert?
+
+- Bei erneuter Analyse auf anderem Verzeichnis Treeview leeren!
+
 Release 1.22:
 =============
 
