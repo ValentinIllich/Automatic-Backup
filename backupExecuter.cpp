@@ -130,6 +130,7 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
 , verifiedK(0)
 , checksumsChanged(false)
 , m_engine(new backupEngine(*this))
+, m_taskFinished(true)
 {
   setObjectName("backupExecuter");
   setupUi(this);
@@ -1153,6 +1154,7 @@ void backupExecuter::doIt(bool runningInBackground)
 
   startingAction();
 
+  m_taskFinished = false;
   m_engine->start(false);
 }
 
@@ -1170,12 +1172,12 @@ void backupExecuter::verifyIt(bool runningInBackground)
 
   startingAction(); // do verify only if not cancelled in batch
 
+  m_taskFinished = false;
   m_engine->start(true);
 }
 
 void backupExecuter::processEventsAndWait()
 {
-    m_taskFinished = false;
     while( !m_taskFinished )
     {
         m_waiter.wait(50);
@@ -1394,10 +1396,15 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
   {
     if( verboseMaintenance->isChecked() || verboseExecute->isChecked() )
     {
-      stream << indent << "---> " << "would remove file " << absolutePath
-      << ", created("+fi.created().toString(Qt::ISODate)
-      +") modified("+fi.lastModified().toString(Qt::ISODate)
-      +")" << "\r\n";
+      if( fi.exists() )
+      {
+        stream << indent << "---> " << "would remove file " << absolutePath
+        << ", created("+fi.created().toString(Qt::ISODate)
+        +") modified("+fi.lastModified().toString(Qt::ISODate)
+        +")" << "\r\n";
+      }
+      else
+        stream << indent << "---> " << "file " << absolutePath << " does not exist any longer\r\n";
     }
     else
     {
