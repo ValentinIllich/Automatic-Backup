@@ -33,7 +33,7 @@ struct backupConfigData
   bool			m_bzlib;
   bool      m_bsuspend;
   int       m_iTimeout;
-  bool			m_bexecuted;
+  //bool			m_bexecuted;
 };
 
 struct crcInfo
