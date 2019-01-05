@@ -39,7 +39,7 @@ public:
     m_config.m_bzlib=zlib;
     m_config.m_bsuspend=suspend;
     m_config.m_iTimeout=timeout;
-    m_config.m_bexecuted=false;
+    //m_config.m_bexecuted=false;
 
     setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled|Qt::ItemIsTristate);
     if( m_config.m_bAuto )
@@ -64,7 +64,7 @@ public:
     executer.setCloseAfterExecute(closeAferExecute);
     executer.setAskForShutdown(askForShutdown);
     executer.exec();
-    m_config.m_bexecuted = executer.result()==QDialog::Accepted;
+    //m_config.m_bexecuted = executer.result()==QDialog::Accepted;
 
     m_config.m_sText = executer.getTitle();
     m_config.m_sSrc = executer.getSrc();
@@ -120,7 +120,7 @@ public:
 //    m_executer->startBatchProcessing();
     m_executer->show();
     m_executer->doIt(runningInBackground);
-    m_config.m_bexecuted = true;
+    //m_config.m_bexecuted = true;
   }
 
   void verifyBackupItem(bool closeAferExecute,bool runningInBackground)
@@ -134,10 +134,10 @@ public:
     m_executer->verifyIt(runningInBackground);
   }
 
-  bool executionDone()
+/*  bool executionDone()
   {
     return m_config.m_bexecuted;
-  }
+  }*/
 
   backupExecuter    *m_executer;
   backupConfigData  m_config;
