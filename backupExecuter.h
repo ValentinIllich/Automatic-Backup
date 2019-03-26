@@ -161,6 +161,8 @@ private:
   void scanDirectory(QDate const &date, QString const &startPath = QString::null, bool eraseAll = false);
   void findDuplicates(QString const &startPath = QString::null,bool operatingOnSource = false);
 
+  void deleteFilesFromDestination(QList< QPair<QString,QString> > const &m_toBeRemovedFromToc, unsigned &totalcount, unsigned long &totaldirkbytes);
+
   QString const &defaultAt( QStringList const &list, int ix );
 
   void checkTimeout();
@@ -216,6 +218,8 @@ private:
 
   backupEngine *m_engine;
   bool m_taskFinished;
+
+  QList< QPair<QString,QString> > m_toBeRemovedFromToc;
 };
 
 #endif

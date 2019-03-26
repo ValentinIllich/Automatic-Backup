@@ -195,6 +195,7 @@ QDataStream &operator>>(QDataStream &in, struct crcInfo &dst)
 
 backupExecuter::~backupExecuter()
 {
+  processEventsAndWait();
   saveData();
   delete m_engine;
 }
@@ -219,8 +220,11 @@ void backupExecuter::saveData()
   }
   checksumsChanged = false;
 
-  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(destination);
-  m_dirs.writeToFile(tocSummaryFile);
+  if( m_dirs.tocHasChanged() )
+  {
+    QString tocSummaryFile = backupDirstruct::getTocSummaryFile(destination);
+    m_dirs.writeToFile(tocSummaryFile);
+  }
 }
 
 void backupExecuter::changeVisibility()
@@ -667,7 +671,11 @@ void backupExecuter::analyzeDirectories()
       if( backupDirstruct::isTocSummaryFile(actualName) || backupDirstruct::isChecksumSummaryFile(actualName) )
         passed = false;
 
-      if( !srcFile.isSymLink() && actualName!="." && actualName!=".." && !isAutoBackupCreatedFile(actualName) )
+      if( isAutoBackupCreatedFile(actualName) )
+      {
+        copy = false;
+      }
+      else if( !srcFile.isSymLink() && actualName!="." && actualName!=".." )
       {
         if( passed )
         {
@@ -1072,8 +1080,8 @@ void backupExecuter::threadedCopyOperation()
   //if( /*m_running &&*/ m_dirsCreated ) // always check for duplicates even if cancelled
     findDuplicates();
 
-  if( m_running && !m_isBatch )
-    verifyBackup();
+/*  if( m_running && !m_isBatch )
+    verifyBackup();*/
 
   if( m_running /*&& m_isBatch*/ )
   {
@@ -1107,6 +1115,8 @@ void backupExecuter::threadedVerifyOperation()
     else
       stream << "++++ couldn't create automatic test item\r\n";
   }
+
+  saveData();
 }
 
 void backupExecuter::operationFinishedEvent()
@@ -1386,11 +1396,14 @@ void backupExecuter::cleanup()
 
 void backupExecuter::deletePath(QString const &absolutePath,QString const &indent)
 {
-  QFileInfo fi(absolutePath);
+  QString destinationPath = absolutePath;
+  if( destinationPath.startsWith(source) ) destinationPath = destination + "/" + destinationPath.mid(source.length()+1);
+
+  QFileInfo fi(destinationPath);
 
   if( fi.isDir() )
   {
-    scanDirectory(QDate::currentDate(),absolutePath,true);
+    scanDirectory(QDate::currentDate(),destinationPath,true);
   }
   else
   {
@@ -1408,7 +1421,8 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
     }
     else
     {
-      QFile file(absolutePath);
+      QFile file(destinationPath);
+
       if( collectFiles->isChecked() )
       {
           if( collectingDeleted )
@@ -1426,17 +1440,16 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
       if( file.setPermissions(QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther)
       && file.remove() )
       {
-        stream << "---> " << "removed file " << absolutePath << "\r\n";
+        stream << "---> " << "removed file " << destinationPath << "\r\n";
 
         // remove file entry from CRC list
-        if( crcSummary.contains(absolutePath) )
+        if( crcSummary.contains(destinationPath) )
         {
-          crcSummary.remove(absolutePath);
+          crcSummary.remove(destinationPath);
           checksumsChanged = true;
         }
 
         // check for empty directory; remove it if neccessary
-        QFileInfo fi(absolutePath);
         QDir dir(fi.dir());
         QStringList list(dir.entryList());
         while( !dir.isRoot() && (list.count()<=2) )
@@ -1455,9 +1468,12 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
       }
       else
       {
-        QString str = "++++ can't remove file '"+absolutePath+"' file is write protected!\r\n";
+        QString str = "++++ can't remove file '"+destinationPath+"' file is write protected!\r\n";
         stream << str; errstream.append(str);
       }
+      QString relPath = fi.dir().path().mid(destination.length()+1);
+      QString filename = fi.fileName();
+      m_toBeRemovedFromToc.append(qMakePair(relPath,filename));
     }
   }
 }
@@ -1588,6 +1604,8 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
       scanDirectory(date,destination);
     else
     {
+      m_toBeRemovedFromToc.clear();
+
       tocDataContainerMap::iterator it1 = m_dirs.getFirstElement();
       while( m_running &&(it1!=m_dirs.getLastElement()) )
       {
@@ -1630,6 +1648,8 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
         ++it1;
       }
+
+      deleteFilesFromDestination(m_toBeRemovedFromToc,totalcount,totaldirkbytes);
     }
     stream << "----> " << totalCounts.daycount << " files younger than a month with " << totalCounts.daykbytes << " Kbytes found\r\n";
     stream << "----> " << totalCounts.monthcount << " files between one and three months with " << totalCounts.monthkbytes << " Kbytes found\r\n";
@@ -1993,12 +2013,12 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
     totalcount = 0;
     filemap.clear();
 
+    m_toBeRemovedFromToc.clear();
+
     tocDataContainerMap::iterator it1 = m_dirs.getFirstElement();
     while( m_running &&(it1!=m_dirs.getLastElement()) )
     {
       tocDataEntryMap::iterator it2 = it1.value().begin();
-
-      QList< QPair<QString,QString> > tobeRemovedFromToc;
 
       QString relpath = it1.key();
       m_engine->setFileNameText(destination + "/" + relpath);
@@ -2022,8 +2042,8 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
 
           if( listSize==m_dirs.getNewestEntry(it2).m_size )
           {
-            tobeRemovedFromToc.append(qMakePair(listPath,listFile));
-            tobeRemovedFromToc.append(qMakePair(relpath,filename));
+            m_toBeRemovedFromToc.append(qMakePair(listPath,listFile));
+            m_toBeRemovedFromToc.append(qMakePair(relpath,filename));
           }
           else if( showTreeStruct->isChecked() )
           {
@@ -2046,55 +2066,69 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
         ++it2;
       }
 
-      QList< QPair<QString,QString> >::iterator it3 = tobeRemovedFromToc.begin();
-      while( it3!=tobeRemovedFromToc.end() )
-      {
-        QString relPath = (*it3).first;
-        QString file = (*it3).second;
-        QString srcPath = "";
-
-        if( relPath=="." )
-        {
-            srcPath = source + "/" + file;
-            relPath = "";
-        }
-        else
-            srcPath = source + "/" + relPath + "/" + file;
-
-
-        if( QFile::exists(srcPath) )
-        {
-          ++it3;
-          continue;
-        }
-
-        tocDataEntryList &entries = m_dirs.getEntryList(relPath,file);
-        tocDataEntryList::iterator it4 = entries.begin();
-        while( it4!=entries.end() )
-        {
-          totaldirkbytes += (*it4).m_size / 1024;
-          ++it4;
-        }
-        totalcount++;
-
-        QStringList toBeDeleted;
-        m_dirs.removeFile(relPath,file,toBeDeleted);
-
-        QStringList::iterator it = toBeDeleted.begin();
-        while (it!=toBeDeleted.end())
-        {
-          QString fullName = destination + "/" + *it;
-          QFile::remove(fullName);
-          ++it;
-        }
-
-        ++it3;
-      }
       ++it1;
     }
 
+    deleteFilesFromDestination(m_toBeRemovedFromToc,totalcount,totaldirkbytes);
+
     m_engine->setProgressMaximum(1);
     m_engine->setProgressValue(0);
+  }
+}
+
+void backupExecuter::deleteFilesFromDestination(const QList<QPair<QString, QString> > &toBeRemovedFromToc, unsigned &totalcount, unsigned long &totaldirkbytes)
+{
+  QList< QPair<QString,QString> >::const_iterator it3 = toBeRemovedFromToc.begin();
+  while( it3!=toBeRemovedFromToc.end() )
+  {
+    QString relPath = (*it3).first;
+    QString file = (*it3).second;
+    QString srcPath = source + "/" + (relPath=="." ? "" : relPath + "/") + file;
+    bool sourceFileFound = false;
+    unsigned long historykbytes = 0;
+
+    if( QFile::exists(srcPath) )
+      sourceFileFound = true;
+    else
+    {
+      tocDataEntryList &entries = m_dirs.getEntryList(relPath,file);
+      tocDataEntryList::iterator it4 = entries.begin();
+      while( it4!=entries.end() )
+      {
+        srcPath = source + "/" + (relPath=="." ? "" : relPath + "/") + (*it4).m_prefix + file;
+
+        if( QFile::exists(srcPath) )
+          sourceFileFound = true;
+
+        historykbytes += (*it4).m_size / 1024;
+        ++it4;
+      }
+    }
+
+    if( sourceFileFound )
+    {
+      ++it3;
+      continue;
+    }
+
+    totalcount++;
+    totaldirkbytes += historykbytes;
+
+    QStringList toBeDeleted;
+    m_dirs.removeFile(relPath,file,toBeDeleted);
+
+    QStringList::iterator it = toBeDeleted.begin();
+    while (it!=toBeDeleted.end())
+    {
+      if( !QFile::exists(source + "/" + *it) )
+      {
+        QString fullName = destination + "/" + *it;
+        QFile::remove(fullName);
+      }
+      ++it;
+    }
+
+    ++it3;
   }
 }
 
