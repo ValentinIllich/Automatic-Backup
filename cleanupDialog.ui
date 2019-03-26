@@ -68,7 +68,14 @@ files and folders older than the given date. The
 files are shown in a tree.</string>
          </property>
          <property name="text">
-          <string>Analyze...</string>
+          <string>Analyze Directory...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="rescanButt">
+         <property name="text">
+          <string>Rescan Directory...</string>
          </property>
         </widget>
        </item>
@@ -120,8 +127,8 @@ close the dialog.</string>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>595</x>
-     <y>454</y>
+     <x>786</x>
+     <y>586</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -136,8 +143,8 @@ close the dialog.</string>
    <slot>doBreak()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>626</x>
-     <y>460</y>
+     <x>786</x>
+     <y>586</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
@@ -152,8 +159,8 @@ close the dialog.</string>
    <slot>doAnalyze()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>70</x>
-     <y>454</y>
+     <x>83</x>
+     <y>586</y>
     </hint>
     <hint type="destinationlabel">
      <x>254</x>
@@ -161,9 +168,26 @@ close the dialog.</string>
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>rescanButt</sender>
+   <signal>clicked()</signal>
+   <receiver>cleanupDialog</receiver>
+   <slot>doRescan()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>221</x>
+     <y>568</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>373</x>
+     <y>526</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>doAnalyze()</slot>
   <slot>doBreak()</slot>
+  <slot>doRescan()</slot>
  </slots>
 </ui>

@@ -41,6 +41,7 @@ cleanupDialog::cleanupDialog(QWidget *parent)
   header << "Path" << "Size" << "modified" << "full path";
   ui->treeView->setHeaderLabels(header);
   ui->treeView->hideColumn(3);
+  ui->rescanButt->hide();
 }
 
 cleanupDialog::~cleanupDialog()
@@ -58,7 +59,7 @@ void cleanupDialog::saveDirStruct()
 {
   QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_path);
   if( !backupDirstruct::convertToTocFile(tocSummaryFile,m_rootEntry ) )
-      ;
+      QMessageBox::warning(this,"write error","could not create table of contents file.\nPlease restart in Root mode.");
 }
 
 void cleanupDialog::setPaths(QString const &srcpath,QString const &dstpath)
@@ -66,6 +67,8 @@ void cleanupDialog::setPaths(QString const &srcpath,QString const &dstpath)
   m_sourcePath = srcpath;
   m_analyzingPath = dstpath;
   setWindowTitle("cleaning up "+dstpath);
+
+  checkForBackupPath(m_analyzingPath);
 }
 
 void cleanupDialog::threadedCopyOperation()
@@ -192,17 +195,48 @@ void cleanupDialog::doAnalyze()
 
   if( !startingPath.isEmpty() )
   {
-    setLimitDate();
-
-    if( startingPath!=m_path )
+    QFile dir1(startingPath);
+    if( !dir1.exists(startingPath) )
     {
-      ui->treeView->clear();
-
-      analyzePath(startingPath);
-      m_path = startingPath;
+      ui->analyzebutt->setDisabled(true);
+      QMessageBox box(QMessageBox::NoIcon,"removable media not found","'"+startingPath+"' not found.\n\nPlease insert removable media containing this path.",QMessageBox::Cancel,this);
+      box.exec();
     }
     else
-      operationFinishedEvent();
+    {
+      checkForBackupPath(startingPath);
+
+      setLimitDate();
+
+      if( startingPath!=m_path )
+      {
+        ui->treeView->clear();
+
+        analyzePath(startingPath);
+        m_path = startingPath;
+      }
+      else
+        operationFinishedEvent();
+
+      m_analyzingPath = startingPath;
+    }
+  }
+}
+
+void cleanupDialog::doRescan()
+{
+  QString startingPath;
+
+  startingPath = QFileDialog::getExistingDirectory(this, tr("Rescan Directory"),m_path,QFileDialog::ShowDirsOnly);
+  if( !startingPath.isEmpty() )
+  {
+    QString tocSummaryFile = backupDirstruct::getTocSummaryFile(startingPath);
+    if( QFile::exists(tocSummaryFile) )
+      QFile::remove(tocSummaryFile);
+
+    m_analyzingPath = startingPath;
+
+    doAnalyze();
   }
 }
 
@@ -417,7 +451,8 @@ void cleanupDialog::openFile( QString const &fn )
 #if defined(Q_OS_MAC)
   webbrowser = "open";
 #elif defined(Q_WS_X11)
-  if (isKDERunning()) {
+  if (isKDERunning())
+  {
     webbrowser = "kfmclient";
   }
 #endif
@@ -434,6 +469,29 @@ void cleanupDialog::openFile( QString const &fn )
     args.append(name);
     proc->start(webbrowser, args);
   }
+}
+
+void cleanupDialog::checkForBackupPath(QString const &path)
+{
+    QString tocSummaryFile = backupDirstruct::getTocSummaryFile(path);
+    if( QFile::exists(tocSummaryFile) )
+    {
+      if( m_analyzingPath.isEmpty() )
+      {
+        ui->analyzebutt->setText("Analyze Files...");
+        ui->rescanButt->show();
+      }
+      else
+      {
+        ui->analyzebutt->setText("Analyze Backup...");
+        ui->rescanButt->show();
+      }
+    }
+    else
+    {
+        ui->analyzebutt->setText("Analyze Directory...");
+        ui->rescanButt->hide();
+    }
 }
 
 void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )

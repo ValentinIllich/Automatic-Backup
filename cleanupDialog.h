@@ -35,6 +35,7 @@ public:
 
 public slots:
     void doAnalyze();
+    void doRescan();
     void doBreak();
     void analyzePath(QString const &path);
     void setLimitDate();
@@ -49,6 +50,7 @@ private:
     bool traverseItems(QTreeWidgetItem *startingItem,double &dirSize);
     void openFile( QString const &fn );
 
+    void checkForBackupPath(QString const &path);
     void saveDirStruct();
 
     Ui::cleanupDialog *ui;
