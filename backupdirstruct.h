@@ -146,6 +146,8 @@ public:
       str >> m_archiveContent;
       tocFile.close();
 
+      FILE *fp=fopen("/Users/valentinillich/toc.txt","w");
+
       tocDataContainerMap::iterator it1 = getFirstElement();
       while( it1 != getLastElement() )
       {
@@ -153,19 +155,24 @@ public:
 
         while( it2!=it1.value().end() )
         {
+          fprintf(fp,"%s/%s: ",it1.key().toLatin1().data(),it2.key().toLatin1().data());
           tocDataEntryList entries = it2.value();
           tocDataEntryList::iterator it3 = entries.begin();
           while( it3!=entries.end() )
           {
+            fprintf(fp,"%s, ",it3->m_prefix.toLatin1().data());
             if( (*it3).m_tocId>=m_nextTocId )
               m_nextTocId = (*it3).m_tocId + 1;
             ++it3;
           }
+          fprintf(fp,"\n");
           ++it2;
         }
         ++it1;
       }
 
+      fclose(fp);
+      m_tocChanged = false;
       return true;
     }
     return false;
@@ -178,6 +185,7 @@ public:
       QDataStream str(&tocFile);
       str << m_archiveContent;
       tocFile.close();
+      m_tocChanged = false;
       return true;
     }
     return false;
@@ -192,30 +200,44 @@ public:
     return m_archiveContent.end();
   }
 
+  bool tocHasChanged()
+  {
+      return m_tocChanged;
+  }
+
   int size()
   {
     return m_archiveContent.size();
   }
   bool exists(QString const &path, QString const &file)
   {
+    QString prefix = "";
+    QString baseFile = backupDirstruct::cutFilenamePrefix(file,&prefix);
+
     if( path.isEmpty() )
-      return m_archiveContent.contains(".") && m_archiveContent["."].contains(file);
+      return m_archiveContent.contains(".") && m_archiveContent["."].contains(baseFile);
     else
-      return m_archiveContent.contains(path) && m_archiveContent[path].contains(file);
+      return m_archiveContent.contains(path) && m_archiveContent[path].contains(baseFile);
   }
   qint64 lastModified(QString const &path, QString const &file)
   {
+    QString prefix = "";
+    QString baseFile = backupDirstruct::cutFilenamePrefix(file,&prefix);
+
     if( path.isEmpty() )
-      return m_archiveContent["."][file].front().m_modify;
+      return m_archiveContent["."][baseFile].front().m_modify;
     else
-      return m_archiveContent[path][file].front().m_modify;
+      return m_archiveContent[path][baseFile].front().m_modify;
   }
   tocDataEntryList &getEntryList(QString const &path, QString const &file)
   {
+    QString prefix = "";
+    QString baseFile = backupDirstruct::cutFilenamePrefix(file,&prefix);
+
     if( path.isEmpty() )
-      return m_archiveContent["."][file];
+      return m_archiveContent["."][baseFile];
     else
-      return m_archiveContent[path][file];
+      return m_archiveContent[path][baseFile];
   }
 
   fileTocEntry &getNewestEntry(tocDataEntryMap::iterator const &it)
@@ -244,6 +266,7 @@ public:
     else if( entry.m_prefix.isEmpty() )
       entry.m_prefix = prefix;
     m_archiveContent[basePath][baseFile].push_front(entry);
+    m_tocChanged = true;
   }
   void removeFile(QString const &path, QString const &file, QStringList &toBeDeleted)
   {
@@ -269,6 +292,7 @@ public:
     }
 
     m_archiveContent[basePath].remove(baseFile);
+    m_tocChanged = true;
   }
   void keepFiles( QString const &path, QString const &file, size_t numberOfFiles, QStringList &toBeDeleted )
   {
@@ -315,6 +339,7 @@ public:
 private:
   tocDataContainerMap m_archiveContent;
   qint64 m_nextTocId;
+  bool m_tocChanged;
 };
 
 #endif // BACKUPDIRSTRUCT_H

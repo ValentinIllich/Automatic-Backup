@@ -51,7 +51,7 @@ QDataStream &operator>>(QDataStream &in, std::list<fileTocEntry> &dst)
 
 backupDirstruct::backupDirstruct()
   : m_nextTocId(0)
-
+  , m_tocChanged(false)
 {
 }
 
