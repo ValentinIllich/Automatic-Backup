@@ -3,12 +3,15 @@ Automatic Backup Release Notes (C) Valentin Illich 2011-2018
 Bugs:
 =====
 
-- kann Cleanup symbolische Links erkennen / löschen? Eher nicht
-- was passiert beim „CLeanup“ Button in Maintenance? Files ohne source älter als ... werden gelöscht
+- Crash wenn während clenup-scan Cancel gedrückt wird?
+- processEventsAndWait() nach backupEngine verschieben ?
 
-- deletePath muss Eintrag in tocsummary löschen
-  (Code aus findDuplicates extrahieren, tobeRemovedFromToc Liste als Aufrufargument in deletePath)
+DONE tocsummary gleich nach Backup rausschreiben
 
+DONE kann Cleanup symbolische Links erkennen / löschen? Eher nicht
+DONE was passiert beim „CLeanup“ Button in Maintenance? Files ohne source älter als ... werden gelöscht
+
+DONE deletePath muss Eintrag in tocsummary löschen
 DONE Cleanup-Daten zurücksetzen, wenn Cancel gedrückt wird
 DONE prüfen: werden *alle* Files im tocsummary eingetragen, auch wenn Datumsfilter sie ignoriert?
 
