@@ -46,6 +46,8 @@ cleanupDialog::cleanupDialog(QWidget *parent)
 
 cleanupDialog::~cleanupDialog()
 {
+  m_engine->processEventsAndWait();
+
   if( m_dirStructValid && m_dirStructChanged )
     saveDirStruct();
 
@@ -349,14 +351,16 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
     }
   }
 
-  entry->updateDirInfos(fileSizes,lastModifiedFile);
-
   if( m_run )
+  {
+    entry->updateDirInfos(fileSizes,lastModifiedFile);
     m_dirStructValid = m_dirStructChanged = true;
+  }
   else
   {
     delete m_rootEntry;
     m_rootEntry = new dirEntry(0,m_path);
+    m_dirStructValid = m_dirStructChanged = false;
   }
 }
 
