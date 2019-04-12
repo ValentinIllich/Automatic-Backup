@@ -155,23 +155,23 @@ public:
 
         while( it2!=it1.value().end() )
         {
-          fprintf(fp,"%s/%s: ",it1.key().toLatin1().data(),it2.key().toLatin1().data());
+          if( fp ) fprintf(fp,"%s/%s: ",it1.key().toLatin1().data(),it2.key().toLatin1().data());
           tocDataEntryList entries = it2.value();
           tocDataEntryList::iterator it3 = entries.begin();
           while( it3!=entries.end() )
           {
-            fprintf(fp,"%s, ",it3->m_prefix.toLatin1().data());
+            if( fp ) fprintf(fp,"%s, ",it3->m_prefix.toLatin1().data());
             if( (*it3).m_tocId>=m_nextTocId )
               m_nextTocId = (*it3).m_tocId + 1;
             ++it3;
           }
-          fprintf(fp,"\n");
+          if( fp ) fprintf(fp,"\n");
           ++it2;
         }
         ++it1;
       }
 
-      fclose(fp);
+      if( fp ) fclose(fp);
       m_tocChanged = false;
       return true;
     }
