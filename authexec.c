@@ -7,11 +7,30 @@
 #include <windows.h>
 #endif
 #if defined(Q_OS_MAC)
-#include <Security/Authorization.h>
-#include <Security/AuthorizationTags.h>
+#include <stdio.h>
 #endif
 
-int getAdminRights(int argc, char* argv[]) {
+void checkForPasswdHelper(int argc, char **argv)
+{
+#if defined(Q_OS_MAC)
+  if( strstr(argv[0],"pwdhelper")!=0 )
+  {
+    static char buff[128];
+    FILE *fp=fopen("/tmp/passwd","r");
+    if( fp )
+    {
+      size_t read = fread(buff,1,127,fp);
+      buff[read] = 0x0;
+      fclose(fp);
+      remove("/tmp/passwd");
+    }
+    fprintf(stdout,"%s",buff);
+    exit(0);
+  }
+#endif
+}
+
+int getAdminRights(int argc, char* argv[],char *password) {
     int result = -1;
 
     if( argc==2 && strcmp(argv[1],"-admin")==0 )
@@ -26,74 +45,25 @@ int getAdminRights(int argc, char* argv[]) {
           // The unprivileged parent should wait for
           // the privileged child to finish.
           exit(0);
-//          WaitForSingleObject(child, INFINITE);
-//          CloseHandle(pid);
         }
 #endif
 #if defined(Q_OS_MAC)
-        int read (long,StringPtr,int);
-        int write (long,StringPtr,int);
-
-        OSStatus myStatus = 1;
-        AuthorizationRef myAuthorizationRef;
-
-        myStatus = AuthorizationCreate(
-            NULL,
-            kAuthorizationEmptyEnvironment,
-            kAuthorizationFlagDefaults,
-            &myAuthorizationRef);
-
-        if (myStatus != errAuthorizationSuccess)
-            return myStatus;
-
-        do
+        FILE *fp=fopen("/tmp/passwd","w");
+        if( fp )
         {
+          fprintf(fp,"%s\n",password);
+          fclose(fp);
+        }
 
-            {
-              AuthorizationItem myItems = {kAuthorizationRightExecute, 0, NULL, 0};
-              AuthorizationRights myRights = {1, &myItems};
-              AuthorizationFlags myFlags =
-                  kAuthorizationFlagDefaults |
-                  kAuthorizationFlagInteractionAllowed |
-                  kAuthorizationFlagPreAuthorize |
-                  kAuthorizationFlagExtendRights;
+        char myReadBuffer[4096];
+        sprintf(myReadBuffer,"ln -s %s /tmp/pwdhelper",argv[0]);
+        int ret1 = system(myReadBuffer);
 
-              myStatus = AuthorizationCopyRights(
-                  myAuthorizationRef, &myRights, NULL, myFlags, NULL );
-            }
+        sprintf(myReadBuffer,"export SUDO_ASKPASS=/tmp/pwdhelper;sudo -A -k %s -admin",argv[0]);
+        int ret2 = system(myReadBuffer);
+        exit(0);
 
-            if (myStatus != errAuthorizationSuccess)
-                break;
-
-            {
-                FILE *myCommunicationsPipe = NULL;
-                unsigned char myReadBuffer[128];
-
-                char *argvs[] = { "-admin",NULL };
-                myStatus = AuthorizationExecuteWithPrivileges(
-                    myAuthorizationRef,
-                    argv[0],
-                    kAuthorizationFlagDefaults,
-                    &argvs[0],
-                    &myCommunicationsPipe);
-
-                if (myStatus == errAuthorizationSuccess)
-                    for(;;)
-                    {
-                        exit(0);
-                        int bytesRead = read(fileno(myCommunicationsPipe), myReadBuffer, sizeof(myReadBuffer));
-                        if (bytesRead < 1) break;
-                        write(fileno(stdout), myReadBuffer, bytesRead);
-                    }
-            }
-        } while (0);
-
-        AuthorizationFree(myAuthorizationRef, kAuthorizationFlagDefaults);
-
-        if (myStatus)
-            printf("Status: %ld\n", (long) myStatus);
-
-        result = myStatus;
+        result = ret1 + ret2;
 #endif
     }
 

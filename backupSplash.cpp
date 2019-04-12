@@ -2,13 +2,15 @@
 #include <qsettings.h>
 #include <qpainter.h>
 #include <qmenu.h>
+#include <QString>
+#include <QInputDialog>
 
 #include "backupSplash.h"
 #include "backupMain.h"
 #include "backupExecuter.h"
 #include "utilities.h"
 
-extern "C" int getAdminRights(int argc, char* argv[]);
+extern "C" int getAdminRights(int argc, char* argv[],char *password);
 
 class startMessage : public QMessageBox
 {
@@ -224,7 +226,19 @@ bool backupSplash::startup(int argc,char **argv)
     }
     if( msg.isAdmin() )
     {
-      getAdminRights(argc,argv);
+      bool ok = true;
+      QString text = "";
+
+#if defined(Q_OS_MAC)
+      text = QInputDialog::getText(0,tr("Authorization"),
+                                     tr("Enter Root Password:"), QLineEdit::Password,
+                                     QDir::home().dirName(), &ok);
+      if (text.isEmpty())
+        ok = false;
+#endif
+      if( ok )
+        getAdminRights(argc,argv,text.toLatin1().data());
+
       active = false;
       qApp->quit();
     }

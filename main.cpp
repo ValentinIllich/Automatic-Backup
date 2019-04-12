@@ -11,8 +11,12 @@
 #include "backupExecuter.h"
 #include "utilities.h"
 
+extern "C" void checkForPasswdHelper(int argc, char **argv);
+
 int main( int argc, char **argv )
 {
+  checkForPasswdHelper(argc,argv);
+
   QCoreApplication::setOrganizationName("VISolutions.de");
   QCoreApplication::setApplicationName("Automatic Backup");
 
