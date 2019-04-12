@@ -3,8 +3,8 @@ Automatic Backup Release Notes (C) Valentin Illich 2011-2018
 Bugs:
 =====
 
-- Crash wenn während clenup-scan Cancel gedrückt wird?
-- processEventsAndWait() nach backupEngine verschieben ?
+DONE Crash wenn während clenup-scan Cancel gedrückt wird?
+DONE processEventsAndWait() nach backupEngine verschieben ?
 
 DONE tocsummary gleich nach Backup rausschreiben
 
