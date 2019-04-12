@@ -217,7 +217,6 @@ private:
   QDateTime startTime;
 
   backupEngine *m_engine;
-  bool m_taskFinished;
 
   QList< QPair<QString,QString> > m_toBeRemovedFromToc;
 };

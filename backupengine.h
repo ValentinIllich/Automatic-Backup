@@ -34,6 +34,7 @@ public:
   void setToolTipText(QString const &text);
 
   void start(bool verifyOnly);
+  void processEventsAndWait();
 
 protected:
   virtual void timerEvent(QTimerEvent */*event*/ );

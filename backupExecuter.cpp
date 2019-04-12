@@ -130,7 +130,6 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
 , verifiedK(0)
 , checksumsChanged(false)
 , m_engine(new backupEngine(*this))
-, m_taskFinished(true)
 {
   setObjectName("backupExecuter");
   setupUi(this);
@@ -195,7 +194,7 @@ QDataStream &operator>>(QDataStream &in, struct crcInfo &dst)
 
 backupExecuter::~backupExecuter()
 {
-  processEventsAndWait();
+  m_engine->processEventsAndWait();
   saveData();
   delete m_engine;
 }
@@ -1127,8 +1126,6 @@ void backupExecuter::operationFinishedEvent()
     cancel();
   else if( m_closeAfterExecute )
     accept();								// this means: execution done, return to main window
-
-  m_taskFinished = true;
 }
 
 void backupExecuter::doIt(bool runningInBackground)
@@ -1164,7 +1161,6 @@ void backupExecuter::doIt(bool runningInBackground)
 
   startingAction();
 
-  m_taskFinished = false;
   m_engine->start(false);
 }
 
@@ -1182,17 +1178,12 @@ void backupExecuter::verifyIt(bool runningInBackground)
 
   startingAction(); // do verify only if not cancelled in batch
 
-  m_taskFinished = false;
   m_engine->start(true);
 }
 
 void backupExecuter::processEventsAndWait()
 {
-    while( !m_taskFinished )
-    {
-        m_waiter.wait(50);
-        qApp->processEvents();
-    }
+  m_engine->processEventsAndWait();
 }
 
 void backupExecuter::cancel() // OK (Cancel when running) pressed

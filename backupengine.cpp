@@ -82,6 +82,15 @@ void backupEngine::start(bool verifyOnly)
   m_worker->start();
 }
 
+void backupEngine::processEventsAndWait()
+{
+    while( !m_worker->isFinished() )
+    {
+      m_worker->sleep(50);
+      qApp->processEvents();
+    }
+}
+
 void backupEngine::setProgressMaximum(int max)
 {
   m_locker.lock();
