@@ -3,8 +3,6 @@
 Bugs:
 =====
 
-- commit test
-
 DONE Crash wenn während clenup-scan Cancel gedrückt wird?
 DONE processEventsAndWait() nach backupEngine verschieben ?
 
