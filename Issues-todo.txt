@@ -1,4 +1,4 @@
-﻿Automatic Backup Release Notes (C) Valentin Illich 2011-2018
+﻿Automatic Backup Release Notes (C) Valentin Illich 2011-2019
 
 Bugs:
 =====
