@@ -13,7 +13,7 @@
 void checkForPasswdHelper(int argc, char **argv)
 {
 #if defined(Q_OS_MAC)
-  if( strstr(argv[0],"pwdhelper")!=0 )
+  if( argc==1 && strstr(argv[0],"pwdhelper")!=0 )
   {
     static char buff[128];
     FILE *fp=fopen("/tmp/passwd","r");
@@ -56,6 +56,8 @@ int getAdminRights(int argc, char* argv[],char *password) {
         }
 
         char myReadBuffer[4096];
+        sprintf(myReadBuffer,"rm -f /tmp/pwdhelper");
+        int ret0 = system(myReadBuffer);
         sprintf(myReadBuffer,"ln -s %s /tmp/pwdhelper",argv[0]);
         int ret1 = system(myReadBuffer);
 
@@ -63,7 +65,7 @@ int getAdminRights(int argc, char* argv[],char *password) {
         int ret2 = system(myReadBuffer);
         exit(0);
 
-        result = ret1 + ret2;
+        result = ret0 + ret1 + ret2;
 #endif
     }
 
