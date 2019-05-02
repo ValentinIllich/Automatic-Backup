@@ -231,8 +231,8 @@ bool backupSplash::startup(int argc,char **argv)
 
 #if defined(Q_OS_MAC)
       text = QInputDialog::getText(0,tr("Authorization"),
-                                     tr("Enter Root Password:"), QLineEdit::Password,
-                                     QDir::home().dirName(), &ok);
+                                     tr("Enter Administrator Password:"), QLineEdit::Password,
+                                     "", &ok);
       if (text.isEmpty())
         ok = false;
 #endif
