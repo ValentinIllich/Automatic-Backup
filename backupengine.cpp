@@ -58,6 +58,8 @@ backupEngine::backupEngine(IBackupOperationsInterface &backupHandler)
 
 backupEngine::~backupEngine()
 {
+  delete m_worker;
+  m_worker = NULL;
 }
 
 void backupEngine::timerEvent(QTimerEvent *)
@@ -84,9 +86,11 @@ void backupEngine::start(bool verifyOnly)
 
 void backupEngine::processEventsAndWait()
 {
+    if( m_worker==NULL )
+      return;
     while( !m_worker->isFinished() )
     {
-      m_worker->sleep(50);
+      m_worker->msleep(50);
       qApp->processEvents();
     }
 }
