@@ -13,7 +13,7 @@
 void checkForPasswdHelper(int argc, char **argv)
 {
 #if defined(Q_OS_MAC)
-  if( argc==1 && strstr(argv[0],"pwdhelper")!=0 )
+  if( strstr(argv[0],"pwdhelper")!=0 )
   {
     static char buff[128];
     FILE *fp=fopen("/tmp/passwd","r");
