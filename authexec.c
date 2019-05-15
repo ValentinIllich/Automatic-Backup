@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #if defined(Q_OS_WIN32)
 #include <windows.h>
@@ -10,9 +11,15 @@
 #include <stdio.h>
 #endif
 
+#if defined(Q_OS_WIN)
 void checkForPasswdHelper(int argc, char **argv)
 {
+    printf("%d,%s",argc,argv[0]);
+}
+#endif
 #if defined(Q_OS_MAC)
+void checkForPasswdHelper(int argc, char **argv)
+{
   if( strstr(argv[0],"pwdhelper")!=0 )
   {
     static char buff[128];
@@ -27,8 +34,8 @@ void checkForPasswdHelper(int argc, char **argv)
     fprintf(stdout,"%s",buff);
     exit(0);
   }
-#endif
 }
+#endif
 
 int getAdminRights(int argc, char* argv[],char *password) {
     int result = -1;
@@ -38,7 +45,7 @@ int getAdminRights(int argc, char* argv[],char *password) {
     else if( argc==1 )
     {
 #if defined(Q_OS_WIN32)
-
+        printf("%s",password);
         HANDLE child = ShellExecuteA(NULL, "runas", argv[0], "-admin", NULL, SW_SHOWNORMAL);
         if (child) {
           // User accepted UAC prompt (gave permission).
