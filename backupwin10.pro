@@ -48,7 +48,8 @@ macx {
 OTHER_FILES += distribute/welcome.html \
     ressources/help.html \
     ReleaseNotes.txt \
-    ressources/backup.rc
+    ressources/backup.rc \
+    deploywin10.cmd
 
 DISTFILES += \
     .gitignore \
