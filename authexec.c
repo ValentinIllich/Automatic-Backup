@@ -14,7 +14,6 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-#if defined(Q_OS_WIN)
 void checkForPasswdHelper(int argc, char **argv)
 {
 #if defined(Q_OS_MAC)
@@ -34,7 +33,6 @@ void checkForPasswdHelper(int argc, char **argv)
     }
 #endif
 }
-#endif
 
 int getAdminRights(int argc, char* argv[], char *password)
 {
