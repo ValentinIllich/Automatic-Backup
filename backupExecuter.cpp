@@ -2359,7 +2359,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
 QString backupExecuter::getAutobackupCheckFile(QString const &suffix)
 {
-  return getSrc()+"/"+getTitle().remove(" ") + suffix + ".vibup";
+  return destination+"/"+getTitle().remove(" ") + suffix + ".vibup";
 }
 
 bool backupExecuter::isAutoBackupCreatedFile(const QString &file)
