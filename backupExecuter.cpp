@@ -16,7 +16,7 @@
 #include <qpushbutton.h>
 #include <qlineedit.h>
 #include <qprogressbar.h>
-#include <qfileDialog.h>
+#include <qfiledialog.h>
 #include <qmessagebox.h>
 #include <qbuffer.h>
 //#include <qvbox.h>
@@ -517,8 +517,8 @@ void backupExecuter::findDirectories( QString const &start )
     m_engine->setProgressText("Finding Directories...");
     m_engine->setProgressMaximum(m_dirs.size());
 
-    directories.append(source);
-    findDirectories(source);
+    directories.append(source+"/");
+    findDirectories(source+"/");
   }
   else
   {
@@ -548,7 +548,7 @@ void backupExecuter::findDirectories( QString const &start )
       QString actual = fi.fileName();
       if( actual!="." && actual!=".." )
       {
-        QString path = start+"/"+actual;
+        QString path = start+actual;
         bool passed = true;
         bool stepinto = true;
 
@@ -589,7 +589,7 @@ void backupExecuter::findDirectories( QString const &start )
           directories.append(path);
         }
         if( stepinto )
-          findDirectories(path);
+          findDirectories(path+"/");
       }
       ++it;
     }
@@ -1043,6 +1043,7 @@ void backupExecuter::selSource()
   if( !path.isEmpty() )
   {
     path.replace("\\","/");
+    if( path.endsWith("/") ) path=path.left(path.length()-1);
     sourceLab->setText(source = path);
   }
 }
@@ -1058,6 +1059,7 @@ void backupExecuter::selDest()
   if( !path.isEmpty() )
   {
     path.replace("\\","/");
+    if( path.endsWith("/") ) path=path.left(path.length()-1);
     destLab->setText(destination = path);
   }
 }
