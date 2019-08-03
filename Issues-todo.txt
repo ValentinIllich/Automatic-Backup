@@ -1,7 +1,10 @@
-﻿Automatic Backup Release Notes (C) Valentin Illich 2011-2019
+Automatic Backup Release Notes (C) Valentin Illich 2011-2019
 
 Bugs:
 =====
+
+DONE Windows: Probleme mit Root-Verzeichnis als Quelle (Backslash fehlt)
+DONE autocheck, tocsummary und chksummary auf Zielvrzeichnis verwalten
 
 DONE Crash wenn während clenup-scan Cancel gedrückt wird?
 DONE processEventsAndWait() nach backupEngine verschieben ?
@@ -20,5 +23,7 @@ DONE Bei erneuter Analyse auf anderem Verzeichnis Treeview leeren!
 Release 1.22:
 =============
 
+- Zielverzecihnis nur anlegen wenn nicht leer
+- wenn Zielverzeichnis angelegt werden muss, keine Dateien mehr prüfen
 - properties konsequent in Struktur halten
 - Compress entfernen, dafür NAS: kein Verify
