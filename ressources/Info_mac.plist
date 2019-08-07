@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleShortVersionString</key>
-  <string>1.21.0-rc-410</string>
+  <string>1.21.0.410</string>
 	<key>CFBundleVersion</key>
   <string>1.21.0</string>
 	<key>CFBundleIconFile</key>

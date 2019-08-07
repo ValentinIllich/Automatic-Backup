@@ -315,7 +315,7 @@ void backupSplash::shutDown()
 void backupSplash::updateTooltip()
 {
   QString nextTime = QDateTime::currentDateTime().addSecs(3600).toString();
-  setToolTip(QString("Automatic Backup V")+BACKUP_VERSION+" running.\nNext schedule on "+nextTime);
+  setToolTip(QString("Automatic Backup V")+BACKUP_STR_VERSION+" running.\nNext schedule on "+nextTime);
 }
 
 bool backupSplash::keepRunning()

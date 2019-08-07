@@ -238,7 +238,7 @@ void backupExecuter::changeVisibility()
     {
       actualfile->hide();
       cancelButt->hide();
-      m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_VERSION+" running.\nProcessing Configuration '"+getTitle()+"'");
+      m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_STR_VERSION+" running.\nProcessing Configuration '"+getTitle()+"'");
     }
     else
     {
@@ -612,7 +612,7 @@ void backupExecuter::analyzeDirectories()
     checkTimeout();
 
     if( m_isBatch )
-        m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_VERSION+" running.\nProcessing Directory '"+*it+"'");
+        m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_STR_VERSION+" running.\nProcessing Directory '"+*it+"'");
     m_engine->setFileNameText(*it);
     m_engine->setProgressValue(i);
     if( getBackground() )
@@ -917,7 +917,7 @@ void backupExecuter::copySelectedFiles()
             time = time.addSecs((int)((double)(kbytes_to_copy-copiedk)/(ratio)+0.5));
             setWindowTitle(time.toString("hh:mm:ss") +" remaining");
             if( m_isBatch )
-              m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_VERSION+" running "+getTitle()+".\nProcessing File '"+*it2+"'...\n");
+              m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_STR_VERSION+" running "+getTitle()+".\nProcessing File '"+*it2+"'...\n");
             m_waiter.Sleep(20);
           }
 

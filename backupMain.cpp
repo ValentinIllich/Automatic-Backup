@@ -170,9 +170,9 @@ backupMain::backupMain(bool runsAsAdmin, QString const &configfile)
   setupUi(this);
 
   if( runsAsAdmin )
-    setWindowTitle(windowTitle()+" with Administrator Rights "+BACKUP_VERSION);
+    setWindowTitle(windowTitle()+" with Administrator Rights "+BACKUP_STR_VERSION);
   else
-    setWindowTitle(windowTitle()+" "+BACKUP_VERSION);
+    setWindowTitle(windowTitle()+" "+BACKUP_STR_VERSION);
 
   config.setFileName( configfile.isEmpty() ? path : configfile );
 
@@ -230,7 +230,8 @@ void backupMain::aboutButton()
   QAction *result = menu.exec(QCursor::pos());
   if( result==about )
   {
-    QMessageBox::about(this,"about backup",windowTitle()+"\n(C) 2009-2010 Valentin Illich\n\nThis program is distributed under the GPL license.\nPlease refer to www.VISolutions.com");
+    QMessageBox::about(this,"about backup",windowTitle()+"."+BACKUP_STR_BUILDNO+BACKUP_STR_ABOUTINFO
+                       +"\n\nThis program is distributed under the GPL license.\nPlease refer to www.VISolutions.com");
   }
   if( result==help )
   {

@@ -1,16 +1,18 @@
 // program_strings.h
 #ifndef _STRINGS_H_
 #define _STRINGS_H_
- 
+
+#include "version.inc"
+
 #define _STR_COMPANY_NAME       "VI Solutions"
 #define _STR_PRODUCT_NAME       "Automatic Backup"
-#define _PRODUCT_VERSION        1,21,0,0
-#define _STR_PRODUCT_VERSION    "1.21"
+#define _PRODUCT_VERSION        BACKUP_VERSION,BACKUP_BUILDNO
+#define _STR_PRODUCT_VERSION    BACKUP_STR_VERSION
 #define _STR_FILE_DESCRIPTION   "Automatic Backup of Selected Paths"
-#define _FILE_VERSION           1,21,410,0
-#define _STR_FILE_VERSION       "1,21,410,0"
+#define _FILE_VERSION           BACKUP_VERSION,BACKUP_BUILDNO
+#define _STR_FILE_VERSION       BACKUP_STR_VERSION "," BACKUP_STR_BUILDNO
 #define _STR_INTERNAL_NAME      "Automatic Backup"
-#define _STR_LEGAL_COPYRIGHT    "Copyright © 2019 (GPL)"
+#define _STR_LEGAL_COPYRIGHT    "Copyright (C) 2019 (GPL)"
 #define _STR_LEGAL_TRADE_1      "All rights reserved or something"
 #define _STR_LEGAL_TRADE_2      _STR_LEGAL_TRADE_1
 #define _STR_ORIGINAL_FILE_NAME "backup.exe"

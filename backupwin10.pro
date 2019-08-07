@@ -53,4 +53,5 @@ OTHER_FILES += distribute/welcome.html \
 
 DISTFILES += \
     .gitignore \
-    Issues-todo.txt
+    Issues-todo.txt \
+    ressources/version.inc
