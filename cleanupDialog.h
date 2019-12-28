@@ -5,7 +5,7 @@
 #include "backupdirstruct.h"
 
 #include <QDialog>
-#include <qtreewidgetitem>
+#include <QTreeWidgetItem>
 
 #include <qmap.h>
 
@@ -19,7 +19,7 @@ class cleanupDialog : public QDialog, public IBackupOperationsInterface
     Q_OBJECT
 
 public:
-    cleanupDialog(QWidget *parent = 0);
+    cleanupDialog(QWidget *parent = nullptr);
     virtual ~cleanupDialog();
 
     void setPaths(QString const &srcpath,QString const &dstpath);

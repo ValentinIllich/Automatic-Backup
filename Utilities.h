@@ -2,11 +2,11 @@
 #define UTILITIES_H
 
 #include <qstring.h>
-#include <QDir.h>
+#include <qdir.h>
 #include <qfile.h>
 #include <qprocess.h>
 #include <qplaintextedit.h>
-#include <QMessageBox.h>
+#include <qmessagebox.h>
 #include <qapplication.h>
 
 extern void setTimestamps( QString const &filename, QDateTime const &modified );

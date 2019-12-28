@@ -9,7 +9,7 @@
 #include "backupSplash.h"
 #include "backupMain.h"
 #include "backupExecuter.h"
-#include "utilities.h"
+#include "Utilities.h"
 
 extern "C" void checkForPasswdHelper(int argc, char **argv);
 

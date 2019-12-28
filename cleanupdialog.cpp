@@ -9,7 +9,7 @@
 #include <QMenu>
 #include <QProcess>
 #include <QLineEdit>
-#include <QcalendarWidget>
+#include <QCalendarWidget>
 #include <QMessageBox>
 #include <QFontMetrics>
 

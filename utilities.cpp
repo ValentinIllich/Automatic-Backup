@@ -1,4 +1,4 @@
-#include "utilities.h"
+#include "Utilities.h"
 
 #include <qfileinfo.h>
 #include <qdatetime.h>

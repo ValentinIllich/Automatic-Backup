@@ -8,7 +8,7 @@
 #include "backupSplash.h"
 #include "backupMain.h"
 #include "backupExecuter.h"
-#include "utilities.h"
+#include "Utilities.h"
 
 extern "C" int getAdminRights(int argc, char* argv[],char *password);
 

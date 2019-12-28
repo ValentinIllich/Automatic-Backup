@@ -54,4 +54,5 @@ OTHER_FILES += distribute/welcome.html \
     ressources/Info_mac.plist
 
 DISTFILES += \
-    Issues-todo.txt
+    Issues-todo.txt \
+    ressources/version.inc
