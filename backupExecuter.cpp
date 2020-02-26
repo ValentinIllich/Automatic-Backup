@@ -448,6 +448,9 @@ void backupExecuter::startingAction()
 }
 void backupExecuter::stoppingAction()
 {
+  QString str = "================ backup '" + getTitle() + "' ending on " + QDateTime::currentDateTime().toString() + " ================\r\n";
+  stream << str;
+
   if( verboseExecute->isChecked() || verboseMaintenance->isChecked() )
   {
     buff.close();
@@ -484,15 +487,46 @@ void backupExecuter::stoppingAction()
 
   if( m_isBatch ) return;
 
-  QString str = "================ backup '" + getTitle() + "' ending on " + QDateTime::currentDateTime().toString() + " ================\r\n";
-  stream << str;
-
   stream.setDevice(0);
 
   m_running=false;
   m_engine->setProgressText("");
   m_engine->setFileNameText("");
   cancelButt->setText("OK");
+}
+
+bool backupExecuter::updateAutoBackupTime()
+{
+  stream << "updating backup time of automatic item '"+getTitle()+"'\r\n";
+  QFile tst(getAutobackupCheckFile(""));
+  bool wasFound = tst.exists();
+  if( tst.open(QIODevice::WriteOnly) )
+  {
+    QTextStream stream(&tst);
+    stream << QDateTime::currentDateTime().toString("yyyyMMddhhmmss");
+    tst.close();
+  }
+  else
+    stream << "++++ couldn't create automatic test item\r\n";
+
+  return wasFound;
+}
+
+bool backupExecuter::updateAutoVerifyTime()
+{
+  stream << "updating verify time of automatic item '"+getTitle()+"'\r\n";
+  QFile tst(getAutobackupCheckFile("_chk"));
+  bool wasFound = tst.exists();
+  if( tst.open(QIODevice::WriteOnly) )
+  {
+    QTextStream stream(&tst);
+    stream << QDateTime::currentDateTime().toString("yyyyMMddhhmmss");
+    tst.close();
+  }
+  else
+    stream << "++++ couldn't create automatic test item\r\n";
+
+  return wasFound;
 }
 
 void backupExecuter::checkTimeout()
@@ -737,44 +771,21 @@ QString backupExecuter::ensureDirExists( QString const &fullPath, QString const 
   QString dstpath = relpath.prepend(dstBase);
 
   QDir dst(dstpath);
-  QStringList relPaths;
-  while( !dst.exists() )
+  if( !dst.exists() )
   {
-    //printf("%s not found in destination, so creating it\n",dst.absPath().toLatin1());
     if( verboseMaintenance->isChecked() )
       stream << dst.absolutePath() << " not found in destination, would be created\r\n";
     else
+    {
       stream << dst.absolutePath() << " not found in destination, so creating it\r\n";
-    relPaths.append(dst.dirName());
-    QString fullname = dst.absolutePath();
-    int pos = fullname.lastIndexOf(dst.dirName());
-    int len = dst.dirName().length();
-    QString news = dst.absolutePath().remove(pos,len);
-    dst.setPath( news );
-  }
-  while( !relPaths.isEmpty() )
-  {
-    QString newdir = relPaths.last();
-    if( verboseMaintenance->isChecked() )
-    {
-      if( showTreeStruct->isChecked() )
-        stream << dst.absolutePath() << " (would be creating "+newdir+")\r\n";
-    }
-    else
-    {
-      if( dst.mkdir(newdir) )
-      {
-        dst.cd(newdir);
-        m_dirsCreated = true;
-      }
-      else
+
+      if( !dst.mkpath(dstpath) )
       {
         m_error = true;
-        QString str = "++++ can't create directory '"+dst.absolutePath()+newdir+"'!\r\n";
+        QString str = "++++ can't create directory '"+dst.absolutePath()+"'!\r\n";
         stream << str; errstream.append(str);
       }
     }
-    relPaths.removeAll(newdir);
   }
 
   return dstpath;
@@ -1086,16 +1097,8 @@ void backupExecuter::threadedCopyOperation()
 
   if( m_running /*&& m_isBatch*/ )
   {
-    stream << "updating backup time of automatic item '"+getTitle()+"'\r\n";
-    QFile tst(getAutobackupCheckFile(""));
-    if( tst.open(QIODevice::WriteOnly) )
-    {
-      QTextStream stream(&tst);
-      stream << QDateTime::currentDateTime().toString("yyyyMMddhhmmss");
-      tst.close();
-    }
-    else
-      stream << "++++ couldn't create automatic test item\r\n";
+    if( !updateAutoBackupTime() )
+      updateAutoVerifyTime();
   }
 }
 
@@ -1105,16 +1108,7 @@ void backupExecuter::threadedVerifyOperation()
 
   if( m_running /*&& m_isBatch*/ )
   {
-    stream << "updating verify time of automatic item '"+getTitle()+"'\r\n";
-    QFile tst(getAutobackupCheckFile("_chk"));
-    if( tst.open(QIODevice::WriteOnly) )
-    {
-      QTextStream stream(&tst);
-      stream << QDateTime::currentDateTime().toString("yyyyMMddhhmmss");
-      tst.close();
-    }
-    else
-      stream << "++++ couldn't create automatic test item\r\n";
+    updateAutoVerifyTime();
   }
 
   saveData();
@@ -2186,12 +2180,13 @@ void backupExecuter::verifyBackup(QString const &startPath)
           //QString srcfile = source + dstFile.mid(destination.length());
 
           QDateTime scanTime;
-          bool willVerify = true;
+          bool willVerify = !isAutoBackupCreatedFile(filename);
 
           // check if this file has an own verify interval
-          if( m_closeAfterExecute && crcSummary.contains(verifyFile) )
+          if( willVerify && crcSummary.contains(verifyFile) )
           {
             scanTime = QDateTime::fromTime_t(crcSummary[verifyFile].lastScan);
+#if 0
             /*int verifydays = 30;
             switch( getInterval() )
             {
@@ -2227,6 +2222,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
               if( getBackground() )
                 m_waiter.Sleep(20);
             }
+#endif
           }
 
           if( willVerify )
@@ -2347,7 +2343,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
           else
           {
             if( verboseMaintenance->isChecked() || verboseExecute->isChecked() )
-              stream << "--- skipping verify on '" << verifyFile << " , scanned on " << scanTime.toString() << "\r\n";
+              stream << "--- skipping verify on '" << verifyFile << " , last scanned on " << scanTime.toString() << "\r\n";
           }
         }
       }

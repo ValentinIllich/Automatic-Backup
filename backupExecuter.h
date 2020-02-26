@@ -151,6 +151,10 @@ private:
   void changeVisibility();
   void startingAction();
   void stoppingAction();
+
+  bool updateAutoBackupTime();
+  bool updateAutoVerifyTime();
+
   void analyzeDirectories();
   QString ensureDirExists( QString const &fullPath, QString const &srcBase, QString const &dstBase );
   void copySelectedFiles();

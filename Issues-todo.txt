@@ -3,8 +3,8 @@ Automatic Backup Release Notes (C) Valentin Illich 2011-2019
 Bugs:
 =====
 
-- auto verify zurücksetzen wenn manuell ausgelöst
-- verify muss .vibup Dateien ignorieren
+DONE auto verify zurücksetzen wenn manuell ausgelöst
+DONE verify muss .vibup Dateien ignorieren
 
 DONE Windows: Probleme mit Root-Verzeichnis als Quelle (Backslash fehlt)
 DONE autocheck, tocsummary und chksummary auf Zielvrzeichnis verwalten
