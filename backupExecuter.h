@@ -22,7 +22,7 @@ typedef QVector<quint16> crcSums;
 
 struct backupConfigData
 {
-  QString			m_sText;
+  QString			m_sName;
   QString			m_sSrc;
   QString			m_sDst;
   QString			m_sFlt;
@@ -30,7 +30,7 @@ struct backupConfigData
   int				m_iInterval;
   bool			m_bKeep;
   int				m_iVersions;
-  bool			m_bzlib;
+  bool			m_bVerify;
   bool      m_bsuspend;
   int       m_iTimeout;
   //bool			m_bexecuted;
@@ -46,10 +46,7 @@ class backupExecuter : public QDialog, public Ui_backupwindow, public IBackupOpe
 {
   Q_OBJECT
 public:
-  backupExecuter( QString const &name, QString const &src, QString const &dst,
-                  QString const &flt, bool automatic, int repeat,
-                  bool keepVers, int versions, bool zlib,
-                  bool suspend, int breakafter);
+  backupExecuter( backupConfigData &configData );
   virtual ~backupExecuter();
 
   void startBatchProcessing();
@@ -171,9 +168,7 @@ private:
 
   void checkTimeout();
 
-  QString source;
-  QString destination;
-  QString filter;
+  backupConfigData m_config;
 
   QStringList directories;
   QStringList filelist;
@@ -190,7 +185,6 @@ private:
   QString errstream;
 
   /* is set when backup is executed automatically */
-  bool m_autoStart;
   bool m_isBatch;
   bool m_running;
   bool m_error;

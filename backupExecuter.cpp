@@ -103,15 +103,9 @@ private:
 static waitHelper m_waiter;
 static quint32 crcDataVersion;
 
-backupExecuter::backupExecuter(QString const &name, QString const &src, QString const &dst,
-                               QString const &flt, bool automatic,int repeat,
-                               bool keepVers,int versions,bool zlib,
-                               bool suspend, int breakafter)
-: source(src)
-, destination(dst)
-, filter(flt)
+backupExecuter::backupExecuter(backupConfigData &configData)
+: m_config(configData)
 , log(NULL)
-, m_autoStart(automatic)
 , m_isBatch(false)
 , m_running(false)
 , m_error(false)
@@ -133,25 +127,25 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
 {
   setObjectName("backupExecuter");
   setupUi(this);
-  nameText->setText(name);
-  sourceLab->setText(src);
-  destLab->setText(dst);
-  filterDesc->setText(flt);
-  autoExec->setChecked(automatic);
-  interval->setCurrentIndex(repeat);
-  keepCopy->setChecked(keepVers);
-  compress->setChecked(zlib);
-  suspending->setChecked(suspend);
-  timeout->setCurrentIndex(breakafter);
-  versionsStr->setText(QString::number(versions));
+  nameText->setText(m_config.m_sName);
+  sourceLab->setText(m_config.m_sSrc);
+  destLab->setText(m_config.m_sDst);
+  filterDesc->setText(m_config.m_sFlt);
+  autoExec->setChecked(m_config.m_bAuto);
+  interval->setCurrentIndex(m_config.m_iInterval);
+  keepCopy->setChecked(m_config.m_bKeep);
+  compress->setChecked(m_config.m_bVerify);
+  suspending->setChecked(m_config.m_bsuspend);
+  timeout->setCurrentIndex(m_config.m_iTimeout);
+  versionsStr->setText(QString::number(m_config.m_iVersions));
   dateTime->setDate(QDate::currentDate());
   resize(width(),200);
 
-  setWindowTitle("Backup Configuration '"+name+"'");
+  setWindowTitle("Backup Configuration '"+m_config.m_sName+"'");
 
   connect(qApp->desktop(),SIGNAL(resized(int)),this,SLOT(screenResizedSlot(int)));
 
-  QString summaryFile = backupDirstruct::getChecksumSummaryFile(destination);
+  QString summaryFile = backupDirstruct::getChecksumSummaryFile(m_config.m_sDst);
   QFile crcfile(summaryFile);
   if( QFile::exists(summaryFile) )
   {
@@ -168,7 +162,7 @@ backupExecuter::backupExecuter(QString const &name, QString const &src, QString 
   else
     lastVerifiedK = 0;
 
-  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(destination);
+  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_config.m_sDst);
   m_dirs.readFromFile(tocSummaryFile);
 
   startTimer(100);
@@ -208,7 +202,7 @@ void backupExecuter::saveData()
 {
   if( checksumsChanged )
   {
-    QString summaryFile = backupDirstruct::getChecksumSummaryFile(destination);
+    QString summaryFile = backupDirstruct::getChecksumSummaryFile(m_config.m_sDst);
     QFile crcfile(summaryFile);
     crcfile.open(QIODevice::WriteOnly | QIODevice::Truncate);
     QDataStream str(&crcfile);
@@ -221,7 +215,7 @@ void backupExecuter::saveData()
 
   if( m_dirs.tocHasChanged() )
   {
-    QString tocSummaryFile = backupDirstruct::getTocSummaryFile(destination);
+    QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_config.m_sDst);
     m_dirs.writeToFile(tocSummaryFile);
   }
 }
@@ -551,8 +545,8 @@ void backupExecuter::findDirectories( QString const &start )
     m_engine->setProgressText("Finding Directories...");
     m_engine->setProgressMaximum(m_dirs.size());
 
-    directories.append(source+"/");
-    findDirectories(source+"/");
+    directories.append(m_config.m_sSrc+"/");
+    findDirectories(m_config.m_sSrc+"/");
   }
   else
   {
@@ -653,7 +647,7 @@ void backupExecuter::analyzeDirectories()
       m_waiter.Sleep(20);
 
     QString srcpath = *it;
-    QString dstpath = ensureDirExists(srcpath,source,destination);
+    QString dstpath = ensureDirExists(srcpath,m_config.m_sSrc,m_config.m_sDst);
 
     QDir dir(srcpath);
 
@@ -717,7 +711,7 @@ void backupExecuter::analyzeDirectories()
           qint64 modify = srcFile.lastModified().toMSecsSinceEpoch();
 
           m_engine->setFileNameText(filePath+"/"+fileName);
-          QString relPath = filePath.mid(source.length()+1);
+          QString relPath = filePath.mid(m_config.m_sSrc.length()+1);
           if( m_dirs.exists(relPath,fileName) )
           {
             qint64 lastm = m_dirs.lastModified(relPath,fileName);
@@ -741,7 +735,7 @@ void backupExecuter::analyzeDirectories()
       if( copy )
       {
         qint64 filesize = srcFile.size();
-        QString relName = fullName.mid(source.length());
+        QString relName = fullName.mid(m_config.m_sSrc.length());
         filelist.append(relName);
         files_to_copy++;
         kbytes_to_copy += (filesize/1024);
@@ -825,12 +819,12 @@ void backupExecuter::copySelectedFiles()
     m_engine->setProgressValue(copiedk);
 
     QString relName = *it2;
-    srcFile = source + relName;
-    dstFile = destination + (prefix.isEmpty() ? relName : backupDirstruct::addFilenamePrefix(relName,prefix));
+    srcFile = m_config.m_sSrc + relName;
+    dstFile = m_config.m_sDst + (prefix.isEmpty() ? relName : backupDirstruct::addFilenamePrefix(relName,prefix));
 
     QFileInfo srcInfo(srcFile);
     QString filePath = srcInfo.dir().absolutePath();
-    QString relPath = filePath.mid(source.length()+1);
+    QString relPath = filePath.mid(m_config.m_sSrc.length()+1);
     QString fileName = srcInfo.fileName();
     qint64 modify = srcInfo.lastModified().toMSecsSinceEpoch();
 
@@ -842,7 +836,7 @@ void backupExecuter::copySelectedFiles()
       QStringList::iterator it = toBeDeleted.begin();
       while (it!=toBeDeleted.end())
       {
-        QString fullName = destination + "/" + *it;
+        QString fullName = m_config.m_sDst + "/" + *it;
         QFile::remove(fullName);
         ++it;
       }
@@ -895,7 +889,7 @@ void backupExecuter::copySelectedFiles()
               stream << str; errstream.append(str);
               if( getAuto() )
               {
-                fullMessage msg(this,destination);
+                fullMessage msg(this,m_config.m_sDst);
                 msg.exec();
               }
               break;
@@ -911,7 +905,7 @@ void backupExecuter::copySelectedFiles()
               stream << str; errstream.append(str);
               if( getAuto() )
               {
-                fullMessage msg(this,destination);
+                fullMessage msg(this,m_config.m_sDst);
                 msg.exec();
               }
               break;
@@ -984,28 +978,27 @@ void backupExecuter::copySelectedFiles()
 
 QString backupExecuter::getTitle()
 {
-  return nameText->text();
+  return m_config.m_sName;
 }
 QString backupExecuter::getSrc()
 {
-  return source;
+  return m_config.m_sSrc;
 }
 QString backupExecuter::getDst()
 {
-  return destination;
+  return m_config.m_sDst;
 }
 QString backupExecuter::getFlt()
 {
-  filter = filterDesc->text();
-  return filter;
+  return m_config.m_sFlt;
 }
 bool backupExecuter::getAuto()
 {
-  return m_autoStart;
+  return m_config.m_bAuto;
 }
 int backupExecuter::getInterval()
 {
-  return interval->currentIndex();
+  return m_config.m_iInterval;
 }
 bool backupExecuter::getBackground()
 {
@@ -1013,23 +1006,23 @@ bool backupExecuter::getBackground()
 }
 bool backupExecuter::getCompress()
 {
-  return compress->isChecked();
+  return m_config.m_bVerify;
 }
 bool backupExecuter::getKeep()
 {
-  return keepCopy->isChecked();
+  return m_config.m_bKeep;
 }
 int	backupExecuter::getVersions()
 {
-  return versionsStr->text().toInt();
+  return m_config.m_iVersions;
 }
 bool backupExecuter::getSuspend()
 {
-  return suspending->isChecked();
+  return m_config.m_bsuspend;
 }
 int backupExecuter::getTimeout()
 {
-  return timeout->currentIndex();
+  return m_config.m_iTimeout;
 }
 
 void backupExecuter::setCloseAfterExecute(bool doIt)
@@ -1048,14 +1041,14 @@ void backupExecuter::selSource()
   this,
   //"get existing directory",
   "Choose a directory",
-  source
+  m_config.m_sSrc
   );
 
   if( !path.isEmpty() )
   {
     path.replace("\\","/");
     if( path.endsWith("/") ) path=path.left(path.length()-1);
-    sourceLab->setText(source = path);
+    sourceLab->setText(m_config.m_sSrc = path);
   }
 }
 void backupExecuter::selDest()
@@ -1064,22 +1057,22 @@ void backupExecuter::selDest()
   this,
   //"get existing directory",
   "Choose a directory",
-  destination
+  m_config.m_sDst
   );
 
   if( !path.isEmpty() )
   {
     path.replace("\\","/");
     if( path.endsWith("/") ) path=path.left(path.length()-1);
-    destLab->setText(destination = path);
+    destLab->setText(m_config.m_sDst = path);
   }
 }
 void backupExecuter::selAuto()
 {
   if( autoExec->isChecked() )
-    m_autoStart = true;
+    m_config.m_bAuto = true;
   else
-    m_autoStart = false;
+    m_config.m_bAuto = false;
 }
 
 void backupExecuter::threadedCopyOperation()
@@ -1134,23 +1127,23 @@ void backupExecuter::doIt(bool runningInBackground)
 
   m_background = runningInBackground || backgroundExec->isChecked();
 
-  QFile dir1(destination);
+  QFile dir1(m_config.m_sDst);
   if( !dir1.exists() )
   {
-    mediaMessage msg(this,destination);
+    mediaMessage msg(this,m_config.m_sDst);
     msg.exec();
     if( msg.result()!=Accepted )
       return;
-    destination = msg.getPath();
+    m_config.m_sDst = msg.getPath();
   }
-  QFile dir2(source);
+  QFile dir2(m_config.m_sSrc);
   if( !dir2.exists() )
   {
-    mediaMessage msg(this,source);
+    mediaMessage msg(this,m_config.m_sSrc);
     msg.exec();
     if( msg.result()!=Accepted )
       return;
-    source = msg.getPath();
+    m_config.m_sSrc = msg.getPath();
   }
 
   changeVisibility();
@@ -1253,7 +1246,7 @@ void backupExecuter::help()
 
 void backupExecuter::restoreDir()
 {
-  QString path = QFileDialog::getExistingDirectory(0,"Restore directory...",destination);
+  QString path = QFileDialog::getExistingDirectory(0,"Restore directory...",m_config.m_sDst);
   if( !path.isEmpty() )
   {
     startingAction();
@@ -1298,7 +1291,7 @@ void backupExecuter::restoreDirectory(QString const &startPath)
   if( verboseMaintenance->isChecked() )
     stream << "examining directory " << startPath << "\r\n";
 
-  ensureDirExists(startPath,destination,source);
+  ensureDirExists(startPath,m_config.m_sDst,m_config.m_sSrc);
 
   m_engine->setFileNameText(startPath);
   //	progressBar->setValue(scanned++);
@@ -1317,9 +1310,9 @@ void backupExecuter::restoreDirectory(QString const &startPath)
       }
       else
       {
-        QString relfile = srcfile.mid(destination.length());
+        QString relfile = srcfile.mid(m_config.m_sDst.length());
         relfile = backupDirstruct::cutFilenamePrefix(relfile);
-        QString destfile = source+relfile;
+        QString destfile = m_config.m_sSrc+relfile;
         if( verboseMaintenance->isChecked() )
           stream << "---> " << "would restore file " << srcfile
           << " to file " << destfile << "\r\n";
@@ -1384,7 +1377,7 @@ void backupExecuter::cleanup()
 void backupExecuter::deletePath(QString const &absolutePath,QString const &indent)
 {
   QString destinationPath = absolutePath;
-  if( destinationPath.startsWith(source) ) destinationPath = destination + "/" + destinationPath.mid(source.length()+1);
+  if( destinationPath.startsWith(m_config.m_sSrc) ) destinationPath = m_config.m_sDst + "/" + destinationPath.mid(m_config.m_sSrc.length()+1);
 
   QFileInfo fi(destinationPath);
 
@@ -1458,7 +1451,7 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
         QString str = "++++ can't remove file '"+destinationPath+"' file is write protected!\r\n";
         stream << str; errstream.append(str);
       }
-      QString relPath = fi.dir().path().mid(destination.length()+1);
+      QString relPath = fi.dir().path().mid(m_config.m_sDst.length()+1);
       QString filename = fi.fileName();
       m_toBeRemovedFromToc.append(qMakePair(relPath,filename));
     }
@@ -1588,7 +1581,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     level = 0;
     m_engine->setProgressMaximum(m_dirs.size());
     if( m_dirs.size()==0 )
-      scanDirectory(date,destination);
+      scanDirectory(date,m_config.m_sDst);
     else
     {
       m_toBeRemovedFromToc.clear();
@@ -1601,7 +1594,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
         checkTimeout();
 
-        QString path = source + "/" + it1.key();
+        QString path = m_config.m_sSrc + "/" + it1.key();
         tocDataEntryMap::iterator it2 = it1.value().begin();
         m_engine->setFileNameText(path);
         m_engine->setProgressValue(scanned++);
@@ -1683,7 +1676,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
           stream << "+- ";
         indent.append("|  ");
       }
-      QString relPath = actPath.mid(destination.length()+1);
+      QString relPath = actPath.mid(m_config.m_sDst.length()+1);
       stream << "." << relPath << "\r\n";
     }
 
@@ -1719,7 +1712,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
             QString filename = fi.fileName();
             filename = backupDirstruct::cutFilenamePrefix(filename);
 
-            QString srcfile = source + (fi.absolutePath()+"/"+filename).mid(destination.length());
+            QString srcfile = m_config.m_sSrc + (fi.absolutePath()+"/"+filename).mid(m_config.m_sDst.length());
 
             if( filemodified.daysTo(date)>0 )
             {
@@ -1868,9 +1861,9 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
       totalcount = 0;
       filemap.clear();
       if( operatingOnSource )
-        findDuplicates(source,operatingOnSource);
+        findDuplicates(m_config.m_sSrc,operatingOnSource);
       else
-        findDuplicates(destination,operatingOnSource);
+        findDuplicates(m_config.m_sDst,operatingOnSource);
       if( verboseMaintenance->isChecked() || verboseExecute->isChecked() )
         stream << "====> " << totalcount << " duplicate files with " << totaldirkbytes << " Kbytes found\r\n";
       else
@@ -1917,7 +1910,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             QString filename = fi.fileName();
             filename = backupDirstruct::cutFilenamePrefix(filename);
 
-            QString srcfile = source + (fi.absolutePath()+"/"+filename).mid(destination.length());
+            QString srcfile = m_config.m_sSrc + (fi.absolutePath()+"/"+filename).mid(m_config.m_sDst.length());
             //stream << "source file is " << srcfile << " \r\n";
 
             int size = 0;
@@ -2008,7 +2001,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
       tocDataEntryMap::iterator it2 = it1.value().begin();
 
       QString relpath = it1.key();
-      m_engine->setFileNameText(destination + "/" + relpath);
+      m_engine->setFileNameText(m_config.m_sDst + "/" + relpath);
       m_engine->setProgressValue(scanned++);
 
       while( m_running && (it2!=it1.value().end()) )
@@ -2034,7 +2027,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
           }
           else if( showTreeStruct->isChecked() )
           {
-            sourceFileRemoved = destination + "/" + relpath+"/"+it2.key();
+            sourceFileRemoved = m_config.m_sDst + "/" + relpath+"/"+it2.key();
             mappedFile = listPath+"/"+filename;
             stream << ""/*indent*/ << "     " << "  found file " << sourceFileRemoved
             << " but sizes are different (" << QString::number(listSize)
@@ -2070,7 +2063,7 @@ void backupExecuter::deleteFilesFromDestination(const QList<QPair<QString, QStri
   {
     QString relPath = (*it3).first;
     QString file = (*it3).second;
-    QString srcPath = source + "/" + (relPath=="." ? "" : relPath + "/") + file;
+    QString srcPath = m_config.m_sSrc + "/" + (relPath=="." ? "" : relPath + "/") + file;
     bool sourceFileFound = false;
     unsigned long historykbytes = 0;
 
@@ -2082,7 +2075,7 @@ void backupExecuter::deleteFilesFromDestination(const QList<QPair<QString, QStri
       tocDataEntryList::iterator it4 = entries.begin();
       while( it4!=entries.end() )
       {
-        srcPath = source + "/" + (relPath=="." ? "" : relPath + "/") + (*it4).m_prefix + file;
+        srcPath = m_config.m_sSrc + "/" + (relPath=="." ? "" : relPath + "/") + (*it4).m_prefix + file;
 
         if( QFile::exists(srcPath) )
           sourceFileFound = true;
@@ -2107,9 +2100,9 @@ void backupExecuter::deleteFilesFromDestination(const QList<QPair<QString, QStri
     QStringList::iterator it = toBeDeleted.begin();
     while (it!=toBeDeleted.end())
     {
-      if( !QFile::exists(source + "/" + *it) )
+      if( !QFile::exists(m_config.m_sSrc + "/" + *it) )
       {
-        QString fullName = destination + "/" + *it;
+        QString fullName = m_config.m_sDst + "/" + *it;
         QFile::remove(fullName);
       }
       ++it;
@@ -2132,7 +2125,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
     m_engine->setProgressMaximum(lastVerifiedK);
     scanned = 0;
     verifiedK = 0;
-    verifyBackup(destination);
+    verifyBackup(m_config.m_sDst);
     m_engine->setProgressValue(0);
     if ( m_running )
       lastVerifiedK = verifiedK;
@@ -2355,7 +2348,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
 QString backupExecuter::getAutobackupCheckFile(QString const &suffix)
 {
-  return destination+"/"+getTitle().remove(" ") + suffix + ".vibup";
+  return m_config.m_sDst+"/"+getTitle().remove(" ") + suffix + ".vibup";
 }
 
 bool backupExecuter::isAutoBackupCreatedFile(const QString &file)
