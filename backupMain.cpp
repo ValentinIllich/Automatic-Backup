@@ -21,26 +21,11 @@
 class backupListItem : public QListWidgetItem
 {
 public:
-  backupListItem( QListWidget *listbox, QString const &name,
-                  QString const &src, QString const &dst, QString const &flt,
-                  bool autoStart,int interval,bool keep,int versions,bool zlib,
-                  bool suspend, int timeout) : QListWidgetItem(name,listbox)
+  backupListItem( QListWidget *listbox, backupConfigData &confiData )
+  : QListWidgetItem(confiData.m_sName,listbox)
+  , m_config(confiData)
   , m_executer(NULL)
-  , m_config()
   {
-    m_config.m_sText=name;
-    m_config.m_sSrc=src;
-    m_config.m_sDst=dst;
-    m_config.m_sFlt=flt;
-    m_config.m_bAuto=autoStart;
-    m_config.m_iInterval=interval;
-    m_config.m_bKeep=keep;
-    m_config.m_iVersions=versions;
-    m_config.m_bzlib=zlib;
-    m_config.m_bsuspend=suspend;
-    m_config.m_iTimeout=timeout;
-    //m_config.m_bexecuted=false;
-
     setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled|Qt::ItemIsTristate);
     if( m_config.m_bAuto )
       setCheckState(Qt::Checked);
@@ -59,26 +44,15 @@ public:
 
   void editBackupItem(bool closeAferExecute,bool *askForShutdown)
   {
-    backupExecuter executer(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
-                            m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
+    backupExecuter executer(m_config);
     executer.setCloseAfterExecute(closeAferExecute);
     executer.setAskForShutdown(askForShutdown);
     executer.exec();
     //m_config.m_bexecuted = executer.result()==QDialog::Accepted;
 
-    m_config.m_sText = executer.getTitle();
-    m_config.m_sSrc = executer.getSrc();
-    m_config.m_sDst = executer.getDst();
-    m_config.m_sFlt = executer.getFlt();
-    m_config.m_bAuto = executer.getAuto();
-    m_config.m_iInterval = executer.getInterval();
-    m_config.m_bKeep = executer.getKeep();
-    m_config.m_iVersions = executer.getVersions();
-    m_config.m_bzlib = executer.getCompress();
-    m_config.m_bsuspend = executer.getSuspend();
-    m_config.m_iTimeout = executer.getTimeout();
+    m_config = executer.getConfigData();
 
-    setText(m_config.m_sText);
+    setText(m_config.m_sName);
     if( m_config.m_bAuto )
       setCheckState(Qt::Checked);
     else
@@ -90,32 +64,28 @@ public:
   backupExecuter *getBackupExecuter()
   {
     if( m_executer==NULL )
-      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
-                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
+      m_executer = new backupExecuter(m_config);
     return m_executer;
   }
 
   void startBatchExecution()
   {
     if( m_executer==NULL )
-      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
-                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
+      m_executer = new backupExecuter(m_config);
     m_executer->startBatchProcessing();
   }
 
   void stopBatchExecution()
   {
     if( m_executer==NULL )
-      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
-                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
+      m_executer = new backupExecuter(m_config);
     m_executer->stopBatchProcessing();
   }
 
   void executebackupItem(bool closeAferExecute,bool runningInBackground)
   {
     if( m_executer==NULL )
-      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
-                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
+      m_executer = new backupExecuter(m_config);
     m_executer->setCloseAfterExecute(closeAferExecute);
 //    m_executer->startBatchProcessing();
     m_executer->show();
@@ -126,8 +96,7 @@ public:
   void verifyBackupItem(bool closeAferExecute,bool runningInBackground)
   {
     if( m_executer==NULL )
-      m_executer = new backupExecuter(m_config.m_sText,m_config.m_sSrc,m_config.m_sDst,m_config.m_sFlt,m_config.m_bAuto,m_config.m_iInterval,
-                                      m_config.m_bKeep,m_config.m_iVersions,m_config.m_bzlib,m_config.m_bsuspend,m_config.m_iTimeout);
+      m_executer = new backupExecuter(m_config);
     m_executer->setCloseAfterExecute(closeAferExecute);
 //    m_executer->startBatchProcessing();
     m_executer->show();
@@ -139,8 +108,9 @@ public:
     return m_config.m_bexecuted;
   }*/
 
-  backupExecuter    *m_executer;
+private:
   backupConfigData  m_config;
+  backupExecuter    *m_executer;
 };
 
 void do_log( QString const &txt )
@@ -186,16 +156,11 @@ backupMain::backupMain(bool runsAsAdmin, QString const &configfile)
     while ( !stream.atEnd() )
     {
       line = stream.readLine(); // line of text excluding '\n'
-      QStringList list = line.split("\t");
 
-      bool autos = list.at(4)=="1";
-      int interval = (list.at(5)).toInt();
-      bool keepc = list.count()>6 ? list.at(6)=="1" : false;
-      int vrs = list.count()>7 ? (list.at(7)).toInt() : 2;
-      bool zlib = list.count()>8 ? list.at(8)=="1" : false;
-      bool suspend = list.count()>9 ? list.at(9)=="1" : false;
-      int timeout = list.count()>10 ? list.at(10).toInt() : 3;
-      new backupListItem(backupList,list.at(0),list.at(1),list.at(2),list.at(3),autos,interval,keepc,vrs,zlib,suspend,timeout);
+      backupConfigData config;
+      config.getFromString(line);
+
+      new backupListItem(backupList,config);
     }
     config.close();
   }
@@ -315,17 +280,7 @@ void backupMain::saveConfig(QString const &configFile)
     for( int i=0; i<backupList->count(); i++ )
     {
       backupListItem *item = static_cast<backupListItem*>(backupList->item(i));
-      stream	<< item->m_config.m_sText << "\t"
-      << item->m_config.m_sSrc << "\t"
-      << item->m_config.m_sDst << "\t"
-      << item->m_config.m_sFlt << "\t"
-      << item->m_config.m_bAuto << "\t"
-      << item->m_config.m_iInterval << "\t"
-      << item->m_config.m_bKeep << "\t"
-      << item->m_config.m_iVersions << "\t"
-      << item->m_config.m_bzlib << "\t"
-      << item->m_config.m_bsuspend << "\t"
-      << item->m_config.m_iTimeout << "\n";
+      stream	<< item->getConfigData().putToString();
     }
     config.close();
   }
@@ -333,7 +288,8 @@ void backupMain::saveConfig(QString const &configFile)
 
 void backupMain::newBackup()
 {
-  new backupListItem(backupList,"unnamed","","","",false,0,false,3,false,false,3);
+  backupConfigData config;
+  new backupListItem(backupList,config);
 }
 
 void backupMain::quit()
@@ -361,26 +317,20 @@ void backupMain::checkSelection()
   if( m_selected==0 )
   {
     deleteBackupButt->setEnabled(false);
-    editBackupButt->setEnabled(false);
-    editBackupButt->setText("Select...");
-    cleanButt->setEnabled(true);
-    cleanButt->setText("Analyze...");
+    cleanDirButt->setEnabled(true);
+    cleanDirButt->setText("Analyze Directory...");
   }
   else if( m_selected==1 )
   {
     deleteBackupButt->setEnabled(true);
-    editBackupButt->setEnabled(true);
-    editBackupButt->setText("Select...");
-    cleanButt->setEnabled(true);
-    cleanButt->setText("Cleanup...");
+    cleanDirButt->setEnabled(true);
+    cleanDirButt->setText("Analyze Backup...");
   }
   else
   {
     deleteBackupButt->setEnabled(true);
-    editBackupButt->setEnabled(true);
-    editBackupButt->setText("Execute...");
-    cleanButt->setEnabled(false);
-    //        cleanButt->setText("Cleanup...");
+    cleanDirButt->setEnabled(false);
+    cleanDirButt->setText("Analyze Directory...");
   }
 }
 
@@ -412,7 +362,7 @@ void backupMain::editBackup()
     activateWindow();
 }
 
-void backupMain::cleanupBackup()
+void backupMain::cleanupDirectory()
 {
   QList<QListWidgetItem*> const &list = backupList->selectedItems();
   for( QList<QListWidgetItem*>::const_iterator it=list.begin(); it!=list.end(); ++it )
@@ -422,10 +372,10 @@ void backupMain::cleanupBackup()
     if( m_selected==1 )
     {
       backupListItem* selected = static_cast<backupListItem*>(item);
-      QString path = selected->m_config.m_sDst;
+      QString path = selected->getConfigData().m_sDst;
 
       cleanupDialog dlg(0);
-      dlg.setPaths(selected->m_config.m_sSrc,selected->m_config.m_sDst);
+      dlg.setPaths(selected->getConfigData().m_sSrc,selected->getConfigData().m_sDst);
       dlg.show();
       dlg.activateWindow();
       dlg.doAnalyze();
@@ -442,6 +392,30 @@ void backupMain::cleanupBackup()
   activateWindow();
 }
 
+void backupMain::cleanupBackup()
+{
+  QList<QListWidgetItem*> const &list = backupList->selectedItems();
+  for( QList<QListWidgetItem*>::const_iterator it=list.begin(); it!=list.end(); ++it )
+  {
+    QListWidgetItem *item = *it;
+
+    if( m_selected==1 )
+    {
+      backupListItem* selected = static_cast<backupListItem*>(item);
+      QString path = selected->getConfigData().m_sDst;
+
+      cleanupDialog dlg(0);
+      dlg.setPaths(selected->getConfigData().m_sSrc,selected->getConfigData().m_sDst);
+      dlg.show();
+      dlg.activateWindow();
+      dlg.doAnalyze();
+      dlg.exec();
+    }
+  }
+
+  activateWindow();
+}
+
 void backupMain::deleteBackup()
 {
   QList<QListWidgetItem*> const &list = backupList->selectedItems();
@@ -450,7 +424,7 @@ void backupMain::deleteBackup()
     QListWidgetItem *item = *it;
 
     if( QMessageBox::information(this,"confirmation","Do you really want to delete '"
-    +static_cast<backupListItem*>(item)->m_config.m_sText+"' ?",
+    +static_cast<backupListItem*>(item)->getConfigData().m_sName+"' ?",
     QMessageBox::Yes,QMessageBox::No|QMessageBox::Default)==QMessageBox::Yes )
       delete item;
   }
@@ -461,17 +435,17 @@ void backupMain::autoExecute(bool runningInBackground)
   for( int i=0; i<backupList->count(); i++ )
   {
     backupListItem *item = static_cast<backupListItem*>(backupList->item(i));
-    do_log("autoExecute found item '"+item->m_config.m_sText+"'");
-    if( item->m_config.m_bAuto )
+    do_log("autoExecute found item '"+item->getConfigData().m_sName+"'");
+    if( item->getConfigData().m_bAuto )
     {
-      do_log("autoExecute testing automatic item '"+item->m_config.m_sText+"'");
+      do_log("autoExecute testing automatic item '"+item->getConfigData().m_sName+"'");
       QFileInfo tstbackup(item->getBackupExecuter()->getAutobackupCheckFile(""));
       QFileInfo tstverify(item->getBackupExecuter()->getAutobackupCheckFile("_chk"));
       bool doItBackup = true;
       bool doItVerify = true;
       int backupdays = 0;
       int verifydays = 0;
-      switch( item->m_config.m_iInterval )
+      switch( item->getConfigData().m_iInterval )
       {
         case 0://daily
           backupdays = 1;

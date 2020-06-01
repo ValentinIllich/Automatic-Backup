@@ -127,18 +127,8 @@ backupExecuter::backupExecuter(backupConfigData &configData)
 {
   setObjectName("backupExecuter");
   setupUi(this);
-  nameText->setText(m_config.m_sName);
-  sourceLab->setText(m_config.m_sSrc);
-  destLab->setText(m_config.m_sDst);
-  filterDesc->setText(m_config.m_sFlt);
-  autoExec->setChecked(m_config.m_bAuto);
-  interval->setCurrentIndex(m_config.m_iInterval);
-  keepCopy->setChecked(m_config.m_bKeep);
-  compress->setChecked(m_config.m_bVerify);
-  suspending->setChecked(m_config.m_bsuspend);
-  timeout->setCurrentIndex(m_config.m_iTimeout);
-  versionsStr->setText(QString::number(m_config.m_iVersions));
-  dateTime->setDate(QDate::currentDate());
+  setControlsFromConfigData(m_config);
+
   resize(width(),200);
 
   setWindowTitle("Backup Configuration '"+m_config.m_sName+"'");
@@ -199,7 +189,7 @@ void backupExecuter::screenResizedSlot( int /*screen*/ )
 }
 
 void backupExecuter::saveData()
-{
+{  
   if( checksumsChanged )
   {
     QString summaryFile = backupDirstruct::getChecksumSummaryFile(m_config.m_sDst);
@@ -218,6 +208,41 @@ void backupExecuter::saveData()
     QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_config.m_sDst);
     m_dirs.writeToFile(tocSummaryFile);
   }
+}
+
+void backupExecuter::setControlsFromConfigData(backupConfigData &config)
+{
+  nameText->setText(config.m_sName);
+  sourceLab->setText(config.m_sSrc);
+  destLab->setText(config.m_sDst);
+  filterDesc->setText(config.m_sFlt);
+  autoExec->setChecked(config.m_bAuto);
+  interval->setCurrentIndex(config.m_iInterval);
+  keepCopy->setChecked(config.m_bKeep);
+  compress->setChecked(config.m_bVerify);
+  suspending->setChecked(config.m_bsuspend);
+  timeout->setCurrentIndex(config.m_iTimeout);
+  versionsStr->setText(QString::number(config.m_iVersions));
+  dateTime->setDate(QDate::currentDate());
+}
+
+backupConfigData backupExecuter::getConfigDataFromControls()
+{
+  backupConfigData config;
+
+  config.m_sName = nameText->text();
+  config.m_sSrc = sourceLab->text();
+  config.m_sDst = destLab->text();
+  config.m_sFlt = filterDesc->text();
+  config.m_bAuto = autoExec->isChecked();
+  config.m_iInterval = interval->currentIndex();
+  config.m_bKeep = keepCopy->isChecked();
+  config.m_iVersions = versionsStr->text().toInt();
+  config.m_bVerify = compress->isChecked();
+  config.m_bsuspend = suspending->isChecked();
+  config.m_iTimeout = timeout->currentIndex();
+
+  return config;
 }
 
 void backupExecuter::changeVisibility()
@@ -974,6 +999,12 @@ void backupExecuter::copySelectedFiles()
   m_engine->setProgressValue(0);
 
   delete[] buffer;
+}
+
+backupConfigData backupExecuter::getConfigData()
+{
+  m_config = getConfigDataFromControls();
+  return m_config;
 }
 
 QString backupExecuter::getTitle()

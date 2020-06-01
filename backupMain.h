@@ -23,6 +23,7 @@ public slots:
   virtual void editBackup();
   virtual void deleteBackup();
   virtual void checkSelection();
+  virtual void cleanupDirectory();
   virtual void cleanupBackup();
   virtual void aboutButton();
 

@@ -4,6 +4,7 @@
 #include "ui_backupwindow.h"
 #include "backupengine.h"
 #include "backupdirstruct.h"
+#include "backupConfigData.h"
 
 #include <qstring.h>
 #include <qstringlist.h>
@@ -19,22 +20,6 @@
 #include <qwaitcondition.h>
 
 typedef QVector<quint16> crcSums;
-
-struct backupConfigData
-{
-  QString			m_sName;
-  QString			m_sSrc;
-  QString			m_sDst;
-  QString			m_sFlt;
-  bool			m_bAuto;
-  int				m_iInterval;
-  bool			m_bKeep;
-  int				m_iVersions;
-  bool			m_bVerify;
-  bool      m_bsuspend;
-  int       m_iTimeout;
-  //bool			m_bexecuted;
-};
 
 struct crcInfo
 {
@@ -56,6 +41,8 @@ public:
 
   QString getAutobackupCheckFile(QString const &suffix);
   bool isAutoBackupCreatedFile(QString const &file);
+
+  backupConfigData getConfigData();
 
   QString getTitle();
   QString getSrc();
@@ -145,6 +132,8 @@ private:
   backupStatistics getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool eraseAll);
 
   void saveData();
+  void setControlsFromConfigData(backupConfigData &config);
+  backupConfigData getConfigDataFromControls();
   void changeVisibility();
   void startingAction();
   void stoppingAction();
