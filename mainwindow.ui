@@ -6,70 +6,48 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>436</width>
-    <height>321</height>
+    <width>880</width>
+    <height>640</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Automatic Backup</string>
   </property>
-  <layout class="QGridLayout">
-   <property name="margin">
-    <number>11</number>
-   </property>
+  <layout class="QGridLayout" name="gridLayout_5">
    <item row="0" column="0">
-    <layout class="QHBoxLayout">
+    <layout class="QVBoxLayout" name="verticalLayout_8">
+     <property name="spacing">
+      <number>0</number>
+     </property>
      <item>
-      <widget class="QListWidget" name="backupList">
-       <property name="selectionMode">
-        <enum>QAbstractItemView::ExtendedSelection</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <layout class="QVBoxLayout">
+      <layout class="QHBoxLayout" name="horizontalLayout_9">
        <item>
-        <widget class="QPushButton" name="newBackupButt">
-         <property name="toolTip">
-          <string>Create a new backup configuration.</string>
-         </property>
-         <property name="text">
-          <string>New...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="editBackupButt">
-         <property name="toolTip">
-          <string>Open the properties of the selected configuration.
-If more than one are selected, execute them.</string>
-         </property>
-         <property name="text">
-          <string>Select...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="deleteBackupButt">
-         <property name="toolTip">
-          <string>Delete the selected backup configuration.</string>
-         </property>
-         <property name="text">
-          <string>Delete...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="cleanButt">
+        <widget class="QPushButton" name="cleanDirButt">
          <property name="toolTip">
           <string>Analyze a given directory and show a tree with
-all direcrtories and files older than a given date.
+all direcrtories and files older than a selected date.
 Clean up will be possible with a context menu.</string>
          </property>
          <property name="text">
-          <string>Clean up...</string>
+          <string>Clean up directory...</string>
+         </property>
+         <property name="autoDefault">
+          <bool>false</bool>
          </property>
         </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_6">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
        </item>
        <item>
         <widget class="QCheckBox" name="keepRun">
@@ -82,45 +60,15 @@ for automatic execution.</string>
          <property name="text">
           <string>Keep running</string>
          </property>
-         <property name="autoExclusive">
-          <bool>false</bool>
-         </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="shutDown">
-         <property name="toolTip">
-          <string>If checked, the backup tool context menu
-will allow you to execute all pending
-backups and to initiate a shut down.
-In this mode, no periodically check is done.</string>
-         </property>
-         <property name="text">
-          <string>Shut down menu</string>
-         </property>
-         <property name="autoExclusive">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="exitButt">
-         <property name="toolTip">
-          <string>Exit the tool or closes the main dialog if
-Keep running is checked.</string>
-         </property>
-         <property name="text">
-          <string>Exit</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer">
+        <spacer name="horizontalSpacer">
          <property name="orientation">
-          <enum>Qt::Vertical</enum>
+          <enum>Qt::Horizontal</enum>
          </property>
          <property name="sizeType">
-          <enum>QSizePolicy::Maximum</enum>
+          <enum>QSizePolicy::Fixed</enum>
          </property>
          <property name="sizeHint" stdset="0">
           <size>
@@ -131,12 +79,857 @@ Keep running is checked.</string>
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="settingstButton">
+        <widget class="QCheckBox" name="shutDown">
+         <property name="toolTip">
+          <string>If checked, the backup tool context menu
+will allow you to execute all pending
+backups and to initiate a shut down.
+In this mode, no periodically check is done.</string>
+         </property>
+         <property name="text">
+          <string>Shut down after execute</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame">
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <property name="lineWidth">
+        <number>1</number>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_7">
+        <property name="leftMargin">
+         <number>5</number>
+        </property>
+        <property name="topMargin">
+         <number>5</number>
+        </property>
+        <property name="rightMargin">
+         <number>5</number>
+        </property>
+        <property name="bottomMargin">
+         <number>5</number>
+        </property>
+        <item row="0" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_7" stretch="0">
+            <property name="spacing">
+             <number>-1</number>
+            </property>
+            <property name="sizeConstraint">
+             <enum>QLayout::SetDefaultConstraint</enum>
+            </property>
+            <item>
+             <widget class="QListWidget" name="backupList">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::ExtendedSelection</enum>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_6">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QGroupBox" name="groupBox">
+              <property name="title">
+               <string>Backup settings</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_2">
+               <item row="1" column="0">
+                <layout class="QGridLayout" name="gridLayout">
+                 <property name="verticalSpacing">
+                  <number>-1</number>
+                 </property>
+                 <item row="0" column="0">
+                  <layout class="QHBoxLayout" name="horizontalLayout">
+                   <property name="spacing">
+                    <number>-1</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>5</number>
+                   </property>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout">
+                     <property name="spacing">
+                      <number>-1</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_4">
+                       <property name="text">
+                        <string>Backup name</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLabel" name="label">
+                       <property name="text">
+                        <string>Source path</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLabel" name="label_2">
+                       <property name="text">
+                        <string>Destination path</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_2">
+                     <item>
+                      <widget class="QLineEdit" name="nameText">
+                       <property name="toolTip">
+                        <string>Name of selected backup configuration</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="sourceLab">
+                       <property name="toolTip">
+                        <string>Source path</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="destLab">
+                       <property name="toolTip">
+                        <string>Destination path</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_3">
+                     <item>
+                      <widget class="QLabel" name="label_5">
+                       <property name="text">
+                        <string/>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="sourceButt">
+                       <property name="toolTip">
+                        <string>Select source path</string>
+                       </property>
+                       <property name="text">
+                        <string>...</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="destButt">
+                       <property name="toolTip">
+                        <string>Selext destination path</string>
+                       </property>
+                       <property name="text">
+                        <string>...</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </item>
+               <item row="2" column="0">
+                <layout class="QHBoxLayout" name="horizontalLayout_6">
+                 <property name="spacing">
+                  <number>-1</number>
+                 </property>
+                 <item>
+                  <widget class="QPushButton" name="execBackupButt">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="toolTip">
+                    <string>Immediately execute selected backups</string>
+                   </property>
+                   <property name="text">
+                    <string>Execute...</string>
+                   </property>
+                   <property name="autoDefault">
+                    <bool>false</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="backgroundExec">
+                   <property name="toolTip">
+                    <string>If checked, the backup will be executed
+in the background for this time.</string>
+                   </property>
+                   <property name="text">
+                    <string>Execute in background</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_2">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="verboseExecute">
+                   <property name="toolTip">
+                    <string>If checked, no action will happen upon Execute.
+Instead, al log si shown with all actions which
+would happen.</string>
+                   </property>
+                   <property name="text">
+                    <string>Preview only...</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_4">
+              <property name="title">
+               <string>Backup include / exclude patterns</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_6">
+               <item row="0" column="0">
+                <layout class="QHBoxLayout" name="horizontalLayout_10">
+                 <item>
+                  <widget class="QLineEdit" name="filterDesc">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>18</height>
+                    </size>
+                   </property>
+                   <property name="toolTip">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="filterButt">
+                   <property name="toolTip">
+                    <string>Getting detailed help about the filter.</string>
+                   </property>
+                   <property name="text">
+                    <string>...</string>
+                   </property>
+                   <property name="shortcut">
+                    <string>H</string>
+                   </property>
+                   <property name="autoDefault">
+                    <bool>false</bool>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_2">
+              <property name="title">
+               <string>Backup options</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_3">
+               <item row="0" column="0">
+                <layout class="QVBoxLayout" name="verticalLayout_4">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_2">
+                   <item>
+                    <widget class="QCheckBox" name="autoExec">
+                     <property name="toolTip">
+                      <string>If checked, the backup will be executed
+automatically with the given interval.</string>
+                     </property>
+                     <property name="text">
+                      <string>Execute on startup:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QComboBox" name="interval">
+                     <item>
+                      <property name="text">
+                       <string>Daily</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Weekly</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>14 Days</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Monthly</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>3 Months</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Yearly</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_3">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="suspending">
+                     <property name="toolTip">
+                      <string>If checked, the backup will be suspended
+automatically after the given time.</string>
+                     </property>
+                     <property name="text">
+                      <string>Suspend after</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QComboBox" name="timeout">
+                     <item>
+                      <property name="text">
+                       <string>10 min</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>15 min</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>30 min</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>1 h</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>1,5 h</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>2 h</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>2,5 h</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>3 h</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>3,5 h</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>4 h</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_3">
+                   <property name="spacing">
+                    <number>10</number>
+                   </property>
+                   <item>
+                    <widget class="QCheckBox" name="keepCopy">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>If checked, the files in the backup path will
+get an extra extension with the backup
+timestamp, so that the given amount of
+different versions are kept.</string>
+                     </property>
+                     <property name="text">
+                      <string>Keep</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLineEdit" name="versionsStr">
+                     <property name="maximumSize">
+                      <size>
+                       <width>50</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="toolTip">
+                      <string>Amount of different versions for a single file
+to be kept in the backup path.</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="versionLabel">
+                     <property name="toolTip">
+                      <string/>
+                     </property>
+                     <property name="text">
+                      <string>versions of files</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_4">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </item>
+               <item row="1" column="0">
+                <layout class="QHBoxLayout" name="horizontalLayout_8">
+                 <property name="spacing">
+                  <number>-1</number>
+                 </property>
+                 <item>
+                  <widget class="QCheckBox" name="verify">
+                   <property name="toolTip">
+                    <string>If checked, the files in the backup path
+will be compressed.</string>
+                   </property>
+                   <property name="text">
+                    <string>Verify files in backup</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_8">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_3">
+              <property name="title">
+               <string>Backup maintenance settings</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_4">
+               <item row="0" column="0">
+                <layout class="QVBoxLayout" name="verticalLayout_5">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_4">
+                   <property name="spacing">
+                    <number>-1</number>
+                   </property>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_9">
+                     <property name="spacing">
+                      <number>0</number>
+                     </property>
+                     <item>
+                      <layout class="QHBoxLayout" name="horizontalLayout_12">
+                       <property name="spacing">
+                        <number>12</number>
+                       </property>
+                       <item>
+                        <widget class="QPushButton" name="cleanupButt">
+                         <property name="toolTip">
+                          <string>This button will automatically remove all
+files in the backup path which are older
+than the given interval and don't have
+a counterpart in the source path.</string>
+                         </property>
+                         <property name="text">
+                          <string>Cleanup Files...</string>
+                         </property>
+                         <property name="shortcut">
+                          <string>A</string>
+                         </property>
+                         <property name="autoDefault">
+                          <bool>false</bool>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QLabel" name="label_3">
+                         <property name="text">
+                          <string>older than</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QComboBox" name="lastModified">
+                         <property name="currentIndex">
+                          <number>0</number>
+                         </property>
+                         <item>
+                          <property name="text">
+                           <string>selected date</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>1 week</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>2 weeks</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>3 weeks</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>1 month</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>2 months</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>3 months</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>6 months</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>1 year</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>2 years</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>5 years</string>
+                          </property>
+                         </item>
+                         <item>
+                          <property name="text">
+                           <string>10 years</string>
+                          </property>
+                         </item>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
+                     <item>
+                      <layout class="QHBoxLayout" name="horizontalLayout_13">
+                       <item>
+                        <widget class="QCheckBox" name="verboseMaintenance">
+                         <property name="toolTip">
+                          <string>If checked, no action will be done upon
+the Cleanup. Instead a log is shown with
+all actions which would take place.</string>
+                         </property>
+                         <property name="text">
+                          <string>Preview only...</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QCheckBox" name="showTreeStruct">
+                         <property name="toolTip">
+                          <string>If checked in combination with Preview, the
+log will be extended to a representation of
+the tree strcture in the backup path.</string>
+                         </property>
+                         <property name="text">
+                          <string>...as tree structure</string>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_5">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>0</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_10">
+                     <property name="spacing">
+                      <number>12</number>
+                     </property>
+                     <item>
+                      <widget class="QCheckBox" name="collectFiles">
+                       <property name="toolTip">
+                        <string>if checked, all deleted files are collected in
+a separate directory which will be asked for.</string>
+                       </property>
+                       <property name="text">
+                        <string>Collect deleted files</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="sourceDuplicates">
+                       <property name="toolTip">
+                        <string>if checked, a scan in the source path will
+be done for duplicate files in different
+subdirectories.</string>
+                       </property>
+                       <property name="text">
+                        <string>Find duplicates in Source</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_11">
+       <item>
+        <widget class="QPushButton" name="newBackup">
+         <property name="toolTip">
+          <string>Create a new backup configuration.</string>
+         </property>
+         <property name="text">
+          <string>New backup...</string>
+         </property>
+         <property name="autoDefault">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_9">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="deleteBackupButt">
+         <property name="toolTip">
+          <string>Delete the selected backup configuration.</string>
+         </property>
+         <property name="text">
+          <string>Delete backup(s)...</string>
+         </property>
+         <property name="autoDefault">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_7">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton">
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="toolTip">
           <string>program information and global settings</string>
          </property>
          <property name="text">
           <string>Settings...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_10">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="exitButt">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Exit</string>
+         </property>
+         <property name="autoDefault">
+          <bool>false</bool>
+         </property>
+         <property name="default">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -146,25 +939,8 @@ Keep running is checked.</string>
    </item>
   </layout>
  </widget>
- <layoutdefault spacing="6" margin="11"/>
  <resources/>
  <connections>
-  <connection>
-   <sender>editBackupButt</sender>
-   <signal>clicked()</signal>
-   <receiver>mainwindow</receiver>
-   <slot>editBackup()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>420</x>
-     <y>126</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>207</x>
-     <y>115</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>exitButt</sender>
    <signal>clicked()</signal>
@@ -172,28 +948,12 @@ Keep running is checked.</string>
    <slot>quit()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>420</x>
-     <y>301</y>
+     <x>866</x>
+     <y>626</y>
     </hint>
     <hint type="destinationlabel">
      <x>163</x>
      <y>257</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>newBackupButt</sender>
-   <signal>clicked()</signal>
-   <receiver>mainwindow</receiver>
-   <slot>newBackup()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>420</x>
-     <y>87</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>252</x>
-     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -204,8 +964,8 @@ Keep running is checked.</string>
    <slot>deleteBackup()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>420</x>
-     <y>165</y>
+     <x>314</x>
+     <y>626</y>
     </hint>
     <hint type="destinationlabel">
      <x>213</x>
@@ -220,8 +980,8 @@ Keep running is checked.</string>
    <slot>checkSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>32</x>
-     <y>37</y>
+     <x>48</x>
+     <y>101</y>
     </hint>
     <hint type="destinationlabel">
      <x>126</x>
@@ -230,14 +990,14 @@ Keep running is checked.</string>
    </hints>
   </connection>
   <connection>
-   <sender>cleanButt</sender>
+   <sender>cleanDirButt</sender>
    <signal>clicked()</signal>
    <receiver>mainwindow</receiver>
-   <slot>cleanupBackup()</slot>
+   <slot>cleanupDirectory()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>420</x>
-     <y>204</y>
+     <x>176</x>
+     <y>44</y>
     </hint>
     <hint type="destinationlabel">
      <x>223</x>
@@ -252,8 +1012,8 @@ Keep running is checked.</string>
    <slot>checkSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>423</x>
-     <y>232</y>
+     <x>662</x>
+     <y>36</y>
     </hint>
     <hint type="destinationlabel">
      <x>404</x>
@@ -268,8 +1028,8 @@ Keep running is checked.</string>
    <slot>checkSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>423</x>
-     <y>258</y>
+     <x>866</x>
+     <y>36</y>
     </hint>
     <hint type="destinationlabel">
      <x>366</x>
@@ -278,18 +1038,98 @@ Keep running is checked.</string>
    </hints>
   </connection>
   <connection>
-   <sender>settingstButton</sender>
+   <sender>newBackup</sender>
+   <signal>clicked()</signal>
+   <receiver>mainwindow</receiver>
+   <slot>newBackup()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>137</x>
+     <y>626</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>84</x>
+     <y>639</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cleanupButt</sender>
+   <signal>clicked()</signal>
+   <receiver>mainwindow</receiver>
+   <slot>cleanupBackup()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>388</x>
+     <y>530</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>410</x>
+     <y>639</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton</sender>
    <signal>clicked()</signal>
    <receiver>mainwindow</receiver>
    <slot>aboutButton()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>312</x>
-     <y>32</y>
+     <x>599</x>
+     <y>605</y>
     </hint>
     <hint type="destinationlabel">
-     <x>335</x>
-     <y>8</y>
+     <x>556</x>
+     <y>613</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>execBackupButt</sender>
+   <signal>clicked()</signal>
+   <receiver>mainwindow</receiver>
+   <slot>editBackup()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>412</x>
+     <y>223</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>207</x>
+     <y>115</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>sourceButt</sender>
+   <signal>clicked()</signal>
+   <receiver>mainwindow</receiver>
+   <slot>selSource()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>807</x>
+     <y>131</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>875</x>
+     <y>196</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>destButt</sender>
+   <signal>clicked()</signal>
+   <receiver>mainwindow</receiver>
+   <slot>selDest()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>820</x>
+     <y>164</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>875</x>
+     <y>156</y>
     </hint>
    </hints>
   </connection>
@@ -301,5 +1141,8 @@ Keep running is checked.</string>
   <slot>cleanupBackup()</slot>
   <slot>checkSelection()</slot>
   <slot>aboutButton()</slot>
+  <slot>cleanupDirectory()</slot>
+  <slot>selSource()</slot>
+  <slot>selDest()</slot>
  </slots>
 </ui>

@@ -11,6 +11,7 @@ TARGET = backup
 
 # Input
 HEADERS += backupExecuter.h \
+    backupConfigData.h \
     backupMain.h \
     cleanupdialog.h \
     backupSplash.h \

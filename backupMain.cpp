@@ -129,6 +129,7 @@ void do_log( QString const &txt )
 backupMain::backupMain(bool runsAsAdmin, QString const &configfile)
 : m_selected(0)
 , m_immediateShutdown(false)
+, m_isUpdatingConfig(false)
 {
   QSettings settings;
   QString path = settings.value("ConfigFile","").toString();
@@ -168,6 +169,8 @@ backupMain::backupMain(bool runsAsAdmin, QString const &configfile)
   keepRun->setChecked(settings.value("KeepRunning").toInt()==1 ? true : false);
   shutDown->setChecked(settings.value("RunAndShtDwn").toInt()==1 ? true : false);
 
+  connectSignalSlots();
+
   checkSelection();
 }
 
@@ -179,6 +182,30 @@ backupMain::~backupMain()
   settings.setValue("WindowFramewidth",geometry().x()-frameGeometry().x());
   settings.setValue("KeepRunning",keepRun->isChecked() ? 1 : 0);
   settings.setValue("RunAndShtDwn",shutDown->isChecked() ? 1 : 0);
+}
+
+void backupMain::connectSignalSlots()
+{
+  connect(nameText,SIGNAL(textChanged(const QString&)),this,SLOT(getChangedConfigData()));
+  connect(sourceLab,SIGNAL(textChanged(const QString&)),this,SLOT(getChangedConfigData()));
+  connect(destLab,SIGNAL(textChanged(const QString&)),this,SLOT(getChangedConfigData()));
+  connect(filterDesc,SIGNAL(textChanged(const QString&)),this,SLOT(getChangedConfigData()));
+  connect(versionsStr,SIGNAL(textChanged(const QString&)),this,SLOT(getChangedConfigData()));
+
+  connect(backgroundExec,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(verboseExecute,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(autoExec,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(keepCopy,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(verify,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(suspending,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(verboseMaintenance,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(collectFiles,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(sourceDuplicates,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(showTreeStruct,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+
+  connect(interval,SIGNAL(currentIndexChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(timeout,SIGNAL(currentIndexChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(lastModified,SIGNAL(currentIndexChanged(int)),this,SLOT(getChangedConfigData()));
 }
 
 void backupMain::aboutButton()
@@ -289,6 +316,7 @@ void backupMain::saveConfig(QString const &configFile)
 void backupMain::newBackup()
 {
   backupConfigData config;
+  config.m_sName = "new backup";
   new backupListItem(backupList,config);
 }
 
@@ -317,20 +345,31 @@ void backupMain::checkSelection()
   if( m_selected==0 )
   {
     deleteBackupButt->setEnabled(false);
+    execBackupButt->setEnabled(false);
+    cleanupButt->setEnabled(false);
     cleanDirButt->setEnabled(true);
     cleanDirButt->setText("Analyze Directory...");
+    enableControls(false);
   }
   else if( m_selected==1 )
   {
     deleteBackupButt->setEnabled(true);
+    execBackupButt->setEnabled(true);
+    cleanupButt->setEnabled(true);
     cleanDirButt->setEnabled(true);
     cleanDirButt->setText("Analyze Backup...");
+    backupListItem* selected = static_cast<backupListItem*>((backupList->selectedItems())[0]);
+    enableControls(true);
+    setControlsFromConfigData(selected->getConfigData());
   }
   else
   {
     deleteBackupButt->setEnabled(true);
+    execBackupButt->setEnabled(true);
+    cleanupButt->setEnabled(true);
     cleanDirButt->setEnabled(false);
     cleanDirButt->setText("Analyze Directory...");
+    enableControls(false);
   }
 }
 
@@ -427,6 +466,144 @@ void backupMain::deleteBackup()
     +static_cast<backupListItem*>(item)->getConfigData().m_sName+"' ?",
     QMessageBox::Yes,QMessageBox::No|QMessageBox::Default)==QMessageBox::Yes )
       delete item;
+  }
+}
+
+void backupMain::enableControls(bool enabled)
+{
+  if( !enabled )
+  {
+    backupConfigData empty;
+    setControlsFromConfigData(empty);
+  }
+  nameText->setEnabled(enabled);
+  sourceLab->setEnabled(enabled);
+  sourceButt->setEnabled(enabled);
+  destLab->setEnabled(enabled);
+  destButt->setEnabled(enabled);
+  backgroundExec->setEnabled(enabled);
+  verboseExecute->setEnabled(enabled);
+  filterDesc->setEnabled(enabled);
+  filterButt->setEnabled(enabled);
+  autoExec->setEnabled(enabled);
+  interval->setEnabled(enabled);
+  keepCopy->setEnabled(enabled);
+  versionsStr->setEnabled(enabled);
+  verify->setEnabled(enabled);
+  suspending->setEnabled(enabled);
+  timeout->setEnabled(enabled);
+  cleanupButt->setEnabled(enabled);
+  lastModified->setEnabled(false); // \todo
+  verboseMaintenance->setEnabled(enabled);
+  collectFiles->setEnabled(enabled);
+  sourceDuplicates->setEnabled(enabled);
+  showTreeStruct->setEnabled(enabled);
+}
+
+void backupMain::setControlsFromConfigData(backupConfigData &config)
+{
+  m_isUpdatingConfig = true;
+
+  nameText->setText(config.m_sName);
+  sourceLab->setText(config.m_sSrc);
+  destLab->setText(config.m_sDst);
+  backgroundExec->setChecked(config.m_bBackground);
+  verboseExecute->setChecked(config.m_bVerbose);
+  filterDesc->setText(config.m_sFlt);
+  autoExec->setChecked(config.m_bAuto);
+  interval->setCurrentIndex(config.m_iInterval);
+  keepCopy->setChecked(config.m_bKeep);
+  versionsStr->setText(QString::number(config.m_iVersions));
+  verify->setChecked(config.m_bVerify);
+  suspending->setChecked(config.m_bsuspend);
+  timeout->setCurrentIndex(config.m_iTimeout);
+  lastModified->setCurrentIndex(config.m_iLastModify);
+  verboseMaintenance->setChecked(config.m_bVerboseMaint);
+  collectFiles->setChecked(config.m_bCollectDeleted);
+  sourceDuplicates->setChecked(config.m_bFindSrcDupl);
+  showTreeStruct->setChecked(config.m_bShowTree);
+
+  m_isUpdatingConfig = false;
+}
+
+backupConfigData backupMain::getConfigDataFromControls()
+{
+  backupConfigData config;
+
+  config.m_sName = nameText->text();
+  config.m_sSrc = sourceLab->text();
+  config.m_sDst = destLab->text();
+  config.m_bBackground = backgroundExec->isChecked();
+  config.m_bVerbose = verboseExecute->isChecked();
+  config.m_sFlt = filterDesc->text();
+  config.m_bAuto = autoExec->isChecked();
+  config.m_iInterval = interval->currentIndex();
+  config.m_bKeep = keepCopy->isChecked();
+  config.m_iVersions = versionsStr->text().toInt();
+  config.m_bVerify = verify->isChecked();
+  config.m_bsuspend = suspending->isChecked();
+  config.m_iTimeout = timeout->currentIndex();
+  config.m_iLastModify = lastModified->currentIndex();
+  config.m_bVerboseMaint = verboseMaintenance->isChecked();
+  config.m_bCollectDeleted = collectFiles->isChecked();
+  config.m_bFindSrcDupl = sourceDuplicates->isChecked();
+  config.m_bShowTree = showTreeStruct->isChecked();
+
+  return config;
+}
+
+void backupMain::selSource()
+{
+  QString path = QFileDialog::getExistingDirectory(
+  this,
+  //"get existing directory",
+  "Choose a directory",
+  sourceLab->text()
+  );
+
+  if( !path.isEmpty() )
+  {
+    path.replace("\\","/");
+    if( path.endsWith("/") ) path=path.left(path.length()-1);
+    sourceLab->setText(path);
+  }
+}
+
+void backupMain::selDest()
+{
+  QString path = QFileDialog::getExistingDirectory(
+  this,
+  //"get existing directory",
+  "Choose a directory",
+  destLab->text()
+  );
+
+  if( !path.isEmpty() )
+  {
+    path.replace("\\","/");
+    if( path.endsWith("/") ) path=path.left(path.length()-1);
+    destLab->setText(path);
+  }
+}
+
+void backupMain::getChangedConfigData()
+{
+  if( m_isUpdatingConfig )
+    return;
+
+  if( backupList->selectedItems().count()==1 )
+  {
+    backupListItem* selected = static_cast<backupListItem*>((backupList->selectedItems())[0]);
+    backupConfigData config = getConfigDataFromControls();
+    selected->getConfigData() = config;
+
+    selected->setText(config.m_sName);
+    if( config.m_bAuto )
+      selected->setCheckState(Qt::Checked);
+    else
+      selected->setCheckState(Qt::Unchecked);
+
+    backupList->repaint();
   }
 }
 
