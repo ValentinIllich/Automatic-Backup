@@ -2,8 +2,8 @@
 #define	__backupExecuter__
 
 #include "ui_backupwindow.h"
-#include "backupengine.h"
-#include "backupdirstruct.h"
+#include "backupEngine.h"
+#include "backupDirStruct.h"
 #include "backupConfigData.h"
 
 #include <qstring.h>

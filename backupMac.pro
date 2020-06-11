@@ -16,7 +16,7 @@ HEADERS += backupExecuter.h \
     cleanupDialog.h \
     backupSplash.h \
     utilities.h \
-    backupengine.h \
+    backupEngine.h \
     backupdirstruct.h
 FORMS += backupwindow.ui \
     mainwindow.ui \
@@ -27,7 +27,7 @@ SOURCES += backupExecuter.cpp \
     cleanupDialog.cpp \
     backupSplash.cpp \
     utilities.cpp \
-    backupengine.cpp \
+    backupEngine.cpp \
     authexec.c \
     backupdirstruct.cpp
 RESOURCES += backupwindow.qrc

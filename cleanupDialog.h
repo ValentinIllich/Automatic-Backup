@@ -2,7 +2,7 @@
 #define DIALOG_H
 
 #include "backupExecuter.h"
-#include "backupdirstruct.h"
+#include "backupDirStruct.h"
 
 #include <QDialog>
 #include <QTreeWidgetItem>

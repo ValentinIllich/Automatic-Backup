@@ -1,4 +1,4 @@
-#include "backupdirstruct.h"
+#include "backupDirStruct.h"
 
 #include <QStringList>
 #include <QDateTime>
