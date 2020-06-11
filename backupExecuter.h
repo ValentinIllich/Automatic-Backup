@@ -9,6 +9,7 @@
 #include <qstring.h>
 #include <qstringlist.h>
 #include <qtextstream.h>
+#include <qdatetime.h>
 #include <qfile.h>
 #include <qbuffer.h>
 #include <qvector.h>
@@ -27,7 +28,7 @@ struct crcInfo
   crcSums crc;
 };
 
-class backupExecuter : public QDialog, public Ui_backupwindow, public IBackupOperationsInterface
+class backupExecuter : public QWidget, public Ui_backupwindow, public IBackupOperationsInterface
 {
   Q_OBJECT
 public:
@@ -43,8 +44,9 @@ public:
   bool isAutoBackupCreatedFile(QString const &file);
 
   backupConfigData getConfigData();
+  void setConfigData(backupConfigData const &config);
 
-  QString getTitle();
+/*  QString getTitle();
   QString getSrc();
   QString getDst();
   QString getFlt();
@@ -55,7 +57,7 @@ public:
   bool	getKeep();
   int		getVersions();
   bool	getSuspend();
-  int		getTimeout();
+  int		getTimeout();*/
 
   void	setCloseAfterExecute(bool doIt);
   void  setAskForShutdown(bool *willShutdown);
@@ -74,14 +76,9 @@ public:
   virtual void operationFinishedEvent();
 
 public slots:
-  virtual void selSource();
-  virtual void selDest();
-  virtual void selAuto();
   virtual void doIt(bool runningInBackground = false);
   virtual void verifyIt(bool runningInBackground = false);
   virtual void processEventsAndWait();
-  virtual void restoreDir();
-  virtual void restoreFile();
   virtual void cancel();
   virtual void cleanup();
   virtual void help();
@@ -131,6 +128,7 @@ private:
 
   backupStatistics getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool eraseAll);
 
+  void loadData();
   void saveData();
   void setControlsFromConfigData(backupConfigData &config);
   backupConfigData getConfigDataFromControls();
@@ -174,6 +172,7 @@ private:
   QString errstream;
 
   /* is set when backup is executed automatically */
+  bool m_bringToFront;
   bool m_isBatch;
   bool m_running;
   bool m_error;

@@ -136,9 +136,11 @@ public:
 
   bool readFromFile(QString const &tocSummaryFile)
   {
-    QFile tocFile(tocSummaryFile);
+    m_archiveContent.clear();
+
     if( QFile::exists(tocSummaryFile) )
     {
+      QFile tocFile(tocSummaryFile);
       m_nextTocId = 0;
 
       tocFile.open(QIODevice::ReadOnly);

@@ -106,6 +106,7 @@ static quint32 crcDataVersion;
 backupExecuter::backupExecuter(backupConfigData &configData)
 : m_config(configData)
 , log(NULL)
+, m_bringToFront(false)
 , m_isBatch(false)
 , m_running(false)
 , m_error(false)
@@ -127,33 +128,12 @@ backupExecuter::backupExecuter(backupConfigData &configData)
 {
   setObjectName("backupExecuter");
   setupUi(this);
-  setControlsFromConfigData(m_config);
-
-  resize(width(),200);
 
   setWindowTitle("Backup Configuration '"+m_config.m_sName+"'");
 
   connect(qApp->desktop(),SIGNAL(resized(int)),this,SLOT(screenResizedSlot(int)));
 
-  QString summaryFile = backupDirstruct::getChecksumSummaryFile(m_config.m_sDst);
-  QFile crcfile(summaryFile);
-  if( QFile::exists(summaryFile) )
-  {
-    crcfile.open(QIODevice::ReadOnly);
-    QDataStream str(&crcfile);
-    str >> crcDataVersion;
-    if( crcDataVersion&0x80000000 )
-      str >> lastVerifiedK;
-    else
-      lastVerifiedK = crcDataVersion;
-    str >> crcSummary;
-    crcfile.close();
-  }
-  else
-    lastVerifiedK = 0;
-
-  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_config.m_sDst);
-  m_dirs.readFromFile(tocSummaryFile);
+  loadData();
 
   startTimer(100);
 }
@@ -188,6 +168,31 @@ void backupExecuter::screenResizedSlot( int /*screen*/ )
   changeVisibility();
 }
 
+void backupExecuter::loadData()
+{
+  crcSummary.clear();
+
+  QString summaryFile = backupDirstruct::getChecksumSummaryFile(m_config.m_sDst);
+  QFile crcfile(summaryFile);
+  if( QFile::exists(summaryFile) )
+  {
+    crcfile.open(QIODevice::ReadOnly);
+    QDataStream str(&crcfile);
+    str >> crcDataVersion;
+    if( crcDataVersion&0x80000000 )
+      str >> lastVerifiedK;
+    else
+      lastVerifiedK = crcDataVersion;
+    str >> crcSummary;
+    crcfile.close();
+  }
+  else
+    lastVerifiedK = 0;
+
+  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_config.m_sDst);
+  m_dirs.readFromFile(tocSummaryFile);
+}
+
 void backupExecuter::saveData()
 {  
   if( checksumsChanged )
@@ -210,54 +215,17 @@ void backupExecuter::saveData()
   }
 }
 
-void backupExecuter::setControlsFromConfigData(backupConfigData &config)
-{
-  nameText->setText(config.m_sName);
-  sourceLab->setText(config.m_sSrc);
-  destLab->setText(config.m_sDst);
-  filterDesc->setText(config.m_sFlt);
-  autoExec->setChecked(config.m_bAuto);
-  interval->setCurrentIndex(config.m_iInterval);
-  keepCopy->setChecked(config.m_bKeep);
-  compress->setChecked(config.m_bVerify);
-  suspending->setChecked(config.m_bsuspend);
-  timeout->setCurrentIndex(config.m_iTimeout);
-  versionsStr->setText(QString::number(config.m_iVersions));
-  dateTime->setDate(QDate::currentDate());
-}
-
-backupConfigData backupExecuter::getConfigDataFromControls()
-{
-  backupConfigData config;
-
-  config.m_sName = nameText->text();
-  config.m_sSrc = sourceLab->text();
-  config.m_sDst = destLab->text();
-  config.m_sFlt = filterDesc->text();
-  config.m_bAuto = autoExec->isChecked();
-  config.m_iInterval = interval->currentIndex();
-  config.m_bKeep = keepCopy->isChecked();
-  config.m_iVersions = versionsStr->text().toInt();
-  config.m_bVerify = compress->isChecked();
-  config.m_bsuspend = suspending->isChecked();
-  config.m_iTimeout = timeout->currentIndex();
-
-  return config;
-}
-
 void backupExecuter::changeVisibility()
 {
-  if( getBackground() )
+  if( m_config.m_bBackground )
   {
-    tabWidget->hide();
     progresslabel->hide();
-    executeButt->hide();
 
     if( m_isBatch )
     {
       actualfile->hide();
       cancelButt->hide();
-      m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_STR_VERSION+" running.\nProcessing Configuration '"+getTitle()+"'");
+      m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_STR_VERSION+" running.\nProcessing Configuration '"+m_config.m_sName+"'");
     }
     else
     {
@@ -275,15 +243,8 @@ void backupExecuter::changeVisibility()
   }
   else
   {
-    if( m_isBatch )
-    {
-      tabWidget->hide();
-      //        progressLab->hide();
-      executeButt->hide();
-    }
-
     resize( width(), 0 ); // dialog wil be as small as possible
-    setWindowTitle("Processing Configuration '"+getTitle()+"'");
+    setWindowTitle("Processing Configuration '"+m_config.m_sName+"'");
   }
 }
 
@@ -422,7 +383,7 @@ void backupExecuter::startingAction()
   m_dirsCreated = false;
   cancelButt->setText("Cancel");
 
-  if( verboseExecute->isChecked() || verboseMaintenance->isChecked() )
+  if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
   {
     if( buff.open(QIODevice::Truncate|QIODevice::WriteOnly) )
       stream.setDevice(&buff);
@@ -432,16 +393,16 @@ void backupExecuter::startingAction()
     log = openFile(QString::null);
     if( log->fileName()!=QString::null )
       stream.setDevice(log);
-    else if( getAuto() )
+    else if( m_config.m_bAuto )
       stream << "++++ problem found in backup: directory doesn't exist: couldn't open log file " << "\r\n";
     else
       QMessageBox::warning(this,"backup problems","couldn't open log file 'backup.log'");
   }
 
-  QString str = "================ backup '" + getTitle() + "' starting on " + QDateTime::currentDateTime().toString() + " ================\r\n";
+  QString str = "================ backup '" + m_config.m_sName + "' starting on " + QDateTime::currentDateTime().toString() + " ================\r\n";
   stream << str; errstream.append(str);
 
-  QStringList incexcl = getFlt().remove("+").split("-");
+  QStringList incexcl = m_config.m_sFlt.remove("+").split("-");
   QString includingsstr = defaultAt(incexcl,0);
   QString excludingsstr = defaultAt(incexcl,1);
 
@@ -467,10 +428,10 @@ void backupExecuter::startingAction()
 }
 void backupExecuter::stoppingAction()
 {
-  QString str = "================ backup '" + getTitle() + "' ending on " + QDateTime::currentDateTime().toString() + " ================\r\n";
+  QString str = "================ backup '" + m_config.m_sName + "' ending on " + QDateTime::currentDateTime().toString() + " ================\r\n";
   stream << str;
 
-  if( verboseExecute->isChecked() || verboseMaintenance->isChecked() )
+  if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
   {
     buff.close();
     displayResult(this,QString(buff.buffer()));
@@ -516,7 +477,7 @@ void backupExecuter::stoppingAction()
 
 bool backupExecuter::updateAutoBackupTime()
 {
-  stream << "updating backup time of automatic item '"+getTitle()+"'\r\n";
+  stream << "updating backup time of automatic item '"+m_config.m_sName+"'\r\n";
   QFile tst(getAutobackupCheckFile(""));
   bool wasFound = tst.exists();
   if( tst.open(QIODevice::WriteOnly) )
@@ -533,7 +494,7 @@ bool backupExecuter::updateAutoBackupTime()
 
 bool backupExecuter::updateAutoVerifyTime()
 {
-  stream << "updating verify time of automatic item '"+getTitle()+"'\r\n";
+  stream << "updating verify time of automatic item '"+m_config.m_sName+"'\r\n";
   QFile tst(getAutobackupCheckFile("_chk"));
   bool wasFound = tst.exists();
   if( tst.open(QIODevice::WriteOnly) )
@@ -550,10 +511,10 @@ bool backupExecuter::updateAutoVerifyTime()
 
 void backupExecuter::checkTimeout()
 {
-  if( suspending->isChecked() )
+  if( m_config.m_bsuspend )
   {
     static int times[] = { 10,15,30,60,90,120,150,180,210,240 };
-    int maxtime = times[timeout->currentIndex()]*60;
+    int maxtime = times[m_config.m_iTimeout]*60;
 
     if( startTime.secsTo(QDateTime::currentDateTime())>maxtime )
     {
@@ -623,7 +584,7 @@ void backupExecuter::findDirectories( QString const &start )
 
         if( passed )
         {
-          if( verboseExecute->isChecked() )
+          if( m_config.m_bVerbose )
             stream << "checking directory " << path << "\r\n";
         }
         else
@@ -668,7 +629,7 @@ void backupExecuter::analyzeDirectories()
         m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_STR_VERSION+" running.\nProcessing Directory '"+*it+"'");
     m_engine->setFileNameText(*it);
     m_engine->setProgressValue(i);
-    if( getBackground() )
+    if( m_config.m_bBackground )
       m_waiter.Sleep(20);
 
     QString srcpath = *it;
@@ -699,7 +660,7 @@ void backupExecuter::analyzeDirectories()
     {
       checkTimeout();
 
-      if( getBackground() )
+      if( m_config.m_bBackground )
         m_waiter.Sleep(20);
 
       srcFile = *it2;
@@ -792,7 +753,7 @@ QString backupExecuter::ensureDirExists( QString const &fullPath, QString const 
   QDir dst(dstpath);
   if( !dst.exists() )
   {
-    if( verboseMaintenance->isChecked() )
+    if( m_config.m_bVerboseMaint )
       stream << dst.absolutePath() << " not found in destination, would be created\r\n";
     else
     {
@@ -826,7 +787,7 @@ void backupExecuter::copySelectedFiles()
 
   m_engine->setProgressMaximum(kbytes_to_copy);
 
-  QString prefix = backupDirstruct::createFileNamePrefix(getKeep(),getCompress());
+  QString prefix = backupDirstruct::createFileNamePrefix(m_config.m_bKeep,false);
 
   QTime startTime = QTime::currentTime();
 
@@ -853,10 +814,10 @@ void backupExecuter::copySelectedFiles()
     QString fileName = srcInfo.fileName();
     qint64 modify = srcInfo.lastModified().toMSecsSinceEpoch();
 
-    if( getKeep() )
+    if( m_config.m_bKeep )
     {
       QStringList toBeDeleted;
-      m_dirs.keepFiles(relPath,fileName,getVersions()-1,toBeDeleted);
+      m_dirs.keepFiles(relPath,fileName,m_config.m_iVersions-1,toBeDeleted);
 
       QStringList::iterator it = toBeDeleted.begin();
       while (it!=toBeDeleted.end())
@@ -882,16 +843,9 @@ void backupExecuter::copySelectedFiles()
           checksumsChanged = true;
         }
 
-        int written = 0;
         int bytes = src.size();
 
         stream << "copy " << srcFile << " to " << dstFile << " (" << bytes << " bytes) ";
-        if( getCompress() )
-        {
-          dst.write ((const char *)(&header),sizeof(unsigned long));
-          dst.write ((const char *)(&magic),sizeof(unsigned long));
-          dst.write ((const char *)(&bytes),sizeof(int));
-        }
         while( m_running )
         {
           checkTimeout();
@@ -900,27 +854,6 @@ void backupExecuter::copySelectedFiles()
 
           QByteArray bytes = src.read(buffsize);
           int n = bytes.size();
-          if( getCompress() )
-          {
-            QByteArray cprs = qCompress(bytes);
-            int n2 = cprs.size();
-            dst.write ((const char *)(&n2),sizeof(int));
-            nout = dst.write(cprs);
-            written += n2;
-            if( nout!=n2 )
-            {
-              m_error = true;
-              QString str = "++++ destination drive is full. Cancelling the backup!\r\n";
-              stream << str; errstream.append(str);
-              if( getAuto() )
-              {
-                fullMessage msg(this,m_config.m_sDst);
-                msg.exec();
-              }
-              break;
-            }
-          }
-          else
           {
             nout = dst.write(bytes);
             if( nout!=n )
@@ -928,7 +861,7 @@ void backupExecuter::copySelectedFiles()
               m_error = true;
               QString str = "++++ destination drive is full. Cancelling the backup!\r\n";
               stream << str; errstream.append(str);
-              if( getAuto() )
+              if( m_config.m_bAuto )
               {
                 fullMessage msg(this,m_config.m_sDst);
                 msg.exec();
@@ -939,7 +872,7 @@ void backupExecuter::copySelectedFiles()
           copiedk += (n/1024);
           m_engine->setProgressValue(copiedk);
 
-          if( /*isBatch &&*/ getBackground() )
+          if( /*isBatch &&*/ m_config.m_bBackground )
           {
             QTime actTime = QTime::currentTime();
             double ratio = ( (double)copiedk / (double)startTime.msecsTo(actTime) * 1000.0);
@@ -947,7 +880,7 @@ void backupExecuter::copySelectedFiles()
             time = time.addSecs((int)((double)(kbytes_to_copy-copiedk)/(ratio)+0.5));
             setWindowTitle(time.toString("hh:mm:ss") +" remaining");
             if( m_isBatch )
-              m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_STR_VERSION+" running "+getTitle()+".\nProcessing File '"+*it2+"'...\n");
+              m_engine->setToolTipText(QString("Automatic Backup V")+BACKUP_STR_VERSION+" running "+m_config.m_sName+".\nProcessing File '"+*it2+"'...\n");
             m_waiter.Sleep(20);
           }
 
@@ -958,10 +891,7 @@ void backupExecuter::copySelectedFiles()
 
         if( m_running )
         {
-          if( getCompress() )
-            stream << "--> " <<  " (" << written << " bytes)\r\n";
-          else
-            stream << "\r\n";
+          stream << "\r\n";
 
           // finally, fix modification time stamp to src file
           //QFileInfo fi(srcFile);
@@ -1003,11 +933,16 @@ void backupExecuter::copySelectedFiles()
 
 backupConfigData backupExecuter::getConfigData()
 {
-  m_config = getConfigDataFromControls();
   return m_config;
 }
 
-QString backupExecuter::getTitle()
+void backupExecuter::setConfigData(const backupConfigData &config)
+{
+  m_config = config;
+  loadData();
+}
+
+/*QString backupExecuter::getTitle()
 {
   return m_config.m_sName;
 }
@@ -1055,9 +990,10 @@ int backupExecuter::getTimeout()
 {
   return m_config.m_iTimeout;
 }
-
+*/
 void backupExecuter::setCloseAfterExecute(bool doIt)
 {
+  m_closed = false;
   m_closeAfterExecute = doIt;
 }
 
@@ -1066,64 +1002,26 @@ void backupExecuter::setAskForShutdown(bool *willShutdown)
   m_askForShutDown = willShutdown;
 }
 
-void backupExecuter::selSource()
-{
-  QString path = QFileDialog::getExistingDirectory(
-  this,
-  //"get existing directory",
-  "Choose a directory",
-  m_config.m_sSrc
-  );
-
-  if( !path.isEmpty() )
-  {
-    path.replace("\\","/");
-    if( path.endsWith("/") ) path=path.left(path.length()-1);
-    sourceLab->setText(m_config.m_sSrc = path);
-  }
-}
-void backupExecuter::selDest()
-{
-  QString path = QFileDialog::getExistingDirectory(
-  this,
-  //"get existing directory",
-  "Choose a directory",
-  m_config.m_sDst
-  );
-
-  if( !path.isEmpty() )
-  {
-    path.replace("\\","/");
-    if( path.endsWith("/") ) path=path.left(path.length()-1);
-    destLab->setText(m_config.m_sDst = path);
-  }
-}
-void backupExecuter::selAuto()
-{
-  if( autoExec->isChecked() )
-    m_config.m_bAuto = true;
-  else
-    m_config.m_bAuto = false;
-}
-
 void backupExecuter::threadedCopyOperation()
 {
   findDirectories();
   analyzeDirectories();
-  if( m_running && !verboseExecute->isChecked() )
+  if( m_running && !m_config.m_bVerbose )
     copySelectedFiles();
 
-  //if( /*m_running &&*/ m_dirsCreated ) // always check for duplicates even if cancelled
+  if( m_running )
     findDuplicates();
 
-/*  if( m_running && !m_isBatch )
-    verifyBackup();*/
+  if( m_config.m_bVerify && m_running && !m_isBatch )
+    verifyBackup();
 
   if( m_running /*&& m_isBatch*/ )
   {
     if( !updateAutoBackupTime() )
       updateAutoVerifyTime();
   }
+
+  saveData();
 }
 
 void backupExecuter::threadedVerifyOperation()
@@ -1142,10 +1040,10 @@ void backupExecuter::operationFinishedEvent()
 {
   stoppingAction();
 
-  if( verboseExecute->isChecked() || m_closed ) // when debugging this means: just like OK / when dialog closed: Cancel
+  if( m_config.m_bVerbose || m_closed ) // when debugging this means: just like OK / when dialog closed: Cancel
     cancel();
-  else if( m_closeAfterExecute )
-    accept();								// this means: execution done, return to main window
+  else //if( m_closeAfterExecute )
+    close();								// this means: execution done, return to main window
 }
 
 void backupExecuter::doIt(bool runningInBackground)
@@ -1156,14 +1054,16 @@ void backupExecuter::doIt(bool runningInBackground)
       *m_askForShutDown = true;
   }
 
-  m_background = runningInBackground || backgroundExec->isChecked();
+  m_bringToFront = true;
+
+  m_background = runningInBackground || m_config.m_bBackground;
 
   QFile dir1(m_config.m_sDst);
   if( !dir1.exists() )
   {
     mediaMessage msg(this,m_config.m_sDst);
     msg.exec();
-    if( msg.result()!=Accepted )
+    if( msg.result()!=QDialog::Accepted )
       return;
     m_config.m_sDst = msg.getPath();
   }
@@ -1172,7 +1072,7 @@ void backupExecuter::doIt(bool runningInBackground)
   {
     mediaMessage msg(this,m_config.m_sSrc);
     msg.exec();
-    if( msg.result()!=Accepted )
+    if( msg.result()!=QDialog::Accepted )
       return;
     m_config.m_sSrc = msg.getPath();
   }
@@ -1192,7 +1092,7 @@ void backupExecuter::verifyIt(bool runningInBackground)
       *m_askForShutDown = true;
   }
 
-  m_background = runningInBackground || backgroundExec->isChecked();
+  m_background = runningInBackground || m_config.m_bBackground;
 
   changeVisibility();
 
@@ -1210,14 +1110,13 @@ void backupExecuter::cancel() // OK (Cancel when running) pressed
 {
   if( m_running )
   {
-    cancelButt->setText("OK");
     m_engine->setProgressText("");
     m_engine->setFileNameText("");
     m_engine->setProgressValue(0);
     m_running=false;
   }
-  else
-    reject();								// this means: just OK pressed
+
+  close();
 }
 
 void backupExecuter::contextMenuEvent(QContextMenuEvent */*event*/)
@@ -1244,6 +1143,11 @@ void backupExecuter::closeEvent ( QCloseEvent */*event*/ )
 
 void backupExecuter::timerEvent(QTimerEvent *)
 {
+  if( m_bringToFront )
+  {
+    m_bringToFront = false;
+    raise();
+  }
 }
 
 void backupExecuter::help()
@@ -1275,133 +1179,20 @@ void backupExecuter::help()
   help.exec();
 }
 
-void backupExecuter::restoreDir()
-{
-  QString path = QFileDialog::getExistingDirectory(0,"Restore directory...",m_config.m_sDst);
-  if( !path.isEmpty() )
-  {
-    startingAction();
-    restoreDirectory(path);
-    stoppingAction();
-  }
-}
-void backupExecuter::restoreFile()
-{
-  QString srcFile = QFileDialog::getOpenFileName(0,"Restore file...","","All Files (*.*)");
-  if( !srcFile.isEmpty() )
-  {
-    startingAction();
-    QFileInfo fi(srcFile);
-    if( fi.isDir() )
-    {
-      restoreDirectory(srcFile);
-    }
-    else
-    {
-      QString dstFile = QFileDialog::getSaveFileName(0,"Store file as...","","All Files (*.*)");
-      if( !dstFile.isEmpty() )
-      {
-        if( verboseMaintenance->isChecked() )
-          stream << "---> " << "would restore file " << srcFile
-          << " to file " << dstFile << "\r\n";
-        else
-          copyFile(srcFile,dstFile);
-      }
-    }
-    stoppingAction();
-  }
-}
-void backupExecuter::restoreDirectory(QString const &startPath)
-{
-  QDir dir(startPath);
-  dir.setSorting(QDir::Name);
-  const QFileInfoList &list = dir.entryInfoList();
-  QFileInfoList::const_iterator it=list.begin();
-  QFileInfo fi;
-
-  if( verboseMaintenance->isChecked() )
-    stream << "examining directory " << startPath << "\r\n";
-
-  ensureDirExists(startPath,m_config.m_sDst,m_config.m_sSrc);
-
-  m_engine->setFileNameText(startPath);
-  //	progressBar->setValue(scanned++);
-  qApp->processEvents();
-
-  while ( it!=list.end() )
-  {
-    fi = *it;
-    QString name = fi.fileName();
-    if( name!=".." && name!="." )
-    {
-      QString srcfile = startPath+"/"+name;
-      if( fi.isDir() )
-      {
-        restoreDirectory(srcfile);
-      }
-      else
-      {
-        QString relfile = srcfile.mid(m_config.m_sDst.length());
-        relfile = backupDirstruct::cutFilenamePrefix(relfile);
-        QString destfile = m_config.m_sSrc+relfile;
-        if( verboseMaintenance->isChecked() )
-          stream << "---> " << "would restore file " << srcfile
-          << " to file " << destfile << "\r\n";
-        else
-          copyFile(srcfile,destfile);
-      }
-    }
-    ++it;
-  }
-}
-void backupExecuter::copyFile(QString const &srcFile, QString const &dstFile)
-{
-  QFile src(srcFile);
-  if( src.open(QIODevice::ReadOnly) )
-  {
-    QFile dst(dstFile);
-    if( dst.open(QIODevice::WriteOnly) )
-    {
-      unsigned long l1 = 0, l2 = 0;
-      int bytes = 0, read = 0;
-      int n = 0;
-
-      src.read ((char *)(&l1),sizeof(unsigned long));
-      src.read ((char *)(&l2),sizeof(unsigned long));
-      if( l1==header && l2==magic )
-      {
-        src.read((char *)(&bytes),sizeof(int));
-        while( read<bytes )
-        {
-          src.read((char *)(&n),sizeof(int));
-          QByteArray data = src.read(n);
-          QByteArray decode = qUncompress(data);
-          dst.write(decode);
-          read += decode.size();
-        }
-      }
-      else
-      {
-        src.reset();
-        QByteArray data = src.readAll();
-        dst.write(data);
-      }
-      dst.close();
-    }
-    src.close();
-  }
-}
-
 void backupExecuter::cleanup()
 {
   QDate date;
-
-  date = dateTime->date();
+  switch( m_config.m_iLastModify )
+  {
+  default:
+    date = QDateTime::currentDateTime().date().addDays(-1);
+    break;
+  }
 
   startingAction();
   scanDirectory(date);
   findDuplicates();
-  if( verboseMaintenance->isChecked() && sourceDuplicates->isChecked() ) findDuplicates(QString::null,true);
+  if( m_config.m_bFindSrcDupl ) findDuplicates(QString::null,true);
   stoppingAction();
 }
 
@@ -1418,7 +1209,7 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
   }
   else
   {
-    if( verboseMaintenance->isChecked() || verboseExecute->isChecked() )
+    if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
     {
       if( fi.exists() )
       {
@@ -1434,7 +1225,7 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
     {
       QFile file(destinationPath);
 
-      if( collectFiles->isChecked() )
+      if( m_config.m_bCollectDeleted )
       {
           if( collectingDeleted )
           {
@@ -1651,7 +1442,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
         if( results.count>0 )
         {
-          if( showTreeStruct->isChecked() )
+          if( m_config.m_bShowTree )
             stream << "      " << results.count << " removable files with " << results.dirkbytes << " Kbytes found in " << path << "\r\n";
           totalcount += results.count;
           totaldirkbytes += results.dirkbytes;
@@ -1669,7 +1460,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     stream << "----> " << totalCounts.yearcount << " files older than a year with " << totalCounts.yearkbytes << " Kbytes found\r\n";
     stream << "====> " << totalCounts.yearcount+totalCounts.halfcount+totalCounts.quartercount+totalCounts.monthcount+totalCounts.daycount
            << " total files with " << totalCounts.yearkbytes+totalCounts.halfkbytes+totalCounts.quarterkbytes+totalCounts.monthkbytes+totalCounts.daykbytes << " Kbytes found\r\n";
-    if( verboseMaintenance->isChecked() )
+    if( m_config.m_bVerboseMaint )
       stream << "====> " << totalcount << " deletable files with " << totaldirkbytes << " Kbytes found\r\n";
     else
       stream << "====> " << totalcount << " files with " << totaldirkbytes << " Kbytes deleted\r\n";
@@ -1683,7 +1474,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     unsigned long foundkbytes = 0;
 
     QString actPath = startPath;
-    QString configfile = getTitle();
+    QString configfile = m_config.m_sName;
 
     QDir dir(actPath);
     dir.setSorting(QDir::Name);
@@ -1697,7 +1488,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     QString lastName = "";
     QString indent = "";
 
-    if( showTreeStruct->isChecked() ) // bei Detail-Listing
+    if( m_config.m_bShowTree ) // bei Detail-Listing
     {
       for( int i=0; i<=level; i++ )
       {
@@ -1834,14 +1625,14 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
       ++it;
     }
 
-    if( showTreeStruct->isChecked() && (found>0) ) // bei Detail-Listing
+    if( m_config.m_bShowTree && (found>0) ) // bei Detail-Listing
     {
       stream << indent << "     " << found << " total files with " << foundkbytes << " Kbytes found in " << actPath << "\r\n";
     }
 
     if( count>0 )
     {
-      if( showTreeStruct->isChecked() )
+      if( m_config.m_bShowTree )
         stream << indent << "     " << count << " removable files with " << dirkbytes << " Kbytes found in " << actPath << "\r\n";
       totalcount += count;
       totaldirkbytes += dirkbytes;
@@ -1895,7 +1686,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
         findDuplicates(m_config.m_sSrc,operatingOnSource);
       else
         findDuplicates(m_config.m_sDst,operatingOnSource);
-      if( verboseMaintenance->isChecked() || verboseExecute->isChecked() )
+      if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
         stream << "====> " << totalcount << " duplicate files with " << totaldirkbytes << " Kbytes found\r\n";
       else
         stream << "====> " << totalcount << " duplicate files with " << totaldirkbytes << " Kbytes deleted\r\n";
@@ -1905,7 +1696,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
     else
     {
       QString actPath = startPath;
-      QString configfile = getTitle();
+      QString configfile = m_config.m_sName;
 
       QDir dir(actPath);
       dir.setSorting(QDir::Name);
@@ -1987,7 +1778,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
                   totaldirkbytes += size / 1024;
                   totalcount++;
                 }
-                else if( showTreeStruct->isChecked() )
+                else if( m_config.m_bShowTree )
                 {
                   fileToDelete = fi.absoluteFilePath();
                   mappedFile = listPath+"/"+filename;
@@ -2006,7 +1797,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
                 filemap.insert(filename,fi.absolutePath()+";"+filemodified.toString()+";"
                 +QString::number(size));
               }
-              else if( showTreeStruct->isChecked() )
+              else if( m_config.m_bShowTree )
                 stream << indent << "     " << "file " << fi.absoluteFilePath() << " has source, keeping it\r\n";
             }
           }
@@ -2056,7 +1847,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             m_toBeRemovedFromToc.append(qMakePair(listPath,listFile));
             m_toBeRemovedFromToc.append(qMakePair(relpath,filename));
           }
-          else if( showTreeStruct->isChecked() )
+          else if( m_config.m_bShowTree )
           {
             sourceFileRemoved = m_config.m_sDst + "/" + relpath+"/"+it2.key();
             mappedFile = listPath+"/"+filename;
@@ -2149,7 +1940,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
   if( startPath.isNull() )
   {
-    if( verboseExecute->isChecked() )
+    if( m_config.m_bVerbose )
       return;
 
     m_engine->setProgressText("verifying files in backup...");
@@ -2157,6 +1948,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
     scanned = 0;
     verifiedK = 0;
     verifyBackup(m_config.m_sDst);
+    m_engine->setProgressMaximum(1);
     m_engine->setProgressValue(0);
     if ( m_running )
       lastVerifiedK = verifiedK;
@@ -2164,7 +1956,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
   else
   {
     QString actPath = startPath;
-    QString configfile = getTitle();
+    QString configfile = m_config.m_sName;
 
     QDir dir(actPath);
     dir.setSorting(QDir::Name);
@@ -2174,7 +1966,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
     m_engine->setFileNameText(actPath);
     //progressBar->setValue(scanned++);
-    if( getBackground() )
+    if( m_config.m_bBackground )
       m_waiter.Sleep(20);
 
     QString lastFile = "";
@@ -2251,7 +2043,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
           if( willVerify )
           {
-            if( verboseMaintenance->isChecked() || verboseExecute->isChecked() )
+            if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
               stream << "--- verifying '" << verifyFile << "'...";
             QFile dst(verifyFile);
             if( dst.open(QIODevice::ReadOnly) )
@@ -2295,7 +2087,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                     m_engine->setProgressValue(verifiedK);
                   else
                     m_engine->setProgressMaximum(0);
-                  if( getBackground() )
+                  if( m_config.m_bBackground )
                     m_waiter.Sleep(20);
                 }
               }
@@ -2326,7 +2118,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                     m_engine->setProgressValue(verifiedK);
                   else
                     m_engine->setProgressMaximum(0);
-                  if( getBackground() )
+                  if( m_config.m_bBackground )
                     m_waiter.Sleep(20);
                 }
                 //if( bytes>10000 && bytes<20000 ) errFound=true;
@@ -2350,7 +2142,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                 QString str = "++++ verify error in backup file '" + verifyFile + "'!\r\n";
                 stream << str; errstream.append(str);
               }
-              else if( verboseMaintenance->isChecked() || verboseExecute->isChecked() )
+              else if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
                 stream << " is OK.\r\n";
               dst.close();
             }
@@ -2366,7 +2158,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
           }
           else
           {
-            if( verboseMaintenance->isChecked() || verboseExecute->isChecked() )
+            if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
               stream << "--- skipping verify on '" << verifyFile << " , last scanned on " << scanTime.toString() << "\r\n";
           }
         }
@@ -2379,7 +2171,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
 QString backupExecuter::getAutobackupCheckFile(QString const &suffix)
 {
-  return m_config.m_sDst+"/"+getTitle().remove(" ") + suffix + ".vibup";
+  return m_config.m_sDst+"/"+m_config.m_sName.remove(" ") + suffix + ".vibup";
 }
 
 bool backupExecuter::isAutoBackupCreatedFile(const QString &file)

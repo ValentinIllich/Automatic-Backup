@@ -44,21 +44,14 @@ public:
 
   void editBackupItem(bool closeAferExecute,bool *askForShutdown)
   {
-    backupExecuter executer(m_config);
-    executer.setCloseAfterExecute(closeAferExecute);
-    executer.setAskForShutdown(askForShutdown);
-    executer.exec();
-    //m_config.m_bexecuted = executer.result()==QDialog::Accepted;
-
-    m_config = executer.getConfigData();
-
-    setText(m_config.m_sName);
-    if( m_config.m_bAuto )
-      setCheckState(Qt::Checked);
+    if( m_executer==NULL )
+      m_executer = new backupExecuter(m_config);
     else
-      setCheckState(Qt::Unchecked);
-
-    listWidget()->repaint();
+      m_executer->setConfigData(m_config);
+    m_executer->setCloseAfterExecute(closeAferExecute);
+    m_executer->setAskForShutdown(askForShutdown);
+    m_executer->show();
+    m_executer->doIt();
   }
 
   backupExecuter *getBackupExecuter()
@@ -86,10 +79,13 @@ public:
   {
     if( m_executer==NULL )
       m_executer = new backupExecuter(m_config);
+    else
+      m_executer->setConfigData(m_config);
     m_executer->setCloseAfterExecute(closeAferExecute);
 //    m_executer->startBatchProcessing();
     m_executer->show();
     m_executer->doIt(runningInBackground);
+    m_executer->processEventsAndWait(); // remove this to allow parallel processing of backups. But logging must be changed for this.
     //m_config.m_bexecuted = true;
   }
 
@@ -97,10 +93,13 @@ public:
   {
     if( m_executer==NULL )
       m_executer = new backupExecuter(m_config);
+    else
+      m_executer->setConfigData(m_config);
     m_executer->setCloseAfterExecute(closeAferExecute);
 //    m_executer->startBatchProcessing();
     m_executer->show();
     m_executer->verifyIt(runningInBackground);
+    m_executer->processEventsAndWait(); // remove this to allow parallel processing of backups. But logging must be changed for this.
   }
 
 /*  bool executionDone()
