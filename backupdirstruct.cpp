@@ -3,6 +3,97 @@
 #include <QStringList>
 #include <QDateTime>
 
+
+dirEntry::dirEntry(dirEntry *parent, const QString &name)
+  : m_parent(parent)
+  ,m_name(name)
+{
+  m_tocData.m_prefix.clear();
+  m_tocData.m_tocId = 0;
+  m_tocData.m_size = 0;
+  m_tocData.m_modify = 0;
+  m_tocData.m_crc = 0;
+}
+
+dirEntry::~dirEntry()
+{
+  QMap<QString, dirEntry*>::const_iterator it1 = m_dirs.constBegin();
+  while (it1 != m_dirs.constEnd())
+  {
+    delete it1.value();
+    ++it1;
+  }
+  QList<dirEntry*>::const_iterator it2 = m_files.constBegin();
+  while (it2 != m_files.constEnd())
+  {
+    delete *it2;
+    ++it2;
+  }
+}
+
+void dirEntry::updateDirInfos(qint64 sizeOfFiles, qint64 lastModified)
+{
+  dirEntry *parent = this;
+  while( parent )
+  {
+    parent->m_tocData.m_size += sizeOfFiles;
+    if( lastModified>parent->m_tocData.m_modify ) parent->m_tocData.m_modify = lastModified;
+    parent = parent->m_parent;
+  }
+}
+
+QString dirEntry::absoluteFilePath()
+{
+  QString path = "";
+
+  dirEntry *current = this;
+  while( current )
+  {
+    if( !path.isEmpty() ) path.prepend("/");
+    path = current->m_tocData.m_prefix+current->m_name + path;
+    current = current->m_parent;
+  }
+
+  return path;
+}
+
+QString dirEntry::relativeFilePath()
+{
+  QString path = "";
+
+  dirEntry *current = this;
+  while( current->m_parent )
+  {
+    if( !path.isEmpty() ) path.prepend("/");
+    path = current->m_name + path;
+    current = current->m_parent;
+  }
+
+  return path;
+}
+
+void dirEntry::deleteDir(dirEntry *entry)
+{
+  m_dirs.remove(entry->m_name);
+  dirEntry *current = this;
+  while( current )
+  {
+    //current->m_tocData.m_size -= entry->m_tocData.m_size;
+    current = current->m_parent;
+  }
+}
+
+void dirEntry::deleteFile(dirEntry *entry)
+{
+  m_files.removeAll(entry);
+  dirEntry *current = this;
+  while( current )
+  {
+    current->m_tocData.m_size -= entry->m_tocData.m_size;
+    current = current->m_parent;
+  }
+}
+
 QDataStream &operator<<(QDataStream &out, const struct fileTocEntry &src)
 {
   out << src.m_prefix << src.m_tocId << src.m_size << src.m_modify << src.m_crc;
@@ -49,19 +140,214 @@ QDataStream &operator>>(QDataStream &in, std::list<fileTocEntry> &dst)
   return in;
 }
 
-backupDirstruct::backupDirstruct()
+backupDirStruct::backupDirStruct()
   : m_nextTocId(0)
   , m_tocChanged(false)
 {
 }
 
-backupDirstruct::~backupDirstruct()
+backupDirStruct::~backupDirStruct()
 {
 }
 
-bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry *rootEntry, int &dirCount)
+bool backupDirStruct::readFromFile(const QString &tocSummaryFile)
 {
-  backupDirstruct dirs;
+  m_archiveContent.clear();
+
+  if( QFile::exists(tocSummaryFile) )
+  {
+    QFile tocFile(tocSummaryFile);
+    m_nextTocId = 0;
+
+    tocFile.open(QIODevice::ReadOnly);
+    QDataStream str(&tocFile);
+    str >> m_archiveContent;
+    tocFile.close();
+
+    FILE *fp=fopen("/Users/valentinillich/toc.txt","w");
+
+    tocDataContainerMap::iterator it1 = getFirstElement();
+    while( it1 != getLastElement() )
+    {
+      tocDataEntryMap::iterator it2 = it1.value().begin();
+
+      while( it2!=it1.value().end() )
+      {
+        if( fp ) fprintf(fp,"%s/%s: ",it1.key().toLatin1().data(),it2.key().toLatin1().data());
+        tocDataEntryList entries = it2.value();
+        tocDataEntryList::iterator it3 = entries.begin();
+        while( it3!=entries.end() )
+        {
+          if( fp ) fprintf(fp,"%s, ",it3->m_prefix.toLatin1().data());
+          if( (*it3).m_tocId>=m_nextTocId )
+            m_nextTocId = (*it3).m_tocId + 1;
+          ++it3;
+        }
+        if( fp ) fprintf(fp,"\n");
+        ++it2;
+      }
+      ++it1;
+    }
+
+    if( fp ) fclose(fp);
+    m_tocChanged = false;
+    return true;
+  }
+  return false;
+}
+
+bool backupDirStruct::writeToFile(const QString &tocSummaryFile)
+{
+  QFile tocFile(tocSummaryFile);
+  if( tocFile.open(QIODevice::WriteOnly | QIODevice::Truncate) )
+  {
+    QDataStream str(&tocFile);
+    str << m_archiveContent;
+    tocFile.close();
+    m_tocChanged = false;
+    return true;
+  }
+  return false;
+}
+
+tocDataContainerMap::iterator backupDirStruct::getFirstElement()
+{
+  return m_archiveContent.begin();
+}
+
+tocDataContainerMap::iterator backupDirStruct::getLastElement()
+{
+  return m_archiveContent.end();
+}
+
+bool backupDirStruct::tocHasChanged()
+{
+  return m_tocChanged;
+}
+
+int backupDirStruct::size()
+{
+  return m_archiveContent.size();
+}
+
+bool backupDirStruct::exists(const QString &path, const QString &file)
+{
+  QString prefix = "";
+  QString baseFile = backupDirStruct::cutFilenamePrefix(file,&prefix);
+
+  if( path.isEmpty() )
+    return m_archiveContent.contains(".") && m_archiveContent["."].contains(baseFile);
+  else
+    return m_archiveContent.contains(path) && m_archiveContent[path].contains(baseFile);
+}
+
+qint64 backupDirStruct::lastModified(const QString &path, const QString &file)
+{
+  QString prefix = "";
+  QString baseFile = backupDirStruct::cutFilenamePrefix(file,&prefix);
+
+  if( path.isEmpty() )
+    return m_archiveContent["."][baseFile].front().m_modify;
+  else
+    return m_archiveContent[path][baseFile].front().m_modify;
+}
+
+tocDataEntryList &backupDirStruct::getEntryList(const QString &path, const QString &file)
+{
+  QString prefix = "";
+  QString baseFile = backupDirStruct::cutFilenamePrefix(file,&prefix);
+
+  if( path.isEmpty() )
+    return m_archiveContent["."][baseFile];
+  else
+    return m_archiveContent[path][baseFile];
+}
+
+fileTocEntry &backupDirStruct::getNewestEntry(const tocDataEntryMap::iterator &it)
+{
+  return it.value().front();
+}
+
+qint64 backupDirStruct::nextTocId()
+{
+  return m_nextTocId++;
+}
+
+void backupDirStruct::addFile(const QString &path, const QString &file, fileTocEntry &entry)
+{
+  QString basePath = "";
+  QString prefix = "";
+  QString baseFile = backupDirStruct::cutFilenamePrefix(file,&prefix);
+
+  if( path.isEmpty() )
+    basePath = ".";
+  else
+    basePath = path;
+
+  if( prefix.isEmpty() && entry.m_prefix.isEmpty() )
+    m_archiveContent[basePath][baseFile].clear();
+  else if( entry.m_prefix.isEmpty() )
+    entry.m_prefix = prefix;
+  m_archiveContent[basePath][baseFile].push_front(entry);
+  m_tocChanged = true;
+}
+
+void backupDirStruct::removeFile(const QString &path, const QString &file, QStringList &toBeDeleted)
+{
+  QString basePath = "";
+  QString prefix = "";
+  QString baseFile = backupDirStruct::cutFilenamePrefix(file,&prefix);
+
+  if( path.isEmpty() )
+    basePath = ".";
+  else
+    basePath = path;
+
+  std::list<fileTocEntry> &entries = m_archiveContent[basePath][baseFile];
+  std::list<fileTocEntry>::iterator it = entries.begin();
+  while( it!=entries.end() )
+  {
+    QString relPath = path;
+    if( !relPath.isEmpty() ) relPath += "/";
+    relPath += (*it).m_prefix+file;
+
+    toBeDeleted.push_back(relPath);
+    ++it;
+  }
+
+  m_archiveContent[basePath].remove(baseFile);
+  m_tocChanged = true;
+}
+
+void backupDirStruct::keepFiles(const QString &path, const QString &file, size_t numberOfFiles, QStringList &toBeDeleted)
+{
+  QString basePath = "";
+  QString prefix = "";
+  QString baseFile = backupDirStruct::cutFilenamePrefix(file,&prefix);
+
+  if( path.isEmpty() )
+    basePath = ".";
+  else
+    basePath = path;
+
+  std::list<fileTocEntry> &entries = m_archiveContent[basePath][baseFile];
+
+  while( entries.size()>numberOfFiles )
+  {
+    fileTocEntry entry = entries.back();
+    entries.pop_back();
+
+    QString relPath = path;
+    if( !relPath.isEmpty() ) relPath += "/";
+    relPath += entry.m_prefix+file;
+
+    toBeDeleted.push_back(relPath);
+  }
+}
+
+bool backupDirStruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry *rootEntry, int &dirCount)
+{
+  backupDirStruct dirs;
 
   if( dirs.readFromFile(tocSummaryFile) )
   {
@@ -132,7 +418,7 @@ bool backupDirstruct::convertFromTocFile(QString const &tocSummaryFile, dirEntry
   return false;
 }
 
-void iterateDirecories(dirEntry *entry,backupDirstruct &dirs)
+void iterateDirecories(dirEntry *entry,backupDirStruct &dirs)
 {
   QMap<QString,dirEntry*>::iterator it1 = entry->m_dirs.begin();
   while( it1!=entry->m_dirs.end() )
@@ -151,15 +437,15 @@ void iterateDirecories(dirEntry *entry,backupDirstruct &dirs)
   }
 }
 
-bool backupDirstruct::convertToTocFile(const QString &tocSummaryFile, dirEntry *rootEntry)
+bool backupDirStruct::convertToTocFile(const QString &tocSummaryFile, dirEntry *rootEntry)
 {
-  backupDirstruct dirs;
+  backupDirStruct dirs;
   iterateDirecories(rootEntry,dirs);
 
   return dirs.writeToFile(tocSummaryFile);
 }
 
-QString backupDirstruct::createFileNamePrefix(bool keepCopies, bool compressFile)
+QString backupDirStruct::createFileNamePrefix(bool keepCopies, bool compressFile)
 {
   QString prefix;
 
@@ -175,7 +461,7 @@ QString backupDirstruct::createFileNamePrefix(bool keepCopies, bool compressFile
   return prefix;
 }
 
-QString backupDirstruct::addFilenamePrefix(const QString &relPath, const QString &prefix)
+QString backupDirStruct::addFilenamePrefix(const QString &relPath, const QString &prefix)
 {
   QString result = relPath;
   int pos = result.lastIndexOf("/");
@@ -187,7 +473,7 @@ QString backupDirstruct::addFilenamePrefix(const QString &relPath, const QString
   return result;
 }
 
-QString backupDirstruct::cutFilenamePrefix(const QString &relPath, QString *prefixFound /*= NULL*/)
+QString backupDirStruct::cutFilenamePrefix(const QString &relPath, QString *prefixFound /*= NULL*/)
 {
   QString result = relPath;
   QString name = "";
@@ -218,27 +504,27 @@ QString backupDirstruct::cutFilenamePrefix(const QString &relPath, QString *pref
   return result;
 }
 
-QString backupDirstruct::getTocSummaryFile(QString const &filePath)
+QString backupDirStruct::getTocSummaryFile(QString const &filePath)
 {
   return filePath + "/tocsummary.crcs";
 }
 
-bool backupDirstruct::isTocSummaryFile(const QString &filePath)
+bool backupDirStruct::isTocSummaryFile(const QString &filePath)
 {
   return filePath.contains("tocsummary.crcs");
 }
 
-QString backupDirstruct::getChecksumSummaryFile(QString const &filePath)
+QString backupDirStruct::getChecksumSummaryFile(QString const &filePath)
 {
   return filePath + "/checksumsummary.crcs";
 }
 
-bool backupDirstruct::isChecksumSummaryFile(const QString &filePath)
+bool backupDirStruct::isChecksumSummaryFile(const QString &filePath)
 {
   return filePath.contains("checksumsummary.crcs");
 }
 
-bool backupDirstruct::isSummaryFile(const QString &filePath)
+bool backupDirStruct::isSummaryFile(const QString &filePath)
 {
   return filePath.endsWith(".crcs");
 }
