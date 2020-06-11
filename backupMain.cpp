@@ -672,14 +672,14 @@ void backupMain::autoExecute(bool runningInBackground)
       {
         item->startBatchExecution();
         item->executebackupItem(true,runningInBackground);
-        item->getBackupExecuter()->processEventsAndWait();
+        item->getBackupExecuter()->processEventsAndWait(); // remove this to allow parallel processing of backups. But logging must be changed for this.
       }
 
       if( doItVerify )
       {
         if( !doItBackup ) item->startBatchExecution();
         item->verifyBackupItem(true,runningInBackground);
-        item->getBackupExecuter()->processEventsAndWait();
+        item->getBackupExecuter()->processEventsAndWait(); // remove this to allow parallel processing of backups. But logging must be changed for this.
       }
 
       if( doItBackup || doItVerify )

@@ -1017,6 +1017,7 @@ void backupExecuter::threadedCopyOperation()
 
   if( m_running /*&& m_isBatch*/ )
   {
+    // avoid verify upon initial run
     if( !updateAutoBackupTime() )
       updateAutoVerifyTime();
   }
@@ -1026,12 +1027,11 @@ void backupExecuter::threadedCopyOperation()
 
 void backupExecuter::threadedVerifyOperation()
 {
-  verifyBackup();
+  if( m_config.m_bVerify )
+    verifyBackup();
 
   if( m_running /*&& m_isBatch*/ )
-  {
     updateAutoVerifyTime();
-  }
 
   saveData();
 }
@@ -1040,10 +1040,10 @@ void backupExecuter::operationFinishedEvent()
 {
   stoppingAction();
 
-  if( m_config.m_bVerbose || m_closed ) // when debugging this means: just like OK / when dialog closed: Cancel
+  if( m_config.m_bVerbose || m_closed )
     cancel();
-  else //if( m_closeAfterExecute )
-    close();								// this means: execution done, return to main window
+  else
+    close();
 }
 
 void backupExecuter::doIt(bool runningInBackground)

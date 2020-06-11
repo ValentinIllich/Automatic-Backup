@@ -18,7 +18,10 @@
 	<string>@EXECUTABLE@</string>
 	<key>CFBundleDocumentTypes</key>
 	<array/>
-	<key>NOTE</key>
+  <key>NSPrincipalClass</key>
+  <string>NSApplication</string>
+  <key>NSHighResolutionCapable</key>
+  <string>True</string>	<key>NOTE</key>
 	<string>Automatic Backup by Valentins QT Solutions</string>
 </dict>
 </plist>
