@@ -24,7 +24,7 @@ FORMS += backupwindow.ui \
 SOURCES += backupExecuter.cpp \
     backupMain.cpp \
     main.cpp \
-    cleanupdialog.cpp \
+    cleanupDialog.cpp \
     backupSplash.cpp \
     utilities.cpp \
     backupengine.cpp \
