@@ -172,7 +172,7 @@ void backupExecuter::loadData()
 {
   crcSummary.clear();
 
-  QString summaryFile = backupDirstruct::getChecksumSummaryFile(m_config.m_sDst);
+  QString summaryFile = backupDirStruct::getChecksumSummaryFile(m_config.m_sDst);
   QFile crcfile(summaryFile);
   if( QFile::exists(summaryFile) )
   {
@@ -189,7 +189,7 @@ void backupExecuter::loadData()
   else
     lastVerifiedK = 0;
 
-  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_config.m_sDst);
+  QString tocSummaryFile = backupDirStruct::getTocSummaryFile(m_config.m_sDst);
   m_dirs.readFromFile(tocSummaryFile);
 }
 
@@ -197,7 +197,7 @@ void backupExecuter::saveData()
 {  
   if( checksumsChanged )
   {
-    QString summaryFile = backupDirstruct::getChecksumSummaryFile(m_config.m_sDst);
+    QString summaryFile = backupDirStruct::getChecksumSummaryFile(m_config.m_sDst);
     QFile crcfile(summaryFile);
     crcfile.open(QIODevice::WriteOnly | QIODevice::Truncate);
     QDataStream str(&crcfile);
@@ -210,7 +210,7 @@ void backupExecuter::saveData()
 
   if( m_dirs.tocHasChanged() )
   {
-    QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_config.m_sDst);
+    QString tocSummaryFile = backupDirStruct::getTocSummaryFile(m_config.m_sDst);
     m_dirs.writeToFile(tocSummaryFile);
   }
 }
@@ -681,7 +681,7 @@ void backupExecuter::analyzeDirectories()
         if( !(*it4).isEmpty() && fullName.contains(*it4) )
           passed = false;
       }
-      if( backupDirstruct::isTocSummaryFile(actualName) || backupDirstruct::isChecksumSummaryFile(actualName) )
+      if( backupDirStruct::isTocSummaryFile(actualName) || backupDirStruct::isChecksumSummaryFile(actualName) )
         passed = false;
 
       if( isAutoBackupCreatedFile(actualName) )
@@ -787,7 +787,7 @@ void backupExecuter::copySelectedFiles()
 
   m_engine->setProgressMaximum(kbytes_to_copy);
 
-  QString prefix = backupDirstruct::createFileNamePrefix(m_config.m_bKeep,false);
+  QString prefix = backupDirStruct::createFileNamePrefix(m_config.m_bKeep,false);
 
   QTime startTime = QTime::currentTime();
 
@@ -806,7 +806,7 @@ void backupExecuter::copySelectedFiles()
 
     QString relName = *it2;
     srcFile = m_config.m_sSrc + relName;
-    dstFile = m_config.m_sDst + (prefix.isEmpty() ? relName : backupDirstruct::addFilenamePrefix(relName,prefix));
+    dstFile = m_config.m_sDst + (prefix.isEmpty() ? relName : backupDirStruct::addFilenamePrefix(relName,prefix));
 
     QFileInfo srcInfo(srcFile);
     QString filePath = srcInfo.dir().absolutePath();
@@ -1508,7 +1508,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
       fi = *it;
       QString name = fi.fileName();
-      if( name!=".." && name!="." && name!=configfile && !backupDirstruct::isSummaryFile(name) )
+      if( name!=".." && name!="." && name!=configfile && !backupDirStruct::isSummaryFile(name) )
       {
         if( fi.isDir() )
         {
@@ -1532,7 +1532,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
             //QString srcfile = source + fi.absoluteFilePath().remove(destination);//VIL
 
             QString filename = fi.fileName();
-            filename = backupDirstruct::cutFilenamePrefix(filename);
+            filename = backupDirStruct::cutFilenamePrefix(filename);
 
             QString srcfile = m_config.m_sSrc + (fi.absolutePath()+"/"+filename).mid(m_config.m_sDst.length());
 
@@ -1730,7 +1730,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             //QDate today = QDate::currentDate();
 
             QString filename = fi.fileName();
-            filename = backupDirstruct::cutFilenamePrefix(filename);
+            filename = backupDirStruct::cutFilenamePrefix(filename);
 
             QString srcfile = m_config.m_sSrc + (fi.absolutePath()+"/"+filename).mid(m_config.m_sDst.length());
             //stream << "source file is " << srcfile << " \r\n";
@@ -1980,7 +1980,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
       fi = *it;
       QString name = fi.fileName();
-      if( name!=".." && name!="." && name!=configfile && !backupDirstruct::isSummaryFile(name) )
+      if( name!=".." && name!="." && name!=configfile && !backupDirStruct::isSummaryFile(name) )
       {
         if( fi.isDir() )
         {
@@ -1989,7 +1989,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
         else
         {
           QString filename = fi.fileName();
-          filename = backupDirstruct::cutFilenamePrefix(filename);
+          filename = backupDirStruct::cutFilenamePrefix(filename);
 
           QString verifyFile = fi.absolutePath()+"/"+fi.fileName();
           //QString dstFile = fi.absolutePath()+"/"+filename;
@@ -2176,5 +2176,5 @@ QString backupExecuter::getAutobackupCheckFile(QString const &suffix)
 
 bool backupExecuter::isAutoBackupCreatedFile(const QString &file)
 {
-  return backupDirstruct::isTocSummaryFile(file) || file.contains(".vibup");
+  return backupDirStruct::isTocSummaryFile(file) || file.contains(".vibup");
 }

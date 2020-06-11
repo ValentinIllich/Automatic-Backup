@@ -194,7 +194,7 @@ private:
 
   QMap<QString,struct crcInfo> crcSummary;
 
-  backupDirstruct m_dirs;
+  backupDirStruct m_dirs;
 
   quint32 lastVerifiedK;
   quint32 verifiedK;

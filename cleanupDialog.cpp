@@ -59,8 +59,8 @@ cleanupDialog::~cleanupDialog()
 
 void cleanupDialog::saveDirStruct()
 {
-  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_path);
-  if( !backupDirstruct::convertToTocFile(tocSummaryFile,m_rootEntry ) )
+  QString tocSummaryFile = backupDirStruct::getTocSummaryFile(m_path);
+  if( !backupDirStruct::convertToTocFile(tocSummaryFile,m_rootEntry ) )
       QMessageBox::warning(this,"write error","could not create table of contents file.\nPlease restart in Root mode.");
 }
 
@@ -89,8 +89,8 @@ void cleanupDialog::threadedVerifyOperation()
   m_dirStructChanged = false;
   m_dirCount = 0;
 
-  QString tocSummaryFile = backupDirstruct::getTocSummaryFile(m_path);
-  if( backupDirstruct::convertFromTocFile(tocSummaryFile,m_rootEntry,m_dirCount)/*canReadFromTocFile(path,entry)*/ )
+  QString tocSummaryFile = backupDirStruct::getTocSummaryFile(m_path);
+  if( backupDirStruct::convertFromTocFile(tocSummaryFile,m_rootEntry,m_dirCount)/*canReadFromTocFile(path,entry)*/ )
     m_dirStructValid = true;
   else
     scanRelativePath(m_path,m_rootEntry,m_dirCount);
@@ -232,7 +232,7 @@ void cleanupDialog::doRescan()
   startingPath = QFileDialog::getExistingDirectory(this, tr("Rescan Directory"),m_path,QFileDialog::ShowDirsOnly);
   if( !startingPath.isEmpty() )
   {
-    QString tocSummaryFile = backupDirstruct::getTocSummaryFile(startingPath);
+    QString tocSummaryFile = backupDirStruct::getTocSummaryFile(startingPath);
     if( QFile::exists(tocSummaryFile) )
       QFile::remove(tocSummaryFile);
 
@@ -320,10 +320,10 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
   {
     QFileInfo fileInfo = list.at(i);
     QString prefix = "";
-    QString name = backupDirstruct::cutFilenamePrefix(fileInfo.fileName(),&prefix);
+    QString name = backupDirStruct::cutFilenamePrefix(fileInfo.fileName(),&prefix);
     if( fileInfo.isDir() )
     {
-      if( name!="." && name!=".." && !backupDirstruct::isSummaryFile(name) )
+      if( name!="." && name!=".." && !backupDirStruct::isSummaryFile(name) )
       {
         dirEntry *newEntry = new dirEntry(entry,name);
         entry->m_dirs[name] = newEntry;
@@ -477,7 +477,7 @@ void cleanupDialog::openFile( QString const &fn )
 
 void cleanupDialog::checkForBackupPath(QString const &path)
 {
-    QString tocSummaryFile = backupDirstruct::getTocSummaryFile(path);
+    QString tocSummaryFile = backupDirStruct::getTocSummaryFile(path);
     if( QFile::exists(tocSummaryFile) )
     {
       if( m_analyzingPath.isEmpty() )

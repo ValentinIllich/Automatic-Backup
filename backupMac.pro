@@ -20,7 +20,7 @@ HEADERS += backupExecuter.h \
     backupdirstruct.h
 FORMS += backupwindow.ui \
     mainwindow.ui \
-    cleanupdialog.ui
+    cleanupDialog.ui
 SOURCES += backupExecuter.cpp \
     backupMain.cpp \
     main.cpp \
