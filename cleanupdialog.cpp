@@ -1,5 +1,5 @@
-#include "cleanupdialog.h"
-#include "ui_cleanupdialog.h"
+#include "cleanupDialog.h"
+#include "ui_cleanupDialog.h"
 #include "backupengine.h"
 #include "backupExecuter.h"
 

@@ -15,7 +15,7 @@
 
 #include "backupMain.h"
 #include "backupExecuter.h"
-#include "cleanupdialog.h"
+#include "cleanupDialog.h"
 #include "Utilities.h"
 
 class backupListItem : public QListWidgetItem

@@ -13,7 +13,7 @@ TARGET = backup
 HEADERS += backupExecuter.h \
     backupConfigData.h \
     backupMain.h \
-    cleanupdialog.h \
+    cleanupDialog.h \
     backupSplash.h \
     utilities.h \
     backupengine.h \
