@@ -119,6 +119,14 @@ backupExecuter::backupExecuter(backupConfigData &configData)
 
   loadData();
 
+  QSettings settings;
+  int titleheight = settings.value("WindowTitlebarHeight").toInt();
+  int framewidth = settings.value("WindowFramewidth").toInt();
+  int w = width();
+  int h = minimumSizeHint().height();
+  QRect screen = qApp->desktop()->availableGeometry();
+  setGeometry(screen.x()+screen.width()/2-w/2-framewidth,screen.y()+screen.height()/2-(h+titleheight)/2,w,h);
+
   startTimer(100);
 }
 
