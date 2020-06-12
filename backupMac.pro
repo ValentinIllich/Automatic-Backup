@@ -31,19 +31,22 @@ SOURCES += backupExecuter.cpp \
     authexec.c \
     backupDirStruct.cpp
 RESOURCES += backupwindow.qrc
-win32 { 
-    MOC_DIR = c:/tmp/backup_obj
-    UI_DIR = c:/tmp/backup_obj
-    OBJECTS_DIR = c:/tmp/backup_obj
-    RCC_DIR = c:/tmp/backup_obj
+
+CONFIG(debug, debug|release): BUILD = debug
+CONFIG(release, debug|release): BUILD = release
+
+win32 {
+    OBJECTS_DIR = c:/tmp/backup_$${BUILD}_obj
+    UI_DIR = c:/tmp/backup_$${BUILD}_obj
+    MOC_DIR = c:/tmp/backup_$${BUILD}_obj
+    RCC_DIR = c:/tmp/backup_$${BUILD}_obj
     RC_FILE = ressources/backup.rc
 }
 macx { 
-#    QMAKE_MAKEFILE = MacMakefile
-    MOC_DIR = /private/var/tmp/backup_obj
-    UI_DIR = /private/var/tmp/backup_obj
-    OBJECTS_DIR = /private/var/tmp/backup_obj
-    RCC_DIR = /private/var/tmp/backup_obj
+    OBJECTS_DIR = /private/var/tmp/backup_$${BUILD}_obj
+    UI_DIR = /private/var/tmp/backup_$${BUILD}_obj
+    MOC_DIR = /private/var/tmp/backup_$${BUILD}_obj
+    RCC_DIR = /private/var/tmp/backup_$${BUILD}_obj
     ICON = ressources/backup.icns
     QMAKE_INFO_PLIST = ressources/Info_mac.plist
     LIBS += -framework Security
