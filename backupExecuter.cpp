@@ -2,30 +2,14 @@
 #include "backupMain.h"
 #include "Utilities.h"
 
-#include <qlayout.h>
-
-#include <qdir.h>
-#include <qprogressdialog.h>
-#include <qapplication.h>
-#include <qsettings.h>
-
-#include <qcheckbox.h>
-#include <qcombobox.h>
-
-#include <qlabel.h>
-#include <qpushbutton.h>
-#include <qlineedit.h>
-#include <qprogressbar.h>
-#include <qfiledialog.h>
-#include <qmessagebox.h>
-#include <qbuffer.h>
-//#include <qvbox.h>
-#include <qtextedit.h>
-#include <qtextbrowser.h>
-#include <qdatetimeedit.h>
-#include <qdesktopwidget.h>
-#include <qthread.h>
-#include <qmenu.h>
+#include <QSettings>
+#include <QFileDialog>
+#include <QTextBrowser>
+#include <QCalendarWidget>
+#include <QDesktopWidget>
+#include <QThread>
+#include <QWidget>
+#include <QMenu>
 
 #define BUFF_SIZE (5*1024*1024)
 
@@ -328,6 +312,49 @@ void backupExecuter::setWindowOnScreen(QWidget *widget,int width,int height)
     widget->setGeometry(screen.x(),screen.y()+titleheight,width,height); // upper left
   else if( position=="lr" )
     widget->setGeometry(screen.x()+screen.width()-width-framewidth,screen.y()+screen.height()-height,width,height); // lower right
+}
+
+QDateTime backupExecuter::getLimitDate(QWidget *parent,const QDateTime &startingDate)
+{
+  QDateTime result;
+
+  QDialog d(parent);
+  QVBoxLayout vert(&d);
+  QHBoxLayout hor(&d);
+  QCalendarWidget w(&d);
+  QPushButton cancel("Cancel");
+  QPushButton prevy("<<");
+  QPushButton prevm("<");
+  QPushButton nextm(">");
+  QPushButton nexty(">>");
+  QPushButton butt("OK");
+  vert.addWidget(&w);
+  hor.addWidget(&cancel);
+  hor.addWidget(&prevy);
+  hor.addWidget(&prevm);
+  hor.addWidget(&nextm);
+  hor.addWidget(&nexty);
+  hor.addWidget(&butt);
+  vert.addLayout(&hor);
+  w.setSelectedDate(startingDate.date());
+  d.connect(&cancel,SIGNAL(clicked()),&d,SLOT(reject()));
+  d.connect(&prevy,SIGNAL(clicked()),&w,SLOT(showPreviousYear()));
+  d.connect(&prevm,SIGNAL(clicked()),&w,SLOT(showPreviousMonth()));
+  d.connect(&nextm,SIGNAL(clicked()),&w,SLOT(showNextMonth()));
+  d.connect(&nexty,SIGNAL(clicked()),&w,SLOT(showNextYear()));
+  d.connect(&butt,SIGNAL(clicked()),&d,SLOT(accept()));
+  d.setWindowTitle("find files older than");
+  d.resize(d.sizeHint());
+  if( d.exec()==QDialog::Accepted )
+  {
+    result = QDateTime(w.selectedDate());
+  }
+  else
+  {
+    result = QDateTime();
+  }
+
+  return result;
 }
 
 void backupExecuter::processProgressMaximum(int maximum)
@@ -1181,19 +1208,62 @@ void backupExecuter::help()
 
 void backupExecuter::cleanup()
 {
-  QDate date;
+  QDateTime date;
   switch( m_config.m_iLastModify )
   {
+  case 0: // selecteed date
+    date = getLimitDate(this,QDateTime::currentDateTime().addYears(-2));
+    break;
+    // 1w, 2w, 3w, 1m, 2m ,3m ,6m, 1y, 2y, 5y, 10y
+  case 1:
+    date = QDateTime::currentDateTime().addDays(-7);
+    break;
+  case 2:
+    date = QDateTime::currentDateTime().addDays(-14);
+    break;
+  case 3:
+    date = QDateTime::currentDateTime().addDays(-21);
+    break;
+  case 4:
+    date = QDateTime::currentDateTime().addMonths(-1);
+    break;
+  case 5:
+    date = QDateTime::currentDateTime().addMonths(-2);
+    break;
+  case 6:
+    date = QDateTime::currentDateTime().addMonths(-3);
+    break;
+  case 7:
+    date = QDateTime::currentDateTime().addMonths(-6);
+    break;
+  case 8:
+    date = QDateTime::currentDateTime().addYears(-1);
+    break;
+  case 9:
+    date = QDateTime::currentDateTime().addYears(-2);
+    break;
+  case 10:
+    date = QDateTime::currentDateTime().addYears(-5);
+    break;
+  case 11:
+    date = QDateTime::currentDateTime().addYears(-10);
+    break;
   default:
-    date = QDateTime::currentDateTime().date().addDays(-1);
+    date = QDateTime::currentDateTime().addDays(-1);
     break;
   }
 
-  startingAction();
-  scanDirectory(date);
-  findDuplicates();
-  if( m_config.m_bFindSrcDupl ) findDuplicates(QString::null,true);
-  stoppingAction();
+  if( date.isValid() )
+  {
+    startingAction();
+    scanDirectory(date.date());
+    findDuplicates();
+    if( m_config.m_bFindSrcDupl ) findDuplicates(QString::null,true);
+    stoppingAction();
+  }
+
+  if( m_closeAfterExecute )
+    close();
 }
 
 void backupExecuter::deletePath(QString const &absolutePath,QString const &indent)
@@ -1213,65 +1283,68 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
     {
       if( fi.exists() )
       {
-        stream << indent << "---> " << "would remove file " << absolutePath
+        stream << indent << "---> " << "would remove file " << destinationPath
         << ", created("+fi.created().toString(Qt::ISODate)
         +") modified("+fi.lastModified().toString(Qt::ISODate)
         +")" << "\r\n";
       }
       else
-        stream << indent << "---> " << "file " << absolutePath << " does not exist any longer\r\n";
+        stream << indent << "---> " << "file " << destinationPath << " does not exist any longer, removing from toc\r\n";
     }
     else
     {
       QFile file(destinationPath);
 
-      if( m_config.m_bCollectDeleted )
+      if( file.exists() )
       {
-          if( collectingDeleted )
-          {
-              if( !collectingPath.isEmpty() )
-                  QFile::copy(absolutePath,collectingPath+"/"+fi.lastModified().toString("yyyy-MM-dd")+"_"+fi.fileName());
-          }
-          else
-          {
-            collectingDeleted = true;
-            collectingPath = QFileDialog::getExistingDirectory (
-                        this, "collecting deleted files here:", collectingPath );
-          }
-      }
-      if( file.setPermissions(QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther)
-      && file.remove() )
-      {
-        stream << "---> " << "removed file " << destinationPath << "\r\n";
-
-        // remove file entry from CRC list
-        if( crcSummary.contains(destinationPath) )
+        if( m_config.m_bCollectDeleted )
         {
-          crcSummary.remove(destinationPath);
-          checksumsChanged = true;
+            if( collectingDeleted )
+            {
+                if( !collectingPath.isEmpty() )
+                    QFile::copy(absolutePath,collectingPath+"/"+fi.lastModified().toString("yyyy-MM-dd")+"_"+fi.fileName());
+            }
+            else
+            {
+              collectingDeleted = true;
+              collectingPath = QFileDialog::getExistingDirectory (
+                          this, "collecting deleted files here:", collectingPath );
+            }
         }
-
-        // check for empty directory; remove it if neccessary
-        QDir dir(fi.dir());
-        QStringList list(dir.entryList());
-        while( !dir.isRoot() && (list.count()<=2) )
+        if( file.setPermissions(QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther)
+        && file.remove() )
         {
-          QFile::remove(dir.absolutePath()+"/.DS_Store");
-          QString name = dir.dirName();
-          dir.cdUp();
-          if( !dir.rmdir(name) )
+          stream << "---> " << "removed file " << destinationPath << "\r\n";
+
+          // remove file entry from CRC list
+          if( crcSummary.contains(destinationPath) )
           {
-            QMessageBox::warning(0,"dir error","directory\n"+dir.absolutePath()+"/"+name+"\nseems to have (hidden) content.");
-            break;
+            crcSummary.remove(destinationPath);
+            checksumsChanged = true;
           }
-          else
-            list = dir.entryList();
+
+          // check for empty directory; remove it if neccessary
+          QDir dir(fi.dir());
+          QStringList list(dir.entryList());
+          while( !dir.isRoot() && (list.count()<=2) )
+          {
+            QFile::remove(dir.absolutePath()+"/.DS_Store");
+            QString name = dir.dirName();
+            dir.cdUp();
+            if( !dir.rmdir(name) )
+            {
+              QMessageBox::warning(0,"dir error","directory\n"+dir.absolutePath()+"/"+name+"\nseems to have (hidden) content.");
+              break;
+            }
+            else
+              list = dir.entryList();
+          }
         }
-      }
-      else
-      {
-        QString str = "++++ can't remove file '"+destinationPath+"' file is write protected!\r\n";
-        stream << str; errstream.append(str);
+        else
+        {
+          QString str = "++++ can't remove file '"+destinationPath+"' file is write protected!\r\n";
+          stream << str; errstream.append(str);
+        }
       }
       QString relPath = fi.dir().path().mid(m_config.m_sDst.length()+1);
       QString filename = fi.fileName();
@@ -1288,7 +1361,11 @@ backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date
   backupExecuter::backupStatistics result;
 
   if( eraseAll )
+  {
     eraseIt = true;
+    result.count++;
+    result.dirkbytes += (filesize/1024);
+  }
   else
   {
     if( filemodified.daysTo(date)>0 )
@@ -1396,13 +1473,12 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     scanned = 0;
     totalcount = 0;
     totaldirkbytes = 0;
-    backupStatistics results;
-    totalCounts = results;
+//    totalCounts = results;
 //    totalcount = yearcount = halfcount = quartercount = monthcount = daycount = 0;
 //    totaldirkbytes = yearkbytes = halfkbytes = quarterkbytes = monthkbytes = daykbytes = 0;
     level = 0;
     m_engine->setProgressMaximum(m_dirs.size());
-    if( m_dirs.size()==0 )
+    if( m_dirs.size()==0 || m_config.m_bScanDestPath )
       scanDirectory(date,m_config.m_sDst);
     else
     {
@@ -1421,6 +1497,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
         m_engine->setFileNameText(path);
         m_engine->setProgressValue(scanned++);
 
+        backupStatistics results;
         while( m_running && (it2!=it1.value().end()) )
         {
           tocDataEntryList entries = it2.value();
@@ -1430,7 +1507,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
             QDate filemodified = QDateTime::fromMSecsSinceEpoch((*it3).m_modify).date();
             QString srcfile = path+"/"+it2.key();
 
-            results = getStatistics(date,srcfile,filemodified,(*it3).m_size,eraseAll);
+            results += getStatistics(date,srcfile,filemodified,(*it3).m_size,eraseAll);
             totalCounts += results;
 
             found++;
@@ -1442,7 +1519,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
         if( results.count>0 )
         {
-          if( m_config.m_bShowTree )
+          if( m_config.m_bVerboseMaint )
             stream << "      " << results.count << " removable files with " << results.dirkbytes << " Kbytes found in " << path << "\r\n";
           totalcount += results.count;
           totaldirkbytes += results.dirkbytes;
@@ -1488,7 +1565,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     QString lastName = "";
     QString indent = "";
 
-    if( m_config.m_bShowTree ) // bei Detail-Listing
+    if( m_config.m_bVerboseMaint && m_config.m_bScanDestPath ) // bei Detail-Listing
     {
       for( int i=0; i<=level; i++ )
       {
@@ -1625,14 +1702,14 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
       ++it;
     }
 
-    if( m_config.m_bShowTree && (found>0) ) // bei Detail-Listing
+    if( m_config.m_bVerboseMaint && (found>0) ) // bei Detail-Listing
     {
       stream << indent << "     " << found << " total files with " << foundkbytes << " Kbytes found in " << actPath << "\r\n";
     }
 
     if( count>0 )
     {
-      if( m_config.m_bShowTree )
+      if( m_config.m_bVerboseMaint )
         stream << indent << "     " << count << " removable files with " << dirkbytes << " Kbytes found in " << actPath << "\r\n";
       totalcount += count;
       totaldirkbytes += dirkbytes;
@@ -1778,6 +1855,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
                   totaldirkbytes += size / 1024;
                   totalcount++;
                 }
+#if 0
                 else if( m_config.m_bShowTree )
                 {
                   fileToDelete = fi.absoluteFilePath();
@@ -1789,6 +1867,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
                   stream << indent << "     " << "(mapped file " << listPath << "/" << filename << ")"
                   << "\r\n";
                 }
+#endif
               }
               else if( operatingOnSource || !QFile::exists(srcfile) )
               {
@@ -1797,7 +1876,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
                 filemap.insert(filename,fi.absolutePath()+";"+filemodified.toString()+";"
                 +QString::number(size));
               }
-              else if( m_config.m_bShowTree )
+              else if( m_config.m_bVerboseMaint )
                 stream << indent << "     " << "file " << fi.absoluteFilePath() << " has source, keeping it\r\n";
             }
           }
@@ -1847,6 +1926,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             m_toBeRemovedFromToc.append(qMakePair(listPath,listFile));
             m_toBeRemovedFromToc.append(qMakePair(relpath,filename));
           }
+#if 0
           else if( m_config.m_bShowTree )
           {
             sourceFileRemoved = m_config.m_sDst + "/" + relpath+"/"+it2.key();
@@ -1858,6 +1938,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             stream << ""/*indent*/ << "     " << "(mapped file " << mappedFile << "/" << filename << ")"
             << "\r\n";
           }
+#endif
         }
         else
         {

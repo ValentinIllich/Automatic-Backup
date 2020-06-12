@@ -66,6 +66,8 @@ public:
   static void displayResult( QWidget *parent, QString const &text, QString const windowTitle = "" );
   static void setWindowOnScreen(QWidget *widget,int width,int height);
 
+  static QDateTime getLimitDate(QWidget *parent,QDateTime const &startingDate);
+
   virtual void processProgressMaximum(int maximum);
   virtual void processProgressValue(int value);
   virtual void processProgressText(QString const &text);

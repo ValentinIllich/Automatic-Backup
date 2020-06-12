@@ -266,36 +266,10 @@ void cleanupDialog::analyzePath(QString const &path)
 
 void cleanupDialog::setLimitDate()
 {
-  QDialog d(this);
-  QVBoxLayout vert(&d);
-  QHBoxLayout hor(&d);
-  QCalendarWidget w(&d);
-  QPushButton cancel("Cancel");
-  QPushButton prevy("<<");
-  QPushButton prevm("<");
-  QPushButton nextm(">");
-  QPushButton nexty(">>");
-  QPushButton butt("OK");
-  vert.addWidget(&w);
-  hor.addWidget(&cancel);
-  hor.addWidget(&prevy);
-  hor.addWidget(&prevm);
-  hor.addWidget(&nextm);
-  hor.addWidget(&nexty);
-  hor.addWidget(&butt);
-  vert.addLayout(&hor);
-  w.setSelectedDate(m_lastmodified.date());
-  d.connect(&cancel,SIGNAL(clicked()),&d,SLOT(reject()));
-  d.connect(&prevy,SIGNAL(clicked()),&w,SLOT(showPreviousYear()));
-  d.connect(&prevm,SIGNAL(clicked()),&w,SLOT(showPreviousMonth()));
-  d.connect(&nextm,SIGNAL(clicked()),&w,SLOT(showNextMonth()));
-  d.connect(&nexty,SIGNAL(clicked()),&w,SLOT(showNextYear()));
-  d.connect(&butt,SIGNAL(clicked()),&d,SLOT(accept()));
-  d.setWindowTitle("find files older than");
-  d.resize(d.sizeHint());
-  if( d.exec()==QDialog::Accepted )
+  QDateTime limit = backupExecuter::getLimitDate(this,m_lastmodified);
+  if( limit.isValid() )
   {
-    m_lastmodified = QDateTime(w.selectedDate());
+    m_lastmodified = limit;
     m_analyze = false;
   }
   else
