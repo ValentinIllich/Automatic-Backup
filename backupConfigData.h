@@ -22,7 +22,7 @@ struct backupConfigData
     m_bVerboseMaint = false;
     m_bCollectDeleted = false;
     m_bFindSrcDupl = false;
-    m_bShowTree = false;
+    m_bScanDestPath = false;
   }
   void getFromString(QString const &string)
   {
@@ -79,7 +79,7 @@ struct backupConfigData
   bool      m_bVerboseMaint;
   bool      m_bCollectDeleted;
   bool      m_bFindSrcDupl;
-  bool      m_bShowTree;
+  bool      m_bScanDestPath;
 };
 
 

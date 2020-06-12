@@ -102,7 +102,18 @@ public:
     m_executer->processEventsAndWait(); // remove this to allow parallel processing of backups. But logging must be changed for this.
   }
 
-/*  bool executionDone()
+  void cleanupBackup()
+  {
+    if( m_executer==NULL )
+      m_executer = new backupExecuter(m_config);
+    else
+      m_executer->setConfigData(m_config);
+    m_executer->setCloseAfterExecute(true);
+    m_executer->show();
+    m_executer->cleanup();
+  }
+
+  /*  bool executionDone()
   {
     return m_config.m_bexecuted;
   }*/
@@ -200,7 +211,7 @@ void backupMain::connectSignalSlots()
   connect(verboseMaintenance,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
   connect(collectFiles,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
   connect(sourceDuplicates,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
-  connect(showTreeStruct,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
+  connect(scanDestination,SIGNAL(stateChanged(int)),this,SLOT(getChangedConfigData()));
 
   connect(interval,SIGNAL(currentIndexChanged(int)),this,SLOT(getChangedConfigData()));
   connect(timeout,SIGNAL(currentIndexChanged(int)),this,SLOT(getChangedConfigData()));
@@ -440,14 +451,7 @@ void backupMain::cleanupBackup()
     if( m_selected==1 )
     {
       backupListItem* selected = static_cast<backupListItem*>(item);
-      QString path = selected->getConfigData().m_sDst;
-
-      cleanupDialog dlg(0);
-      dlg.setPaths(selected->getConfigData().m_sSrc,selected->getConfigData().m_sDst);
-      dlg.show();
-      dlg.activateWindow();
-      dlg.doAnalyze();
-      dlg.exec();
+      selected->cleanupBackup();
     }
   }
 
@@ -491,12 +495,11 @@ void backupMain::enableControls(bool enabled)
   verify->setEnabled(enabled);
   suspending->setEnabled(enabled);
   timeout->setEnabled(enabled);
-  cleanupButt->setEnabled(enabled);
-  lastModified->setEnabled(false); // \todo
+  lastModified->setEnabled(enabled);
   verboseMaintenance->setEnabled(enabled);
   collectFiles->setEnabled(enabled);
   sourceDuplicates->setEnabled(enabled);
-  showTreeStruct->setEnabled(enabled);
+  scanDestination->setEnabled(enabled);
 }
 
 void backupMain::setControlsFromConfigData(backupConfigData &config)
@@ -520,7 +523,7 @@ void backupMain::setControlsFromConfigData(backupConfigData &config)
   verboseMaintenance->setChecked(config.m_bVerboseMaint);
   collectFiles->setChecked(config.m_bCollectDeleted);
   sourceDuplicates->setChecked(config.m_bFindSrcDupl);
-  showTreeStruct->setChecked(config.m_bShowTree);
+  scanDestination->setChecked(config.m_bScanDestPath);
 
   m_isUpdatingConfig = false;
 }
@@ -546,7 +549,7 @@ backupConfigData backupMain::getConfigDataFromControls()
   config.m_bVerboseMaint = verboseMaintenance->isChecked();
   config.m_bCollectDeleted = collectFiles->isChecked();
   config.m_bFindSrcDupl = sourceDuplicates->isChecked();
-  config.m_bShowTree = showTreeStruct->isChecked();
+  config.m_bScanDestPath = scanDestination->isChecked();
 
   return config;
 }

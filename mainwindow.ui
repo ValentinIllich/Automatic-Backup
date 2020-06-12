@@ -799,6 +799,18 @@ a counterpart in the source path.</string>
                      <item>
                       <layout class="QHBoxLayout" name="horizontalLayout_13">
                        <item>
+                        <widget class="QCheckBox" name="scanDestination">
+                         <property name="toolTip">
+                          <string>If checked in combination with Preview, the
+log will be extended to a representation of
+the tree strcture in the backup path.</string>
+                         </property>
+                         <property name="text">
+                          <string>Scan destination path</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
                         <widget class="QCheckBox" name="verboseMaintenance">
                          <property name="toolTip">
                           <string>If checked, no action will be done upon
@@ -807,18 +819,6 @@ all actions which would take place.</string>
                          </property>
                          <property name="text">
                           <string>Preview only...</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QCheckBox" name="showTreeStruct">
-                         <property name="toolTip">
-                          <string>If checked in combination with Preview, the
-log will be extended to a representation of
-the tree strcture in the backup path.</string>
-                         </property>
-                         <property name="text">
-                          <string>...as tree structure</string>
                          </property>
                         </widget>
                        </item>
@@ -1092,22 +1092,6 @@ subdirectories.</string>
    </hints>
   </connection>
   <connection>
-   <sender>cleanupButt</sender>
-   <signal>clicked()</signal>
-   <receiver>mainwindow</receiver>
-   <slot>cleanupBackup()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>388</x>
-     <y>530</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>410</x>
-     <y>639</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>pushButton</sender>
    <signal>clicked()</signal>
    <receiver>mainwindow</receiver>
@@ -1171,16 +1155,33 @@ subdirectories.</string>
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>cleanupButt</sender>
+   <signal>clicked()</signal>
+   <receiver>mainwindow</receiver>
+   <slot>cleanupBackup()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>410</x>
+     <y>526</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>375</x>
+     <y>645</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>editBackup()</slot>
   <slot>newBackup()</slot>
   <slot>deleteBackup()</slot>
-  <slot>cleanupBackup()</slot>
   <slot>checkSelection()</slot>
   <slot>aboutButton()</slot>
   <slot>cleanupDirectory()</slot>
   <slot>selSource()</slot>
   <slot>selDest()</slot>
+  <slot>cleanup()</slot>
+  <slot>cleanupBackup()</slot>
  </slots>
 </ui>
