@@ -1,5 +1,12 @@
 Automatic Backup Release Notes (C) Valentin Illich 2011-2017
 
+Release 1.25:
+=============
+
+ + improved user interface: all properties in one sheet
+ + improved cleanup functionality: giving time delay for files being removed
+ + enhanced support for NAS destinations: verifying files in backup only on demand
+
 Release 1.21:
 ============
 
