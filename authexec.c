@@ -16,7 +16,7 @@
 
 void checkForPasswdHelper(int argc, char **argv)
 {
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MAC) || defined(Q_OS_LINUX)
     if( strstr(argv[0],"pwdhelper")!=0 )
     {
       static char buff[128];
@@ -51,7 +51,7 @@ int getAdminRights(int argc, char* argv[], char *password)
           exit(0);
         }
 #endif
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MAC) || defined(Q_OS_LINUX)
         FILE *fp=fopen("/tmp/passwd","w");
         if( fp )
         {

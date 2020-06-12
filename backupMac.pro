@@ -51,6 +51,15 @@ macx {
     QMAKE_INFO_PLIST = ressources/Info_mac.plist
     LIBS += -framework Security
 }
+unix {
+    OBJECTS_DIR = /var/tmp/backup_$${BUILD}_obj
+    UI_DIR = /var/tmp/backup_$${BUILD}_obj
+    MOC_DIR = /var/tmp/backup_$${BUILD}_obj
+    RCC_DIR = /var/tmp/backup_$${BUILD}_obj
+    ICON = ressources/backup.icns
+    QMAKE_INFO_PLIST = ressources/Info_mac.plist
+}
+
 OTHER_FILES += distribute/welcome.html \
     ressources/help.html \
     ReleaseNotes.txt \

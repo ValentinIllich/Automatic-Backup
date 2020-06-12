@@ -229,7 +229,7 @@ bool backupSplash::startup(int argc,char **argv)
       bool ok = true;
       QString text = "";
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MAC)  || defined(Q_OS_LINUX)
       text = QInputDialog::getText(0,tr("Authorization"),
                                      tr("Enter Administrator Password:"), QLineEdit::Password,
                                      "", &ok);
