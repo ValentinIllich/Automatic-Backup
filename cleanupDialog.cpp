@@ -61,7 +61,7 @@ void cleanupDialog::saveDirStruct()
 {
   QString tocSummaryFile = backupDirStruct::getTocSummaryFile(m_path);
   if( !backupDirStruct::convertToTocFile(tocSummaryFile,m_rootEntry ) )
-      QMessageBox::warning(this,"write error","could not create table of contents file.\nPlease restart in Root mode.");
+      QMessageBox::warning(this,"write error","could not create table of contents file.\nPlease check if destination disk is full.");
 }
 
 void cleanupDialog::setPaths(QString const &srcpath,QString const &dstpath)

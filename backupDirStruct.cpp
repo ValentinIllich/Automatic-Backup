@@ -201,11 +201,13 @@ bool backupDirStruct::writeToFile(const QString &tocSummaryFile)
   QFile tocFile(tocSummaryFile);
   if( tocFile.open(QIODevice::WriteOnly | QIODevice::Truncate) )
   {
+    bool isOk = true;
     QDataStream str(&tocFile);
     str << m_archiveContent;
+    isOk = (tocFile.error()==QFileDevice::NoError);
     tocFile.close();
     m_tocChanged = false;
-    return true;
+    return isOk;
   }
   return false;
 }

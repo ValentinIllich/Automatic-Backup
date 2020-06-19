@@ -181,6 +181,7 @@ private:
   bool m_dirsCreated;
   bool m_closed;
   bool m_background;
+  bool m_diskFull;
   bool m_closeAfterExecute;
   bool *m_askForShutDown;
 

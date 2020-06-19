@@ -98,6 +98,7 @@ backupExecuter::backupExecuter(backupConfigData &configData)
 , m_dirsCreated(false)
 , m_closed(false)
 , m_background(false)
+, m_diskFull(false)
 , m_closeAfterExecute(false)
 //, m_batchRunning(false)
 , m_askForShutDown(NULL)
@@ -151,7 +152,7 @@ QDataStream &operator>>(QDataStream &in, struct crcInfo &dst)
 backupExecuter::~backupExecuter()
 {
   m_engine->processEventsAndWait();
-  saveData();
+  //saveData();
   delete m_engine;
 }
 
@@ -186,7 +187,8 @@ void backupExecuter::loadData()
 }
 
 void backupExecuter::saveData()
-{  
+{
+  bool isOk = true;
   if( checksumsChanged )
   {
     QString summaryFile = backupDirStruct::getChecksumSummaryFile(m_config.m_sDst);
@@ -196,14 +198,22 @@ void backupExecuter::saveData()
     str << 0x80000000;
     str << lastVerifiedK;
     str << crcSummary;
+    isOk = (crcfile.error()==QFileDevice::NoError);
     crcfile.close();
   }
   checksumsChanged = false;
 
-  if( m_dirs.tocHasChanged() )
+  if( isOk && m_dirs.tocHasChanged() )
   {
     QString tocSummaryFile = backupDirStruct::getTocSummaryFile(m_config.m_sDst);
-    m_dirs.writeToFile(tocSummaryFile);
+    isOk = m_dirs.writeToFile(tocSummaryFile);
+  }
+
+  if( !isOk )
+  {
+    QString str = "++++ destination drive is full. Could not update the TOC data!\r\n";
+    stream << str; errstream.append(str);
+    m_diskFull = true;
   }
 }
 
@@ -488,9 +498,17 @@ void backupExecuter::stoppingAction()
       }
       else
       {
-        QApplication::alert(this);
-        QMessageBox::warning(this,"backup problems","problems occured during backup.\nPlease refer to 'backup.log' for details.");
-        displayResult(this,errstream,"backup errors");
+        if( m_diskFull )
+        {
+          fullMessage msg(this,m_config.m_sDst);
+          msg.exec();
+        }
+        else
+        {
+          QApplication::alert(this);
+          QMessageBox::warning(this,"backup problems","problems occured during backup.\nPlease refer to 'backup.log' for details.");
+          displayResult(this,errstream,"backup errors");
+        }
       }
 
       m_error = false;
@@ -500,11 +518,11 @@ void backupExecuter::stoppingAction()
     log->close();
   }
 
+  m_running=false;
   if( m_isBatch ) return;
 
   stream.setDevice(0);
 
-  m_running=false;
   m_engine->setProgressText("");
   m_engine->setFileNameText("");
   cancelButt->setText("OK");
@@ -896,11 +914,8 @@ void backupExecuter::copySelectedFiles()
               m_error = true;
               QString str = "++++ destination drive is full. Cancelling the backup!\r\n";
               stream << str; errstream.append(str);
-              if( m_config.m_bAuto )
-              {
-                fullMessage msg(this,m_config.m_sDst);
-                msg.exec();
-              }
+              m_diskFull = true;
+              m_running = false;
               break;
             }
           }
@@ -1083,6 +1098,9 @@ void backupExecuter::operationFinishedEvent()
 
 void backupExecuter::doIt(bool runningInBackground)
 {
+  if( m_running )
+    return;
+
   if( m_askForShutDown )
   {
     if( QMessageBox::question(0,"security question","Do you want the system to shut down automatically after execution?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::Yes )
@@ -1090,8 +1108,8 @@ void backupExecuter::doIt(bool runningInBackground)
   }
 
   m_bringToFront = true;
-
   m_background = runningInBackground || m_config.m_bBackground;
+  m_diskFull = false;
 
   QFile dir1(m_config.m_sDst);
   if( !dir1.exists() )
@@ -1171,7 +1189,7 @@ void backupExecuter::contextMenuEvent(QContextMenuEvent */*event*/)
 void backupExecuter::closeEvent ( QCloseEvent */*event*/ )
 {
   fileObj.close();
-  saveData();
+  //saveData();
   m_closed = true;
   cancel();
 }
