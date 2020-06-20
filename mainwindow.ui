@@ -1108,22 +1108,6 @@ subdirectories.</string>
    </hints>
   </connection>
   <connection>
-   <sender>execBackupButt</sender>
-   <signal>clicked()</signal>
-   <receiver>mainwindow</receiver>
-   <slot>editBackup()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>412</x>
-     <y>223</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>207</x>
-     <y>115</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>sourceButt</sender>
    <signal>clicked()</signal>
    <receiver>mainwindow</receiver>
@@ -1171,9 +1155,40 @@ subdirectories.</string>
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>filterButt</sender>
+   <signal>clicked()</signal>
+   <receiver>mainwindow</receiver>
+   <slot>setFilters()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>823</x>
+     <y>305</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>894</x>
+     <y>300</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>execBackupButt</sender>
+   <signal>clicked()</signal>
+   <receiver>mainwindow</receiver>
+   <slot>executeBackup()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>485</x>
+     <y>217</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>414</x>
+     <y>19</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
-  <slot>editBackup()</slot>
   <slot>newBackup()</slot>
   <slot>deleteBackup()</slot>
   <slot>checkSelection()</slot>
@@ -1183,5 +1198,7 @@ subdirectories.</string>
   <slot>selDest()</slot>
   <slot>cleanup()</slot>
   <slot>cleanupBackup()</slot>
+  <slot>setFilters()</slot>
+  <slot>executeBackup()</slot>
  </slots>
 </ui>

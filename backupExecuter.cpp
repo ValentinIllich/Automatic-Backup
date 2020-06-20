@@ -1203,35 +1203,6 @@ void backupExecuter::timerEvent(QTimerEvent *)
   }
 }
 
-void backupExecuter::help()
-{
-  int w = 800;
-  int h = 600;
-
-  QDialog help(this);
-  QVBoxLayout box(&help);
-  QTextBrowser browse(&help);
-  QPushButton ok("OK",&help);
-
-  box.addWidget(&browse);
-  box.addWidget(&ok);
-
-  ok.setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Fixed);
-  connect(&ok,SIGNAL(clicked()),&help,SLOT(accept()));
-
-  QFile file(":/helptext/help.html");
-  file.open(QIODevice::ReadOnly);
-  QTextStream stream(&file);
-  browse.setText(stream.readAll());
-  //browse.zoomIn(10);
-  file.close();
-
-  help.setWindowTitle("Filter Definition Help");
-  help.setGeometry(80,80,w,h);
-  //browse.resize(w,h);
-  help.exec();
-}
-
 void backupExecuter::cleanup()
 {
   QDateTime date;

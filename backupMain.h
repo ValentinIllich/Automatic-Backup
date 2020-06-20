@@ -23,7 +23,7 @@ public:
 public slots:
   virtual void newBackup();
   virtual void quit();
-  virtual void editBackup();
+  virtual void executeBackup();
   virtual void deleteBackup();
   virtual void checkSelection();
   virtual void cleanupDirectory();
@@ -32,6 +32,7 @@ public slots:
   virtual void selSource();
   virtual void selDest();
   virtual void getChangedConfigData();
+  virtual void setFilters();
 
   void enableControls(bool enabled);
   void setControlsFromConfigData(backupConfigData &config);

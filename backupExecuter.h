@@ -59,8 +59,8 @@ public:
   bool	getSuspend();
   int		getTimeout();*/
 
-  void	setCloseAfterExecute(bool doIt);
-  void  setAskForShutdown(bool *willShutdown);
+  void	setCloseAfterExecute(bool doIt); // obsolete: always closing now
+  void  setAskForShutdown(bool *willShutdown); // obsolete: only main window needs this
 
   static QFile *openFile( QString const &filename, bool readOnly = false );
   static void displayResult( QWidget *parent, QString const &text, QString const windowTitle = "" );
@@ -83,7 +83,6 @@ public slots:
   virtual void processEventsAndWait();
   virtual void cancel();
   virtual void cleanup();
-  virtual void help();
   virtual void screenResizedSlot( int screen );
 
 protected:

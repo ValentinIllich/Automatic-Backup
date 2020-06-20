@@ -16,6 +16,7 @@
 #include "backupMain.h"
 #include "backupExecuter.h"
 #include "cleanupDialog.h"
+#include "filterSettings.h"
 #include "Utilities.h"
 
 class backupListItem : public QListWidgetItem
@@ -42,16 +43,16 @@ public:
     return m_config;
   }
 
-  void editBackupItem(bool closeAferExecute,bool *askForShutdown)
+  void executeBackupItem(bool closeAferExecute,bool runningInBackground)
   {
     if( m_executer==NULL )
       m_executer = new backupExecuter(m_config);
     else
       m_executer->setConfigData(m_config);
     m_executer->setCloseAfterExecute(closeAferExecute);
-    m_executer->setAskForShutdown(askForShutdown);
+    m_executer->setAskForShutdown(nullptr);
     m_executer->show();
-    m_executer->doIt();
+    m_executer->doIt(runningInBackground);
   }
 
   backupExecuter *getBackupExecuter()
@@ -75,18 +76,10 @@ public:
     m_executer->stopBatchProcessing();
   }
 
-  void executebackupItem(bool closeAferExecute,bool runningInBackground)
+  void executeBackupAndWait(bool closeAferExecute,bool runningInBackground)
   {
-    if( m_executer==NULL )
-      m_executer = new backupExecuter(m_config);
-    else
-      m_executer->setConfigData(m_config);
-    m_executer->setCloseAfterExecute(closeAferExecute);
-//    m_executer->startBatchProcessing();
-    m_executer->show();
-    m_executer->doIt(runningInBackground);
+    executeBackupItem(closeAferExecute,runningInBackground);
     m_executer->processEventsAndWait(); // remove this to allow parallel processing of backups. But logging must be changed for this.
-    //m_config.m_bexecuted = true;
   }
 
   void verifyBackupItem(bool closeAferExecute,bool runningInBackground)
@@ -383,7 +376,7 @@ void backupMain::checkSelection()
   }
 }
 
-void backupMain::editBackup()
+void backupMain::executeBackup()
 {
   m_immediateShutdown = false;
 
@@ -395,13 +388,13 @@ void backupMain::editBackup()
     if( m_selected==1 )
     {
       if( shutDown->isChecked() )
-        static_cast<backupListItem*>(item)->editBackupItem(true,&m_immediateShutdown);
+        static_cast<backupListItem*>(item)->executeBackupItem(true,false);
       else
-        static_cast<backupListItem*>(item)->editBackupItem(false,NULL);
+        static_cast<backupListItem*>(item)->executeBackupItem(false,false);
     }
     else
     {
-      static_cast<backupListItem*>(item)->executebackupItem(true,false);
+      static_cast<backupListItem*>(item)->executeBackupAndWait(true,false);
     }
   }
 
@@ -609,6 +602,19 @@ void backupMain::getChangedConfigData()
   }
 }
 
+void backupMain::setFilters()
+{
+  backupListItem* selected = static_cast<backupListItem*>((backupList->selectedItems())[0]);
+
+  filterSettings settings(this);
+  settings.setFilters(selected->getConfigData().m_sFlt);
+  if( settings.exec()==QDialog::Accepted )
+  {
+    selected->getConfigData().m_sFlt = settings.getFilters();
+    setControlsFromConfigData(selected->getConfigData());
+  }
+}
+
 void backupMain::autoExecute(bool runningInBackground)
 {
   for( int i=0; i<backupList->count(); i++ )
@@ -674,7 +680,7 @@ void backupMain::autoExecute(bool runningInBackground)
       if( doItBackup )
       {
         item->startBatchExecution();
-        item->executebackupItem(true,runningInBackground);
+        item->executeBackupAndWait(true,runningInBackground);
         item->getBackupExecuter()->processEventsAndWait(); // remove this to allow parallel processing of backups. But logging must be changed for this.
       }
 

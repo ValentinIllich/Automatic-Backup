@@ -15,14 +15,17 @@ HEADERS += backupExecuter.h \
     backupMain.h \
     cleanupDialog.h \
     backupSplash.h \
+    filterSettings.h \
     utilities.h \
     backupEngine.h \
     backupDirStruct.h
 FORMS += backupwindow.ui \
+    filterSettings.ui \
     mainwindow.ui \
     cleanupDialog.ui
 SOURCES += backupExecuter.cpp \
     backupMain.cpp \
+    filterSettings.cpp \
     main.cpp \
     cleanupDialog.cpp \
     backupSplash.cpp \
@@ -42,7 +45,7 @@ win32 {
     RCC_DIR = c:/tmp/backup_$${BUILD}_obj
     RC_FILE = ressources/backup.rc
 }
-macx { 
+macx {
     OBJECTS_DIR = /private/var/tmp/backup_$${BUILD}_obj
     UI_DIR = /private/var/tmp/backup_$${BUILD}_obj
     MOC_DIR = /private/var/tmp/backup_$${BUILD}_obj
@@ -51,7 +54,7 @@ macx {
     QMAKE_INFO_PLIST = ressources/Info_mac.plist
     LIBS += -framework Security
 }
-unix {
+linux {
     OBJECTS_DIR = /var/tmp/backup_$${BUILD}_obj
     UI_DIR = /var/tmp/backup_$${BUILD}_obj
     MOC_DIR = /var/tmp/backup_$${BUILD}_obj
