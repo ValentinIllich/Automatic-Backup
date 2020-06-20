@@ -43,14 +43,13 @@ public:
     return m_config;
   }
 
-  void executeBackupItem(bool closeAferExecute,bool runningInBackground)
+  void executeBackupItem(bool noUserInteraction,bool runningInBackground)
   {
     if( m_executer==NULL )
       m_executer = new backupExecuter(m_config);
     else
       m_executer->setConfigData(m_config);
-    m_executer->setCloseAfterExecute(closeAferExecute);
-    m_executer->setAskForShutdown(nullptr);
+    m_executer->setUnattendedMode(noUserInteraction);
     m_executer->show();
     m_executer->doIt(runningInBackground);
   }
@@ -76,9 +75,9 @@ public:
     m_executer->stopBatchProcessing();
   }
 
-  void executeBackupAndWait(bool closeAferExecute,bool runningInBackground)
+  void executeBackupAndWait(bool noUserInteraction,bool runningInBackground)
   {
-    executeBackupItem(closeAferExecute,runningInBackground);
+    executeBackupItem(noUserInteraction,runningInBackground);
     m_executer->processEventsAndWait(); // remove this to allow parallel processing of backups. But logging must be changed for this.
   }
 
@@ -88,7 +87,7 @@ public:
       m_executer = new backupExecuter(m_config);
     else
       m_executer->setConfigData(m_config);
-    m_executer->setCloseAfterExecute(closeAferExecute);
+    m_executer->setUnattendedMode(closeAferExecute);
 //    m_executer->startBatchProcessing();
     m_executer->show();
     m_executer->verifyIt(runningInBackground);
@@ -101,7 +100,7 @@ public:
       m_executer = new backupExecuter(m_config);
     else
       m_executer->setConfigData(m_config);
-    m_executer->setCloseAfterExecute(true);
+    m_executer->setUnattendedMode(true);
     m_executer->show();
     m_executer->cleanup();
   }
@@ -334,7 +333,7 @@ void backupMain::checkSelection()
   m_selected = backupList->selectedItems().count();
 
   keepRun->setEnabled(true);
-  if( shutDown->isChecked() )
+  if( runAndShutdown() )
   {
     exitButt->setText("Close");
     keepRun->setChecked(true);
@@ -380,6 +379,12 @@ void backupMain::executeBackup()
 {
   m_immediateShutdown = false;
 
+  if( runAndShutdown() )
+  {
+    if( QMessageBox::question(0,"security question","Do you want the system to shut down automatically after execution?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::Yes )
+      m_immediateShutdown = true;
+  }
+
   QList<QListWidgetItem*> const &list = backupList->selectedItems();
   for( QList<QListWidgetItem*>::const_iterator it=list.begin(); it!=list.end(); ++it )
   {
@@ -387,7 +392,7 @@ void backupMain::executeBackup()
 
     if( m_selected==1 )
     {
-      if( shutDown->isChecked() )
+      if( runAndShutdown() )
         static_cast<backupListItem*>(item)->executeBackupItem(true,false);
       else
         static_cast<backupListItem*>(item)->executeBackupItem(false,false);

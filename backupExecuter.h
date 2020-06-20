@@ -59,8 +59,7 @@ public:
   bool	getSuspend();
   int		getTimeout();*/
 
-  void	setCloseAfterExecute(bool doIt); // obsolete: always closing now
-  void  setAskForShutdown(bool *willShutdown); // obsolete: only main window needs this
+  void	setUnattendedMode(bool doIt);
 
   static QFile *openFile( QString const &filename, bool readOnly = false );
   static void displayResult( QWidget *parent, QString const &text, QString const windowTitle = "" );
@@ -181,8 +180,7 @@ private:
   bool m_closed;
   bool m_background;
   bool m_diskFull;
-  bool m_closeAfterExecute;
-  bool *m_askForShutDown;
+  bool m_runUnattended;
 
   bool collectingDeleted;
   QString collectingPath;

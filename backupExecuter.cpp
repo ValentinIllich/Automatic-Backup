@@ -99,9 +99,8 @@ backupExecuter::backupExecuter(backupConfigData &configData)
 , m_closed(false)
 , m_background(false)
 , m_diskFull(false)
-, m_closeAfterExecute(false)
+, m_runUnattended(false)
 //, m_batchRunning(false)
-, m_askForShutDown(NULL)
 , collectingDeleted(false)
 , dircount(0)
 , files_to_copy(0)
@@ -485,7 +484,7 @@ void backupExecuter::stoppingAction()
   {
     if( m_error )
     {
-      if( m_closeAfterExecute )
+      if( m_runUnattended )
       {
         QString str = "#### problem(s) found in backup: one or more files couldn't be copied to destination.\r\n";
         stream << str;
@@ -1041,15 +1040,10 @@ int backupExecuter::getTimeout()
   return m_config.m_iTimeout;
 }
 */
-void backupExecuter::setCloseAfterExecute(bool doIt)
+void backupExecuter::setUnattendedMode(bool doIt)
 {
   m_closed = false;
-  m_closeAfterExecute = doIt;
-}
-
-void backupExecuter::setAskForShutdown(bool *willShutdown)
-{
-  m_askForShutDown = willShutdown;
+  m_runUnattended = doIt;
 }
 
 void backupExecuter::threadedCopyOperation()
@@ -1101,15 +1095,7 @@ void backupExecuter::doIt(bool runningInBackground)
   if( m_running )
     return;
 
-  if( m_askForShutDown )
-  {
-    if( QMessageBox::question(0,"security question","Do you want the system to shut down automatically after execution?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::Yes )
-      *m_askForShutDown = true;
-  }
-
-  m_bringToFront = true;
-  m_background = runningInBackground || m_config.m_bBackground;
-  m_diskFull = false;
+  bool cancelled = false;
 
   QFile dir1(m_config.m_sDst);
   if( !dir1.exists() )
@@ -1117,7 +1103,7 @@ void backupExecuter::doIt(bool runningInBackground)
     mediaMessage msg(this,m_config.m_sDst);
     msg.exec();
     if( msg.result()!=QDialog::Accepted )
-      return;
+      cancelled = true;
     m_config.m_sDst = msg.getPath();
   }
   QFile dir2(m_config.m_sSrc);
@@ -1126,25 +1112,28 @@ void backupExecuter::doIt(bool runningInBackground)
     mediaMessage msg(this,m_config.m_sSrc);
     msg.exec();
     if( msg.result()!=QDialog::Accepted )
-      return;
+      cancelled = true;
     m_config.m_sSrc = msg.getPath();
   }
 
-  changeVisibility();
+  if( cancelled )
+    close();
+  else
+  {
+    m_bringToFront = true;
+    m_background = runningInBackground || m_config.m_bBackground;
+    m_diskFull = false;
 
-  startingAction();
+    changeVisibility();
 
-  m_engine->start(false);
+    startingAction();
+
+    m_engine->start(false);
+  }
 }
 
 void backupExecuter::verifyIt(bool runningInBackground)
 {
-  if( m_askForShutDown )
-  {
-    if( QMessageBox::question(0,"security question","Do you want the system to shut down automatically after execution?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::Yes )
-      *m_askForShutDown = true;
-  }
-
   m_background = runningInBackground || m_config.m_bBackground;
 
   changeVisibility();
@@ -1259,8 +1248,7 @@ void backupExecuter::cleanup()
     stoppingAction();
   }
 
-  if( m_closeAfterExecute )
-    close();
+  close();
 }
 
 void backupExecuter::deletePath(QString const &absolutePath,QString const &indent)
