@@ -68,11 +68,9 @@ private:
     QFontMetrics *m_metrics;
 
     QString m_path;
-    //QTreeWidgetItem *m_item;
     dirEntry *m_rootEntry;
     QDateTime m_lastmodified;
     int m_dirCount;
-    //double m_totalbytes;
 
     bool m_dirStructValid;
     bool m_dirStructChanged;

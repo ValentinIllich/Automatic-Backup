@@ -94,13 +94,11 @@ backupExecuter::backupExecuter(backupConfigData &configData)
 , m_isBatch(false)
 , m_running(false)
 , m_error(false)
-//, background()
 , m_dirsCreated(false)
 , m_closed(false)
 , m_background(false)
 , m_diskFull(false)
 , m_runUnattended(false)
-//, m_batchRunning(false)
 , collectingDeleted(false)
 , dircount(0)
 , files_to_copy(0)
@@ -151,7 +149,6 @@ QDataStream &operator>>(QDataStream &in, struct crcInfo &dst)
 backupExecuter::~backupExecuter()
 {
   m_engine->processEventsAndWait();
-  //saveData();
   delete m_engine;
 }
 
@@ -513,7 +510,6 @@ void backupExecuter::stoppingAction()
       m_error = false;
       errstream = "";
     }
-    //buff.close();
     log->close();
   }
 
@@ -591,7 +587,6 @@ void backupExecuter::findDirectories( QString const &start )
     QDir dir(start);
 
     dir.setFilter( QDir::AllDirs | QDir::Dirs | QDir::NoSymLinks );
-    //dir.setMatchAllDirs(true);
     dir.setNameFilters(QStringList("*"));
 
     if( !dir.exists() )
@@ -690,7 +685,6 @@ void backupExecuter::analyzeDirectories()
     QDir dir(srcpath);
 
     dir.setFilter( QDir::Files | QDir::NoSymLinks );
-    //dir.setMatchAllDirs(true);
     dir.setNameFilters(QStringList("*"));
 
     if( !dir.exists() )
@@ -943,7 +937,6 @@ void backupExecuter::copySelectedFiles()
           stream << "\r\n";
 
           // finally, fix modification time stamp to src file
-          //QFileInfo fi(srcFile);
           setTimestamps(dstFile,srcInfo.lastModified());
 
           fileTocEntry entry;
@@ -953,7 +946,6 @@ void backupExecuter::copySelectedFiles()
           entry.m_modify = modify;
           entry.m_crc = 0;
           m_dirs.addFile(relPath,prefix+fileName,entry);
-  //          lastModified2[filePath.toLatin1().data()][fileName.toLatin1().data()] = modify;
         }
         else
           dst.remove();
@@ -991,55 +983,6 @@ void backupExecuter::setConfigData(const backupConfigData &config)
   loadData();
 }
 
-/*QString backupExecuter::getTitle()
-{
-  return m_config.m_sName;
-}
-QString backupExecuter::getSrc()
-{
-  return m_config.m_sSrc;
-}
-QString backupExecuter::getDst()
-{
-  return m_config.m_sDst;
-}
-QString backupExecuter::getFlt()
-{
-  return m_config.m_sFlt;
-}
-bool backupExecuter::getAuto()
-{
-  return m_config.m_bAuto;
-}
-int backupExecuter::getInterval()
-{
-  return m_config.m_iInterval;
-}
-bool backupExecuter::getBackground()
-{
-  return m_background;
-}
-bool backupExecuter::getCompress()
-{
-  return m_config.m_bVerify;
-}
-bool backupExecuter::getKeep()
-{
-  return m_config.m_bKeep;
-}
-int	backupExecuter::getVersions()
-{
-  return m_config.m_iVersions;
-}
-bool backupExecuter::getSuspend()
-{
-  return m_config.m_bsuspend;
-}
-int backupExecuter::getTimeout()
-{
-  return m_config.m_iTimeout;
-}
-*/
 void backupExecuter::setUnattendedMode(bool doIt)
 {
   m_closed = false;
@@ -1059,7 +1002,7 @@ void backupExecuter::threadedCopyOperation()
   if( m_config.m_bVerify && m_running && !m_isBatch )
     verifyBackup();
 
-  if( m_running /*&& m_isBatch*/ )
+  if( m_running  )
   {
     // avoid verify upon initial run
     if( !updateAutoBackupTime() )
@@ -1074,7 +1017,7 @@ void backupExecuter::threadedVerifyOperation()
   if( m_config.m_bVerify )
     verifyBackup();
 
-  if( m_running /*&& m_isBatch*/ )
+  if( m_running )
     updateAutoVerifyTime();
 
   saveData();
@@ -1138,7 +1081,7 @@ void backupExecuter::verifyIt(bool runningInBackground)
 
   changeVisibility();
 
-  startingAction(); // do verify only if not cancelled in batch
+  startingAction();
 
   m_engine->start(true);
 }
@@ -1148,7 +1091,7 @@ void backupExecuter::processEventsAndWait()
   m_engine->processEventsAndWait();
 }
 
-void backupExecuter::cancel() // OK (Cancel when running) pressed
+void backupExecuter::cancel() // Cancel when running pressed
 {
   if( m_running )
   {
@@ -1178,7 +1121,6 @@ void backupExecuter::contextMenuEvent(QContextMenuEvent */*event*/)
 void backupExecuter::closeEvent ( QCloseEvent */*event*/ )
 {
   fileObj.close();
-  //saveData();
   m_closed = true;
   cancel();
 }
@@ -1200,7 +1142,6 @@ void backupExecuter::cleanup()
   case 0: // selecteed date
     date = getLimitDate(this,QDateTime::currentDateTime().addYears(-2));
     break;
-    // 1w, 2w, 3w, 1m, 2m ,3m ,6m, 1y, 2y, 5y, 10y
   case 1:
     date = QDateTime::currentDateTime().addDays(-7);
     break;
@@ -1458,9 +1399,6 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     scanned = 0;
     totalcount = 0;
     totaldirkbytes = 0;
-//    totalCounts = results;
-//    totalcount = yearcount = halfcount = quartercount = monthcount = daycount = 0;
-//    totaldirkbytes = yearkbytes = halfkbytes = quarterkbytes = monthkbytes = daykbytes = 0;
     level = 0;
     m_engine->setProgressMaximum(m_dirs.size());
     if( m_dirs.size()==0 || m_config.m_bScanDestPath )
@@ -1591,7 +1529,6 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
           {
             QDate filemodified = fi.lastModified().date();
             QDate today = QDate::currentDate();
-            //QString srcfile = source + fi.absoluteFilePath().remove(destination);//VIL
 
             QString filename = fi.fileName();
             filename = backupDirStruct::cutFilenamePrefix(filename);
@@ -1769,9 +1706,6 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
       m_engine->setFileNameText(actPath);
       m_engine->setProgressValue(scanned++);
 
-//      QString lastFile = "";
-//      QString lastName = "";
-
       QString indent = "";
 
       while ( m_running && (it!=list.end()) )
@@ -1789,13 +1723,11 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
           else
           {
             QDateTime filemodified = fi.lastModified();
-            //QDate today = QDate::currentDate();
 
             QString filename = fi.fileName();
             filename = backupDirStruct::cutFilenamePrefix(filename);
 
             QString srcfile = m_config.m_sSrc + (fi.absolutePath()+"/"+filename).mid(m_config.m_sDst.length());
-            //stream << "source file is " << srcfile << " \r\n";
 
             int size = 0;
             if( fi.isDir() )
@@ -1803,67 +1735,47 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             else
               size = fi.size();
 
-            //if( !QFile::exists(srcfile) )
+            if( filemap.contains(filename) )
             {
-              if( filemap.contains(filename) )
+              QStringList fileinfs = filemap.value(filename).split(";");
+              QString listPath = fileinfs.at(0);
+              QDateTime listDate = QDateTime::fromString(fileinfs.at(1));
+              int listSize = fileinfs.at(2).toInt();
+
+              QString fileToDelete;
+              QString mappedFile;
+
+              if( listSize==size )
               {
-                QStringList fileinfs = filemap.value(filename).split(";");
-                QString listPath = fileinfs.at(0);
-                QDateTime listDate = QDateTime::fromString(fileinfs.at(1));
-                int listSize = fileinfs.at(2).toInt();
-
-                QString fileToDelete;
-                QString mappedFile;
-
-                if( listSize==size )
-                {
-                  // kepping actual file if it has source or if it is newer than list entry
-                  if( (operatingOnSource || !QFile::exists(srcfile)) && listDate>=fi.lastModified() )
-                  {
-                    fileToDelete = fi.absoluteFilePath();
-                    mappedFile = listPath+"/"+filename;
-                  }
-                  else
-                  {
-                    fileToDelete = listPath+"/"+filename;
-                    mappedFile = fi.absoluteFilePath();
-                    //if( QFile::exists(srcfile) )
-                    filemap.remove(filename);
-                    //else
-                    filemap.insert(filename,fi.absolutePath()+";"+filemodified.toString()+";"
-                    +QString::number(size));
-                  }
-
-                  deletePath(fileToDelete);
-                  stream << indent << "     " << "    (was duplicate, keeping file " << mappedFile << ") \r\n";
-
-                  totaldirkbytes += size / 1024;
-                  totalcount++;
-                }
-#if 0
-                else if( m_config.m_bShowTree )
+                // kepping actual file if it has source or if it is newer than list entry
+                if( (operatingOnSource || !QFile::exists(srcfile)) && listDate>=fi.lastModified() )
                 {
                   fileToDelete = fi.absoluteFilePath();
                   mappedFile = listPath+"/"+filename;
-                  stream << indent << "     " << "  found file " << fileToDelete
-                  << " but sizes are different (" << QString::number(listSize)
-                  << "/" << QString::number(size) << ")"
-                  << "\r\n";
-                  stream << indent << "     " << "(mapped file " << listPath << "/" << filename << ")"
-                  << "\r\n";
                 }
-#endif
+                else
+                {
+                  fileToDelete = listPath+"/"+filename;
+                  mappedFile = fi.absoluteFilePath();
+                  filemap.remove(filename);
+                  filemap.insert(filename,fi.absolutePath()+";"+filemodified.toString()+";"
+                  +QString::number(size));
+                }
+
+                deletePath(fileToDelete);
+                stream << indent << "     " << "    (was duplicate, keeping file " << mappedFile << ") \r\n";
+
+                totaldirkbytes += size / 1024;
+                totalcount++;
               }
-              else if( operatingOnSource || !QFile::exists(srcfile) )
-              {
-                //if( showTreeStruct->isChecked() )
-                //    stream << indent << "---> " << "mapping " << fi.absolutePath()+"/"+filename << "\r\n";
-                filemap.insert(filename,fi.absolutePath()+";"+filemodified.toString()+";"
-                +QString::number(size));
-              }
-              else if( m_config.m_bVerboseMaint )
-                stream << indent << "     " << "file " << fi.absoluteFilePath() << " has source, keeping it\r\n";
             }
+            else if( operatingOnSource || !QFile::exists(srcfile) )
+            {
+              filemap.insert(filename,fi.absolutePath()+";"+filemodified.toString()+";"
+              +QString::number(size));
+            }
+            else if( m_config.m_bVerboseMaint )
+              stream << indent << "     " << "file " << fi.absoluteFilePath() << " has source, keeping it\r\n";
           }
         }
         ++it;
@@ -1893,14 +1805,12 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
       while( m_running && (it2!=it1.value().end()) )
       {
         QString filename = it2.key();
-        //QString srcfile = (path+"/"+filename);
 
         if( filemap.contains(filename) )
         {
           QStringList fileinfs = filemap.value(filename).split(";");
           QString listPath = fileinfs.at(0);
           QString listFile = fileinfs.at(1);
-          //qint64 listDate = (fileinfs.at(2).toLongLong());
           int listSize = fileinfs.at(3).toLongLong();
 
           QString sourceFileRemoved;
@@ -1911,26 +1821,12 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
             m_toBeRemovedFromToc.append(qMakePair(listPath,listFile));
             m_toBeRemovedFromToc.append(qMakePair(relpath,filename));
           }
-#if 0
-          else if( m_config.m_bShowTree )
-          {
-            sourceFileRemoved = m_config.m_sDst + "/" + relpath+"/"+it2.key();
-            mappedFile = listPath+"/"+filename;
-            stream << ""/*indent*/ << "     " << "  found file " << sourceFileRemoved
-            << " but sizes are different (" << QString::number(listSize)
-            << "/" << QString::number(m_dirs.getNewestEntry(it2).m_size) << ")"
-            << "\r\n";
-            stream << ""/*indent*/ << "     " << "(mapped file " << mappedFile << "/" << filename << ")"
-            << "\r\n";
-          }
-#endif
         }
         else
         {
           filemap.insert(filename,relpath+";"+filename+";"+QString::number(m_dirs.getNewestEntry(it2).m_modify)+";"
             +QString::number(m_dirs.getNewestEntry(it2).m_size));
         }
-        // hier war #if 0
         ++it2;
       }
 
@@ -2031,14 +1927,8 @@ void backupExecuter::verifyBackup(QString const &startPath)
     QFileInfo fi;
 
     m_engine->setFileNameText(actPath);
-    //progressBar->setValue(scanned++);
     if( m_config.m_bBackground )
       m_waiter.Sleep(20);
-
-    QString lastFile = "";
-    QString lastName = "";
-
-    QString indent = "";
 
     while ( m_running && (it!=list.end()) )
     {
@@ -2058,8 +1948,6 @@ void backupExecuter::verifyBackup(QString const &startPath)
           filename = backupDirStruct::cutFilenamePrefix(filename);
 
           QString verifyFile = fi.absolutePath()+"/"+fi.fileName();
-          //QString dstFile = fi.absolutePath()+"/"+filename;
-          //QString srcfile = source + dstFile.mid(destination.length());
 
           QDateTime scanTime;
           bool willVerify = !isAutoBackupCreatedFile(filename);
@@ -2068,44 +1956,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
           if( willVerify && crcSummary.contains(verifyFile) )
           {
             scanTime = QDateTime::fromTime_t(crcSummary[verifyFile].lastScan);
-#if 0
-            /*int verifydays = 30;
-            switch( getInterval() )
-            {
-              case 0://daily
-                verifydays = 7;
-                break;
-              case 1://weekly
-                verifydays = 30;
-                break;
-              case 2://14 days
-                verifydays = 30;
-                break;
-              case 3://monthly
-                verifydays = 90;
-                break;
-              case 4://3 months
-                verifydays = 180;
-                break;
-              case 5://yearly
-                verifydays = 365;
-                break;
-            }*/
-            if( false/*scanTime.daysTo(startTime)<=verifydays*/ )
-            {
-              willVerify = false;
-
-              // verify of this file will be skipped, so just add its size to the progress
-              verifiedK += (fi.size()/(qint64)1024);
-              if( verifiedK<=lastVerifiedK )
-                m_engine->setProgressValue(verifiedK);
-              else
-                m_engine->setProgressMaximum(0);
-              if( getBackground() )
-                m_waiter.Sleep(20);
-            }
-#endif
-          }
+         }
 
           if( willVerify )
           {
@@ -2114,9 +1965,6 @@ void backupExecuter::verifyBackup(QString const &startPath)
             QFile dst(verifyFile);
             if( dst.open(QIODevice::ReadOnly) )
             {
-              //              QFile src(dstFile);
-              //              if( dst.open(QIODevice::WriteOnly) )
-              //              {
               unsigned long l1 = 0, l2 = 0;
               qint64 bytes = 0, read = 0;
               int n = 0;
@@ -2187,8 +2035,6 @@ void backupExecuter::verifyBackup(QString const &startPath)
                   if( m_config.m_bBackground )
                     m_waiter.Sleep(20);
                 }
-                //if( bytes>10000 && bytes<20000 ) errFound=true;
-                //dst.write(data);
               }
               if( m_running )
               {
@@ -2218,7 +2064,6 @@ void backupExecuter::verifyBackup(QString const &startPath)
               QString str = "++++ could not open '" + verifyFile + "'!\r\n";
               stream << str; errstream.append(str);
             }
-            //src.close();
 
             m_engine->setProgressText("verifying file " + QString::number(scanned++) + " of " + QString::number(crcSummary.size()) + "...");
           }
@@ -2232,7 +2077,6 @@ void backupExecuter::verifyBackup(QString const &startPath)
       ++it;
     }
   }
-  //}
 }
 
 QString backupExecuter::getAutobackupCheckFile(QString const &suffix)

@@ -46,19 +46,6 @@ public:
   backupConfigData getConfigData();
   void setConfigData(backupConfigData const &config);
 
-/*  QString getTitle();
-  QString getSrc();
-  QString getDst();
-  QString getFlt();
-  bool	getAuto();
-  int		getInterval();
-  bool  getBackground();
-  bool	getCompress();
-  bool	getKeep();
-  int		getVersions();
-  bool	getSuspend();
-  int		getTimeout();*/
-
   void	setUnattendedMode(bool doIt);
 
   static QFile *openFile( QString const &filename, bool readOnly = false );

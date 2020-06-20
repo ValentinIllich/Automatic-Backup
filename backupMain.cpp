@@ -88,7 +88,6 @@ public:
     else
       m_executer->setConfigData(m_config);
     m_executer->setUnattendedMode(closeAferExecute);
-//    m_executer->startBatchProcessing();
     m_executer->show();
     m_executer->verifyIt(runningInBackground);
     m_executer->processEventsAndWait(); // remove this to allow parallel processing of backups. But logging must be changed for this.
@@ -104,11 +103,6 @@ public:
     m_executer->show();
     m_executer->cleanup();
   }
-
-  /*  bool executionDone()
-  {
-    return m_config.m_bexecuted;
-  }*/
 
 private:
   backupConfigData  m_config;
@@ -324,7 +318,6 @@ void backupMain::newBackup()
 
 void backupMain::quit()
 {
-  //qApp->quit();
   accept();
 }
 
@@ -556,7 +549,6 @@ void backupMain::selSource()
 {
   QString path = QFileDialog::getExistingDirectory(
   this,
-  //"get existing directory",
   "Choose a directory",
   sourceLab->text()
   );
@@ -573,7 +565,6 @@ void backupMain::selDest()
 {
   QString path = QFileDialog::getExistingDirectory(
   this,
-  //"get existing directory",
   "Choose a directory",
   destLab->text()
   );

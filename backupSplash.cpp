@@ -38,11 +38,7 @@ public:
     m_cancel = addButton("Quit",QMessageBox::ActionRole);
     m_cancel->setMinimumWidth(buttons.width("Config...")+50);
     setIconPixmap(QApplication::style()->standardPixmap(QStyle::SP_DesktopIcon));
-    /*QFontMetrics metrics(qApp->font());
-    int w = metrics.width("Automatic Backup will start in 5 seconds.")/2;
-    m_ok->setFixedWidth(w);
-    m_config->setFixedWidth(w);
-    m_cancel->setFixedWidth(w);*/
+
     updateText();
     startTimer(1000);
   }
@@ -255,7 +251,6 @@ bool backupSplash::startup(int argc,char **argv)
 
     updateSettings(main);
 
-    //###qApp->setMainWidget(&main);
     if( interactive )
     {
       main.show();

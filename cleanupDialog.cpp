@@ -136,24 +136,13 @@ QString formatSize( double size )
 {
   QString result;
 
-  //double GBytes = size / 1024.0 / 1024.0 / 1024.0;
   double MBytes = size / 1024.0 / 1024.0;
-  //double KBytes = size / 1024.0;
-
-  /*if( GBytes>1.0 )
-        result.sprintf("%8.3f GB",GBytes);
-    else if( MBytes>1.0 )*/
   result.sprintf("%10.3f MB",MBytes);
-  /*else if( KBytes>1.0 )
-        result.sprintf("%8.3f KB",KBytes);
-    else if( size>1.0 )
-        result.sprintf("%8.3f B",size);*/
   return result;
 }
 
 void cleanupDialog::operationFinishedEvent()
 {
-  //populate QTreeWidget
   ui->treeView->clear();
   ui->treeView->setSortingEnabled(false);
 
@@ -256,7 +245,6 @@ void cleanupDialog::analyzePath(QString const &path)
 
   m_path = path;
   m_depth = path.count('/');
-  //m_chars = (ui->label->width() / metrics.width(startingPath) * startingPath.length()) - 5;
 
   ui->buttonBox->button(QDialogButtonBox::Cancel)->setDisabled(false);
   ui->buttonBox->button(QDialogButtonBox::Ok)->setDisabled(true);
@@ -499,19 +487,8 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
     if( sels.count()>0 )
     {
       const QTreeWidgetItem *item = sels.first();
-      /*if( item->childCount()==0 )*/ item=item->parent(); // open containing directory, not selected item
-      /*            QString path;
-            do
-            {
-                if( path.length()>0 )
-                    path = item->text(0) + "/" + path;
-                else
-                    path = item->text(0);
-
-                item = item->parent();
-            } while( item );
-*/
-      openFile(/*path*/item->text(3));
+      item=item->parent();
+      openFile(item->text(3));
     }
   }
   else if( selected==cleanup )
@@ -531,7 +508,6 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
         dirEntry *entry = (dirEntry*)parent->data(3,Qt::UserRole).toLongLong();
         if( entry )
         {
-          //entry->m_tocData.m_size -= dirSize;
           parent->setText(1,formatSize(entry->m_tocData.m_size));
         }
         parent = parent->parent();
@@ -585,16 +561,12 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
         m_dirStructChanged = true;
         ret = false;
       }
-//      else
-//        QMessageBox::warning(0,"dir error","directory\n"+startingItem->text(3)+"\nseems to have (hidden) content.");
     }
     if( ret )
     {
       dirEntry *entry = (dirEntry*)startingItem->data(3,Qt::UserRole).toLongLong();
       startingItem->setText(1,formatSize(entry->m_tocData.m_size));
     }
-    //else
-    //    QMessageBox::warning(0,"dir",list.join(";"));
   }
   else if(!m_cancel)
   {

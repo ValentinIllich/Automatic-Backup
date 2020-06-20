@@ -23,8 +23,6 @@ int main( int argc, char **argv )
   QApplication app(argc,argv);
   backupSplash object(0);
 
-  //object.setWindowTitle("backup");
-  //object.move(qApp->desktop()->width(),qApp->desktop()->height());
   if( object.startup(argc,argv) )
   {
     if( object.keepRunning() )
