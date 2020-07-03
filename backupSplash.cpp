@@ -300,7 +300,10 @@ void backupSplash::shutDown()
   cmd = "/bin/sh";
   arguments << "-c" << "osascript -e 'tell application \"Finder\"' -e 'shut down' -e 'end tell'";
 #endif
-
+#if defined(Q_OS_LINUX)
+  cmd = "/bin/sh";
+  arguments << "-c" << "shutdown -now";
+#endif
   shutDownMessage msg;
   msg.exec();
   if( !msg.cancelled() )
