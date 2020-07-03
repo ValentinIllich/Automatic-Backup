@@ -4,7 +4,7 @@ Bugs:
 =====
 
 - path selection for collecting of deleted files must be moved
-- getStatistics may not delete files --> move to upper level
+DONE getStatistics may not delete files --> move to upper level
 
 DONE auto verify zurücksetzen wenn manuell ausgelöst
 DONE verify muss .vibup Dateien ignorieren

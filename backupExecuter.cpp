@@ -1279,16 +1279,13 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
   }
 }
 
-backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool eraseAll)
+backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool &maybeErased)
 {
   QDate today = QDate::currentDate();
-  bool eraseIt = false;
-
   backupExecuter::backupStatistics result;
 
-  if( eraseAll )
+  if( maybeErased )
   {
-    eraseIt = true;
     result.count++;
     result.dirkbytes += (filesize/1024);
   }
@@ -1333,14 +1330,14 @@ backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date
 
         if( !passed )
         {
-          eraseIt = true;
+          maybeErased = true;
           result.count++;
           result.dirkbytes += (filesize/1024);
         }
       }
       else
       {
-        eraseIt = true;
+        maybeErased = true;
         result.count++;
         result.dirkbytes += (filesize/1024);
       }
@@ -1371,12 +1368,6 @@ backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date
       result.daycount++;
       result.daykbytes += (filesize  /1024);
     }
-  }
-
-  if( eraseIt )
-  {
-    deletePath(srcfile);
-    stream << "     " << "    (file was filtered out or source does not exist any more) \r\n";
   }
 
   return result;
@@ -1430,12 +1421,19 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
             QDate filemodified = QDateTime::fromMSecsSinceEpoch((*it3).m_modify).date();
             QString srcfile = path+"/"+it2.key();
 
-            results += getStatistics(date,srcfile,filemodified,(*it3).m_size,eraseAll);
+            bool maybeErased = eraseAll;
+            results += getStatistics(date,srcfile,filemodified,(*it3).m_size,maybeErased);
             totalCounts += results;
 
             found++;
             foundkbytes += ((*it3).m_size/1024);
             ++it3;
+
+            if( maybeErased )
+            {
+              deletePath(srcfile);
+              stream << "     " << "    (file was filtered out or source does not exist any more) \r\n";
+            }
           }
           ++it2;
         }

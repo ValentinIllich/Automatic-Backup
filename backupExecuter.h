@@ -113,7 +113,7 @@ private:
     }
   };
 
-  backupStatistics getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool eraseAll);
+  backupStatistics getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool &maybeErased);
 
   void loadData();
   void saveData();
