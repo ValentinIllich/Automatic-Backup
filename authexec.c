@@ -7,7 +7,7 @@
 #if defined(Q_OS_WIN32)
 #include <windows.h>
 #endif
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MAC) || defined(Q_OS_LINUX)
 #include <stdio.h>
 #endif
 
