@@ -680,7 +680,7 @@ void backupExecuter::analyzeDirectories()
       m_waiter.Sleep(20);
 
     QString srcpath = *it;
-    QString dstpath = ensureDirExists(srcpath,m_config.m_sSrc,m_config.m_sDst);
+    bool dirCreated = ensureDirExists(srcpath,m_config.m_sSrc,m_config.m_sDst);
 
     QDir dir(srcpath);
 
@@ -738,23 +738,30 @@ void backupExecuter::analyzeDirectories()
       {
         if( passed )
         {
-          QString filePath = srcFile.dir().absolutePath();
-          QString fileName = srcFile.fileName();
-          qint64 modify = srcFile.lastModified().toMSecsSinceEpoch();
-
-          m_engine->setFileNameText(filePath+"/"+fileName);
-          QString relPath = filePath.mid(m_config.m_sSrc.length()+1);
-          if( m_dirs.exists(relPath,fileName) )
+          if( dirCreated )
           {
-            qint64 lastm = m_dirs.lastModified(relPath,fileName);
-            if( modify>lastm )
-              copy = true;
-            else
-              copy = false;
+            copy = true;
           }
           else
           {
-            copy = true;
+            QString filePath = srcFile.dir().absolutePath();
+            QString fileName = srcFile.fileName();
+            qint64 modify = srcFile.lastModified().toMSecsSinceEpoch();
+
+            m_engine->setFileNameText(filePath+"/"+fileName);
+            QString relPath = filePath.mid(m_config.m_sSrc.length()+1);
+            if( m_dirs.exists(relPath,fileName) )
+            {
+              qint64 lastm = m_dirs.lastModified(relPath,fileName);
+              if( modify>lastm )
+                copy = true;
+              else
+                copy = false;
+            }
+            else
+            {
+              copy = true;
+            }
           }
         }
         else
@@ -791,14 +798,18 @@ void backupExecuter::analyzeDirectories()
   }
 }
 
-QString backupExecuter::ensureDirExists( QString const &fullPath, QString const &srcBase, QString const &dstBase )
+bool backupExecuter::ensureDirExists( QString const &fullPath, QString const &srcBase, QString const &dstBase )
 {
+  bool result = false;
+
   QString relpath = fullPath.mid(srcBase.length());
   QString dstpath = relpath.prepend(dstBase);
 
   QDir dst(dstpath);
   if( !dst.exists() )
   {
+    result = true;
+
     if( m_config.m_bVerboseMaint )
       stream << dst.absolutePath() << " not found in destination, would be created\r\n";
     else
@@ -814,7 +825,7 @@ QString backupExecuter::ensureDirExists( QString const &fullPath, QString const 
     }
   }
 
-  return dstpath;
+  return result;
 }
 
 void backupExecuter::copySelectedFiles()
