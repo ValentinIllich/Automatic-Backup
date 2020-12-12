@@ -30,7 +30,7 @@ Release 1.22:
 =============
 
 - Zielverzecihnis nur anlegen wenn nicht leer
-- wenn Zielverzeichnis angelegt werden muss, keine Dateien mehr prüfen
+DONE wenn Zielverzeichnis angelegt werden muss, keine Dateien mehr prüfen
 
 DONE properties konsequent in Struktur halten
 DONE Compress entfernen, dafür NAS: kein Verify

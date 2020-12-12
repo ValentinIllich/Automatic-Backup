@@ -36,12 +36,14 @@ public:
 public slots:
     void doAnalyze();
     void doRescan();
+    void doFinish();
     void doBreak();
     void analyzePath(QString const &path);
     void setLimitDate();
 
 protected:
     virtual void contextMenuEvent ( QContextMenuEvent * e );
+    virtual void customEvent(QEvent *event);
 
 private:
     void scanRelativePath( QString const &path, dirEntry *entry, int &dirCount );

@@ -3,6 +3,9 @@
 #include "backupEngine.h"
 #include "backupExecuter.h"
 
+#include <QStyledItemDelegate>
+#include <QPainter>
+#include <QThread>
 #include <QFileDialog>
 #include <QDateTime>
 #include <QContextMenuEvent>
@@ -16,6 +19,91 @@
 #if defined(Q_OS_WIN)
 #include <windows.h>
 #endif
+
+class CMyDelegate : public QStyledItemDelegate
+{
+public:
+    CMyDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
+
+    void paint(QPainter* painter, const QStyleOptionViewItem & option, const QModelIndex & index) const override;
+};
+
+void CMyDelegate::paint(QPainter* painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
+{
+    QStyleOptionViewItem itemOption(option);
+    initStyleOption(&itemOption, index);
+
+    //itemOption.rect.adjust(0, 0, 0, 0);  // Make the item rectangle 10 pixels smaller from the left side.
+
+    // And now you can draw a bottom border.
+    QTreeWidgetItem *item = (QTreeWidgetItem*)index.internalPointer();
+    if( item && /*!item->isSelected() &&*/ (index.column()==0) )
+    {
+      double percent = 100;
+      dirEntry *entry = (dirEntry*)item->data(3,Qt::UserRole).toLongLong();
+      if( entry && entry->m_parent )
+      {
+        qint64 size = entry->m_tocData.m_size;
+        qint64 parsize = entry->m_parent->m_tocData.m_size;
+        percent = double(size * 100) / double(parsize);
+        if( percent>100.0 ) percent = 100.0;
+      }
+      int w = double(itemOption.rect.width() * percent +0.5) / 100;
+      /*if( item->childCount()>0 )
+        painter->fillRect(itemOption.rect,Qt::lightGray);*/
+      if( item->isSelected() )
+      {
+        painter->fillRect(itemOption.rect,Qt::blue);
+        painter->setPen(Qt::white);
+      }
+      else
+      {
+        painter->setPen(Qt::black);
+      }
+      painter->fillRect(itemOption.rect.x(),itemOption.rect.y(),w,itemOption.rect.height(),Qt::gray);
+
+      painter->drawText(itemOption.rect,item->text(0));
+      if( percent>1.0 )
+        painter->drawText(itemOption.rect,QString::number(percent,'f',0)+" %",QTextOption(Qt::AlignRight));
+      else
+        painter->drawText(itemOption.rect,QString::number(percent,'f',1)+" %",QTextOption(Qt::AlignRight));
+    }
+    else
+      // Draw your item content.
+      QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &itemOption, painter, nullptr);
+}
+
+class actionThread : public QThread
+{
+public:
+  actionThread(std::function<void()> fn)
+    : m_fn(fn)
+  {
+  }
+  virtual ~actionThread()
+  {
+  }
+
+  void processAction()
+  {
+    start();
+    while( !isRunning() )
+      qApp->processEvents();
+    while( !isFinished() )
+      qApp->processEvents();
+
+    wait();
+  }
+
+protected:
+  virtual void run() override
+  {
+    m_fn();
+  }
+
+private:
+  std::function<void()> m_fn;
+};
 
 cleanupDialog::cleanupDialog(QWidget *parent)
 : QDialog(parent), ui(new Ui::cleanupDialog)
@@ -41,15 +129,16 @@ cleanupDialog::cleanupDialog(QWidget *parent)
   header << "Path" << "Size" << "modified" << "full path";
   ui->treeView->setHeaderLabels(header);
   ui->treeView->hideColumn(3);
+
+  CMyDelegate* delegate = new CMyDelegate(ui->treeView);
+  ui->treeView->setItemDelegate(delegate);
+
   ui->rescanButt->hide();
 }
 
 cleanupDialog::~cleanupDialog()
 {
   m_engine->processEventsAndWait();
-
-  if( m_dirStructValid && m_dirStructChanged )
-    saveDirStruct();
 
   delete m_metrics;
   delete m_rootEntry;
@@ -59,9 +148,17 @@ cleanupDialog::~cleanupDialog()
 
 void cleanupDialog::saveDirStruct()
 {
-  QString tocSummaryFile = backupDirStruct::getTocSummaryFile(m_path);
-  if( !backupDirStruct::convertToTocFile(tocSummaryFile,m_rootEntry ) )
-      QMessageBox::warning(this,"write error","could not create table of contents file.\nPlease check if destination disk is full.");
+  ui->label->setText("creating table of contents...");
+  ui->progressBar->setMaximum(0);
+  ui->progressBar->setValue(0);
+
+  actionThread saver([this]()
+    {
+      QString tocSummaryFile = backupDirStruct::getTocSummaryFile(m_path);
+      if( !backupDirStruct::convertToTocFile(tocSummaryFile,m_rootEntry ) )
+          QApplication::postEvent(this,new QEvent(QEvent::User));
+    });
+  saver.processAction();
 }
 
 void cleanupDialog::setPaths(QString const &srcpath,QString const &dstpath)
@@ -90,6 +187,9 @@ void cleanupDialog::threadedVerifyOperation()
   m_dirCount = 0;
 
   QString tocSummaryFile = backupDirStruct::getTocSummaryFile(m_path);
+  m_engine->setProgressText("reading table of contents from disk...");
+  m_engine->setProgressMaximum(0);
+  m_engine->setProgressValue(0);
   if( backupDirStruct::convertFromTocFile(tocSummaryFile,m_rootEntry,m_dirCount)/*canReadFromTocFile(path,entry)*/ )
     m_dirStructValid = true;
   else
@@ -137,7 +237,7 @@ QString formatSize( double size )
   QString result;
 
   double MBytes = size / 1024.0 / 1024.0;
-  result.sprintf("%10.3f MB",MBytes);
+  result.sprintf("%'10.3f MB",MBytes);
   return result;
 }
 
@@ -160,13 +260,23 @@ void cleanupDialog::operationFinishedEvent()
   populateTree(m_rootEntry,item,depth,dirsProcessed);
 
   item->setText(1,formatSize(m_rootEntry->m_tocData.m_size/*m_totalbytes*/));
+  item->setTextAlignment(1,Qt::AlignRight);
+  item->setData(0,Qt::UserRole,QVariant(qint64(m_rootEntry)));
   item->setData(3,Qt::UserRole,QVariant(qint64(m_rootEntry)));
   item->setExpanded(true);
 
   ui->buttonBox->button(QDialogButtonBox::Cancel)->setDisabled(true);
   ui->buttonBox->button(QDialogButtonBox::Ok)->setDisabled(false);
 
+  m_engine->setProgressText("sorting view...");
+  m_engine->setProgressMaximum(0);
+  m_engine->setProgressValue(0);
+  qApp->processEvents(QEventLoop::AllEvents,1000);
+
+  ui->treeView->resizeColumnToContents(0);
+  ui->treeView->resizeColumnToContents(1);
   ui->treeView->setSortingEnabled(true);
+  ui->treeView->sortByColumn(1,Qt::DescendingOrder);
 
   m_engine->setProgressText("");
   m_engine->setProgressMaximum(1);
@@ -199,12 +309,11 @@ void cleanupDialog::doAnalyze()
 
       setLimitDate();
 
-      if( startingPath!=m_path )
+      if( (startingPath!=m_path) || !m_dirStructValid )
       {
         ui->treeView->clear();
 
         analyzePath(startingPath);
-        m_path = startingPath;
       }
       else
         operationFinishedEvent();
@@ -225,10 +334,32 @@ void cleanupDialog::doRescan()
     if( QFile::exists(tocSummaryFile) )
       QFile::remove(tocSummaryFile);
 
+    m_dirStructValid = false;
     m_analyzingPath = startingPath;
 
     doAnalyze();
   }
+}
+
+void cleanupDialog::doFinish()
+{
+  if( m_dirStructValid && m_dirStructChanged )
+    saveDirStruct();
+
+  {
+    ui->label->setText("cleaning up...");
+    ui->progressBar->setMaximum(0);
+    ui->progressBar->setValue(0);
+
+    actionThread saver([this]()
+      {
+        delete m_rootEntry;
+        m_rootEntry = nullptr;
+      });
+    saver.processAction();
+  }
+
+  accept();
 }
 
 void cleanupDialog::analyzePath(QString const &path)
@@ -349,16 +480,18 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
     QTreeWidgetItem *dirItem = new QTreeWidgetItem(item);
     dirItem->setText(0,it.key());
     dirItem->setText(3,it.value()->absoluteFilePath());
+    dirItem->setData(0,Qt::UserRole,QVariant(qint64(it.value())));
     dirItem->setData(3,Qt::UserRole,QVariant(qint64(it.value())));
 
     populateTree(it.value(),dirItem,depth,processedDirs);
     processedDirs++;
 
-    dirItem->setBackgroundColor(0,Qt::lightGray);
-    dirItem->setBackgroundColor(1,Qt::lightGray);
+    //dirItem->setBackgroundColor(0,Qt::lightGray);
+    //dirItem->setBackgroundColor(1,Qt::lightGray);
     dirItem->setText(1,formatSize(it.value()->m_tocData.m_size));
+    dirItem->setTextAlignment(1,Qt::AlignRight);
     dirItem->setText(2,QDateTime::fromMSecsSinceEpoch(it.value()->m_tocData.m_modify).toString("yyyy/MM/dd-hh:mm"));
-    if( depth>1 )
+    if( depth>0 )
       dirItem->setExpanded(false);
     else
     {
@@ -385,8 +518,10 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
 
       fileItem->setText(0,(*it2)->m_tocData.m_prefix+(*it2)->m_name);
       fileItem->setText(1,formatSize((*it2)->m_tocData.m_size));
+      fileItem->setTextAlignment(1,Qt::AlignRight);
       fileItem->setText(2,filedate.toString("yyyy/MM/dd-hh:mm"));
       fileItem->setText(3,(*it2)->absoluteFilePath());
+      fileItem->setData(0,Qt::UserRole,QVariant(qint64(*it2)));
       fileItem->setData(3,Qt::UserRole,QVariant(qint64(*it2)));
 
       fileSizes += (*it2)->m_tocData.m_size;
@@ -509,12 +644,18 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
         if( entry )
         {
           parent->setText(1,formatSize(entry->m_tocData.m_size));
+          parent->setTextAlignment(1,Qt::AlignRight);
         }
         parent = parent->parent();
       }
 
     }
   }
+}
+
+void cleanupDialog::customEvent(QEvent */*event*/)
+{
+  QMessageBox::warning(this,"write error","could not create table of contents file.\nPlease check if destination disk is full.");
 }
 
 bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
@@ -566,6 +707,7 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
     {
       dirEntry *entry = (dirEntry*)startingItem->data(3,Qt::UserRole).toLongLong();
       startingItem->setText(1,formatSize(entry->m_tocData.m_size));
+      startingItem->setTextAlignment(1,Qt::AlignRight);
     }
   }
   else if(!m_cancel)

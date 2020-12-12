@@ -124,7 +124,7 @@ close the dialog.</string>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
    <receiver>cleanupDialog</receiver>
-   <slot>accept()</slot>
+   <slot>doFinish()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>786</x>
@@ -189,5 +189,6 @@ close the dialog.</string>
   <slot>doAnalyze()</slot>
   <slot>doBreak()</slot>
   <slot>doRescan()</slot>
+  <slot>doFinish()</slot>
  </slots>
 </ui>

@@ -426,6 +426,9 @@ void backupMain::cleanupDirectory()
   if( m_selected==0 )
   {
     cleanupDialog dlg(0);
+    dlg.show();
+    dlg.activateWindow();
+    dlg.doAnalyze();
     dlg.exec();
   }
 
