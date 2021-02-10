@@ -389,12 +389,12 @@ void cleanupDialog::setLimitDate()
   if( limit.isValid() )
   {
     m_lastmodified = limit;
-    m_analyze = false;
+    //m_analyze = false;
   }
   else
   {
     m_lastmodified = QDateTime::currentDateTime();
-    m_analyze = true;
+    //m_analyze = true;
   }
 }
 

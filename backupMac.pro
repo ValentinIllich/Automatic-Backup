@@ -8,6 +8,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TEMPLATE = app
 TARGET = backup
+CONFIG += sdk_no_version_check
 
 # Input
 HEADERS += backupExecuter.h \
@@ -34,34 +35,6 @@ SOURCES += backupExecuter.cpp \
     authexec.c \
     backupDirStruct.cpp
 RESOURCES += backupwindow.qrc
-
-CONFIG(debug, debug|release): BUILD = debug
-CONFIG(release, debug|release): BUILD = release
-
-win32 {
-    OBJECTS_DIR = c:/tmp/backup_$${BUILD}_obj
-    UI_DIR = c:/tmp/backup_$${BUILD}_obj
-    MOC_DIR = c:/tmp/backup_$${BUILD}_obj
-    RCC_DIR = c:/tmp/backup_$${BUILD}_obj
-    RC_FILE = ressources/backup.rc
-}
-macx {
-    OBJECTS_DIR = /private/var/tmp/backup_$${BUILD}_obj
-    UI_DIR = /private/var/tmp/backup_$${BUILD}_obj
-    MOC_DIR = /private/var/tmp/backup_$${BUILD}_obj
-    RCC_DIR = /private/var/tmp/backup_$${BUILD}_obj
-    ICON = ressources/backup.icns
-    QMAKE_INFO_PLIST = ressources/Info_mac.plist
-    LIBS += -framework Security
-}
-linux {
-    OBJECTS_DIR = /var/tmp/backup_$${BUILD}_obj
-    UI_DIR = /var/tmp/backup_$${BUILD}_obj
-    MOC_DIR = /var/tmp/backup_$${BUILD}_obj
-    RCC_DIR = /var/tmp/backup_$${BUILD}_obj
-    ICON = ressources/backup.icns
-    QMAKE_INFO_PLIST = ressources/Info_mac.plist
-}
 
 OTHER_FILES += distribute/welcome.html \
     ressources/help.html \

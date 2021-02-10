@@ -13,14 +13,17 @@ HEADERS += backupExecuter.h \
     backupMain.h \
     cleanupDialog.h \
     backupSplash.h \
+    filterSettings.h \
     utilities.h \
     backupengine.h \
     backupdirstruct.h
 FORMS += backupwindow.ui \
+    filterSettings.ui \
     mainwindow.ui \
     cleanupdialog.ui
 SOURCES += backupExecuter.cpp \
     backupMain.cpp \
+    filterSettings.cpp \
     main.cpp \
     cleanupdialog.cpp \
     backupSplash.cpp \
