@@ -377,7 +377,7 @@ in the background for this time.</string>
                   <widget class="QCheckBox" name="verboseExecute">
                    <property name="toolTip">
                     <string>If checked, no action will happen upon Execute.
-Instead, al log si shown with all actions which
+Instead, al log is shown with all actions which
 would happen.</string>
                    </property>
                    <property name="text">
@@ -644,7 +644,7 @@ to be kept in the backup path.</string>
                   <widget class="QCheckBox" name="verify">
                    <property name="toolTip">
                     <string>If checked, the files in the backup path
-will be compressed.</string>
+will be verified from time to time.</string>
                    </property>
                    <property name="text">
                     <string>Verify files in backup</string>
