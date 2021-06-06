@@ -1,29 +1,8 @@
-- Shutdown auch bei Direkt-Execute ?
-  (gelöst 11.5.2014)
-
 - Zielverzeichnisse werden auch angelegt, wenn nix kopiert wird (Filter)
 
 - Wenn CreationDate > ModificationDate dann nix machen!
   (ist extra so programmiert, warum ?)
 
 - Verify nicht durchführen, wenn "preview" gewählt. Nur Meldung!
-
-- Dateien mit '' oder '' im Namen werden immer kopiert!!
-  (gelöst 11.5.2014)
-
-- die _chk Dateien nicht ins Verify nehmen!
-  (gelöst am 21.7.2013, siehe unten)
-
-- Hilfe-PDF erneut auspacken, auch wenn existent
-  (implementiert am 21.7.2013)
-
-- Probleme bei Files, die aktualisiert werden, wenn direckt danach Verify l√§uft?
-  (implementiert am 21.7.2013)
-
-- bei Run&Shutdown KEINE Meldung bei Fehler!!
-  (implementiert 22.7.2013)
-
-- Bei Shutdown während Copy / Verify keine Speicherung des Zustands!
-  (implementiert 31.1.2014)
 
 - Probleme mit Zeitstempel-Erkennung bei Einlegen von Wechselmedium? (mal 0, mal -1)

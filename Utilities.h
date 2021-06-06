@@ -9,6 +9,14 @@
 #include <qmessagebox.h>
 #include <qapplication.h>
 
+struct discInfo
+{
+  int m_capacity;
+  quint64 m_availableBytes;
+  quint64 m_freeBytes;
+};
+
+discInfo getDiscInfo( QString const &filename );
 extern void setTimestamps( QString const &filename, QDateTime const &modified );
 
 extern void showHelp(QObject *parent,QString const &ressourcePath,QString const &helpfile);

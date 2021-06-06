@@ -40,6 +40,28 @@ void TimetToFileTime( QDateTime const &timestamp, LPFILETIME pft )
 
 #endif
 
+discInfo getDiscInfo( QString const &filename )
+{
+  discInfo info;
+
+#if defined(Q_OS_WIN32)
+#elif defined(Q_OS_MAC) || defined(Q_WS_X11)
+  QStringList args;
+  args << "-k" << filename;
+  QProcess proc;
+  proc.start("/bin/df",args);
+  proc.waitForFinished();
+  QString result = proc.readAllStandardOutput();
+  QStringList lines = result.split("\n");
+  QStringList cols = lines[1].simplified().split(" ");
+  info.m_availableBytes = cols[1].toLongLong() * 1024L;
+  info.m_freeBytes = cols[3].toLongLong() * 1024L;
+  info.m_capacity = cols[4].replace("%","").toInt();
+#endif
+
+  return info;
+}
+
 void setTimestamps( QString const &filename, QDateTime const &modified )
 {
 #if defined(Q_OS_WIN32)

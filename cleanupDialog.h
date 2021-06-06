@@ -76,6 +76,7 @@ private:
 
     bool m_dirStructValid;
     bool m_dirStructChanged;
+    bool m_doRescan;
 
     backupEngine *m_engine;
 };

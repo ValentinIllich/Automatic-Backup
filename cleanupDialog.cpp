@@ -2,6 +2,7 @@
 #include "ui_cleanupDialog.h"
 #include "backupEngine.h"
 #include "backupExecuter.h"
+#include "Utilities.h"
 
 #include <QStyledItemDelegate>
 #include <QPainter>
@@ -118,6 +119,7 @@ cleanupDialog::cleanupDialog(QWidget *parent)
 , m_dirCount(0)
 , m_dirStructValid(false)
 , m_dirStructChanged(false)
+, m_doRescan(false)
 , m_engine(new backupEngine(*this))
 {
   ui->setupUi(this);
@@ -148,9 +150,9 @@ cleanupDialog::~cleanupDialog()
 
 void cleanupDialog::saveDirStruct()
 {
-  ui->label->setText("creating table of contents...");
-  ui->progressBar->setMaximum(0);
-  ui->progressBar->setValue(0);
+  m_engine->setProgressText("creating table of contents...");
+  m_engine->setProgressMaximum(0);
+  m_engine->setProgressValue(0);
 
   actionThread saver([this]()
     {
@@ -268,19 +270,22 @@ void cleanupDialog::operationFinishedEvent()
   ui->buttonBox->button(QDialogButtonBox::Cancel)->setDisabled(true);
   ui->buttonBox->button(QDialogButtonBox::Ok)->setDisabled(false);
 
-  m_engine->setProgressText("sorting view...");
+  ui->label->setText("sorting view...");
   m_engine->setProgressMaximum(0);
   m_engine->setProgressValue(0);
-  qApp->processEvents(QEventLoop::AllEvents,1000);
+  qApp->processEvents(QEventLoop::WaitForMoreEvents, 1000);
 
   ui->treeView->resizeColumnToContents(0);
   ui->treeView->resizeColumnToContents(1);
   ui->treeView->setSortingEnabled(true);
   ui->treeView->sortByColumn(1,Qt::DescendingOrder);
 
-  m_engine->setProgressText("");
+  discInfo info = getDiscInfo(m_analyzingPath);
+  m_engine->setProgressText(QString::number(info.m_capacity)+"% of disk space used ("+formatSize(info.m_availableBytes)+" total)");
   m_engine->setProgressMaximum(1);
   m_engine->setProgressValue(0);
+
+  m_doRescan = false;
 }
 
 void cleanupDialog::doAnalyze()
@@ -337,6 +342,7 @@ void cleanupDialog::doRescan()
     m_dirStructValid = false;
     m_analyzingPath = startingPath;
 
+    m_doRescan = true;
     doAnalyze();
   }
 }
@@ -347,9 +353,9 @@ void cleanupDialog::doFinish()
     saveDirStruct();
 
   {
-    ui->label->setText("cleaning up...");
-    ui->progressBar->setMaximum(0);
-    ui->progressBar->setValue(0);
+    m_engine->setProgressText("cleaning up...");
+    m_engine->setProgressMaximum(0);
+    m_engine->setProgressValue(0);
 
     actionThread saver([this]()
       {
@@ -500,7 +506,7 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
       ui->treeView->resizeColumnToContents(0);
     }
 
-    if( dirItem->childCount()==0 ) delete dirItem;
+    if( !m_doRescan && (dirItem->childCount()==0) ) delete dirItem;
 
     ++it;
   }
@@ -636,9 +642,12 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
     {
       QTreeWidgetItem *item = const_cast<QTreeWidgetItem*>(sels.first());
       double dirSize = 0;
-      QTreeWidgetItem *parent = item->parent();
+      //QTreeWidgetItem *parent = item->parent();
+
+      QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
       traverseItems(item,dirSize);
-      while( parent )
+      QGuiApplication::restoreOverrideCursor();
+      /*while( parent )
       {
         dirEntry *entry = (dirEntry*)parent->data(3,Qt::UserRole).toLongLong();
         if( entry )
@@ -647,7 +656,7 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
           parent->setTextAlignment(1,Qt::AlignRight);
         }
         parent = parent->parent();
-      }
+      }*/
 
     }
   }
@@ -665,6 +674,7 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
   QFileInfo info(startingItem->text(3));
   if( info.isDir() && !m_cancel )
   {
+    qDebug("dir: %s",startingItem->text(3).toLatin1().data());
     startingItem->setExpanded(true);
     startingItem->treeWidget()->scrollToItem(startingItem);
 
@@ -702,7 +712,11 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
         m_dirStructChanged = true;
         ret = false;
       }
+      else
+        qDebug("++++ rmdir failed: %s\n",name.toLatin1().data());
     }
+    else
+      qDebug("nem: %s",startingItem->text(3).toLatin1().data());
     if( ret )
     {
       dirEntry *entry = (dirEntry*)startingItem->data(3,Qt::UserRole).toLongLong();
@@ -712,12 +726,20 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
   }
   else if(!m_cancel)
   {
+    qDebug("fil: %s",startingItem->text(3).toLatin1().data());
     const QTreeWidgetItem *item = startingItem;
     QFile::setPermissions(item->text(3),QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther);
     if( QFile::remove(item->text(3)) )
     {
       dirEntry *entry = (dirEntry*)item->data(3,Qt::UserRole).toLongLong();
       if( entry->m_parent ) entry->m_parent->deleteFile(entry);
+
+      while( item->parent() )
+      {
+        dirEntry *it = (dirEntry*)item->parent()->data(3,Qt::UserRole).toLongLong();
+        item->parent()->setText(1,formatSize(it->m_tocData.m_size));
+        item = item->parent();
+      }
 
       delete entry;
       delete startingItem;
