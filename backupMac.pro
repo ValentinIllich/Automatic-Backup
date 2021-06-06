@@ -36,6 +36,18 @@ SOURCES += backupExecuter.cpp \
     backupDirStruct.cpp
 RESOURCES += backupwindow.qrc
 
+win32 {
+    RCC_DIR = c:/tmp/backup_$${BUILD}_obj
+    RC_FILE = ressources/backup.rc
+}
+macx {
+    ICON = ressources/backup.icns
+    QMAKE_INFO_PLIST = ressources/Info_mac.plist
+#    LIBS += -framework Security
+}
+linux {
+}
+
 OTHER_FILES += distribute/welcome.html \
     ressources/help.html \
     ReleaseNotes.txt \
