@@ -870,6 +870,7 @@ void backupExecuter::copySelectedFiles()
     QString relPath = filePath.mid(m_config.m_sSrc.length()+1);
     QString fileName = srcInfo.fileName();
     qint64 modify = srcInfo.lastModified().toMSecsSinceEpoch();
+    qint64 crcsum = 0;
 
     if( m_config.m_bKeep )
     {
@@ -912,6 +913,7 @@ void backupExecuter::copySelectedFiles()
           QByteArray bytes = src.read(buffsize);
           int n = bytes.size();
           {
+            crcsum += qChecksum(bytes.data(),bytes.length(),Qt::ChecksumIso3309);
             nout = dst.write(bytes);
             if( nout!=n )
             {
@@ -955,7 +957,7 @@ void backupExecuter::copySelectedFiles()
           entry.m_tocId = m_dirs.nextTocId();
           entry.m_size = srcInfo.size();
           entry.m_modify = modify;
-          entry.m_crc = 0;
+          entry.m_crc = crcsum;
           m_dirs.addFile(relPath,prefix+fileName,entry);
         }
         else
