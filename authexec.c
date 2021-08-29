@@ -34,6 +34,14 @@ void checkForPasswdHelper(int argc, char **argv)
 #endif
 }
 
+int hasAdminRights(int argc, char* argv[])
+{
+  if( argc==2 && strcmp(argv[1],"-admin")==0 )
+      return 1;
+
+  return 0;
+}
+
 int getAdminRights(int argc, char* argv[], char *password)
 {
     int result = -1;
