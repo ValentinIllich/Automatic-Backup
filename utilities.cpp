@@ -3,6 +3,7 @@
 #include <qfileinfo.h>
 #include <qdatetime.h>
 #include <qprocess.h>
+#include <qstorageinfo.h>
 
 #if defined(Q_OS_WIN32)
 #include <windows.h>
@@ -44,20 +45,24 @@ discInfo getDiscInfo( QString const &filename )
 {
   discInfo info;
 
-#if defined(Q_OS_WIN32)
-#elif defined(Q_OS_MAC) || defined(Q_WS_X11)
-  QStringList args;
-  args << "-k" << filename;
-  QProcess proc;
-  proc.start("/bin/df",args);
-  proc.waitForFinished();
-  QString result = proc.readAllStandardOutput();
-  QStringList lines = result.split("\n");
-  QStringList cols = lines[1].simplified().split(" ");
-  info.m_availableBytes = cols[1].toLongLong() * 1024L;
-  info.m_freeBytes = cols[3].toLongLong() * 1024L;
-  info.m_capacity = cols[4].replace("%","").toInt();
-#endif
+  QStorageInfo storage(filename);
+  info.m_availableBytes = storage.bytesTotal();// bytesAvailable();
+  info.m_freeBytes = storage.bytesFree();
+  info.m_capacity = 100-(info.m_freeBytes*100/info.m_availableBytes);
+//#if defined(Q_OS_WIN32)
+//#elif defined(Q_OS_MAC) || defined(Q_WS_X11)
+//  QStringList args;
+//  args << "-k" << filename;
+//  QProcess proc;
+//  proc.start("/bin/df",args);
+//  proc.waitForFinished();
+//  QString result = proc.readAllStandardOutput();
+//  QStringList lines = result.split("\n");
+//  QStringList cols = lines[1].simplified().split(" ");
+//  info.m_availableBytes = cols[1].toLongLong() * 1024L;
+//  info.m_freeBytes = cols[3].toLongLong() * 1024L;
+//  info.m_capacity = cols[4].replace("%","").toInt();
+//#endif
 
   return info;
 }
@@ -174,10 +179,10 @@ extern void setDbgWindow(QPlainTextEdit *win,int level)
 
 bool dbgout( QString const &text, int level, bool skipLineBreaks )
 {
-    if( level>errorLevel )
-        return true;
+  if( level>errorLevel )
+      return true;
 
-    QString message = text;
+  QString message = text;
 
 	if( skipLineBreaks )
 		message.remove("\n").remove("\r");
