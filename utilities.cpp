@@ -106,7 +106,7 @@ void showHelp(QObject *parent,QString const &ressourcePath,QString const &helpfi
     if( !QFile::exists(destfile) || (fi1.lastModified()>fi2.lastModified()) )
     {
       if( QFile::exists(destfile) && !QFile::remove(destfile) )
-          error("could not delete help file. Probably you will see an older version.");
+          error("could not delete help file "+destfile+". Probably you will see an older version.");
       QFile::copy(ressourcePath,destfile);
     }
 
