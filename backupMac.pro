@@ -16,6 +16,7 @@ HEADERS += backupExecuter.h \
     backupMain.h \
     cleanupDialog.h \
     backupSplash.h \
+    crc32.h \
     filterSettings.h \
     utilities.h \
     backupEngine.h \
@@ -26,6 +27,7 @@ FORMS += backupwindow.ui \
     cleanupDialog.ui
 SOURCES += backupExecuter.cpp \
     backupMain.cpp \
+    crc32.cpp \
     filterSettings.cpp \
     main.cpp \
     cleanupDialog.cpp \
