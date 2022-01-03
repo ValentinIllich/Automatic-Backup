@@ -385,8 +385,8 @@ void backupMain::executeBackup()
 
     if( m_selected==1 )
     {
-      if( runAndShutdown() )
-        static_cast<backupListItem*>(item)->executeBackupItem(true,false);
+      if( m_immediateShutdown )
+        static_cast<backupListItem*>(item)->executeBackupAndWait(true,false);
       else
         static_cast<backupListItem*>(item)->executeBackupItem(false,false);
     }
