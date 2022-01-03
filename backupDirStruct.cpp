@@ -294,6 +294,30 @@ void backupDirStruct::addFile(const QString &path, const QString &file, fileTocE
   m_tocChanged = true;
 }
 
+void backupDirStruct::expandFile(const QString &path, const QString &file, QStringList &filesOnDisk)
+{
+  QString basePath = "";
+  QString prefix = "";
+  QString baseFile = backupDirStruct::cutFilenamePrefix(file,&prefix);
+
+  if( path.isEmpty() )
+    basePath = ".";
+  else
+    basePath = path;
+
+  std::list<fileTocEntry> &entries = m_archiveContent[basePath][baseFile];
+  std::list<fileTocEntry>::iterator it = entries.begin();
+  while( it!=entries.end() )
+  {
+    QString relPath = path;
+    if( !relPath.isEmpty() ) relPath += "/";
+    relPath += (*it).m_prefix+file;
+
+    filesOnDisk.push_back(relPath);
+    ++it;
+  }
+}
+
 void backupDirStruct::removeFile(const QString &path, const QString &file, QStringList &toBeDeleted)
 {
   QString basePath = "";

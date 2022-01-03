@@ -152,6 +152,7 @@ private:
   QStringList fileexcludes;
 
   QMap<QString,QString> filemap;
+  QMap<qint64,QString> crcmap;
 
   QFile *log;
   QBuffer buff;

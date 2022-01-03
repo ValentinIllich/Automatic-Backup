@@ -76,6 +76,7 @@ public:
   qint64 nextTocId();
 
   void addFile(QString const &path, QString const &file, fileTocEntry &entry);
+  void expandFile(QString const &path, QString const &file, QStringList &toBeDeleted);
   void removeFile(QString const &path, QString const &file, QStringList &toBeDeleted);
   void keepFiles( QString const &path, QString const &file, size_t numberOfFiles, QStringList &toBeDeleted );
 

@@ -1,6 +1,7 @@
 #include "backupExecuter.h"
 #include "backupMain.h"
 #include "Utilities.h"
+#include "crc32.h"
 
 #include <QSettings>
 #include <QFileDialog>
@@ -835,6 +836,7 @@ void backupExecuter::copySelectedFiles()
   char *buffer = NULL;
   unsigned int copiedFiles = 0;
   unsigned long copiedk = 0;
+  Crc32 crcsum;
 
   if( !m_running ) return;
 
@@ -870,7 +872,6 @@ void backupExecuter::copySelectedFiles()
     QString relPath = filePath.mid(m_config.m_sSrc.length()+1);
     QString fileName = srcInfo.fileName();
     qint64 modify = srcInfo.lastModified().toMSecsSinceEpoch();
-    qint64 crcsum = 0;
 
     if( m_config.m_bKeep )
     {
@@ -885,6 +886,8 @@ void backupExecuter::copySelectedFiles()
         ++it;
       }
     }
+
+    crcsum.initInstance(0);
 
     QFile src(srcFile);
     if( src.open(QIODevice::ReadOnly) )
@@ -913,7 +916,7 @@ void backupExecuter::copySelectedFiles()
           QByteArray bytes = src.read(buffsize);
           int n = bytes.size();
           {
-            crcsum += qChecksum(bytes.data(),bytes.length(),Qt::ChecksumIso3309);
+            crcsum.pushData(0,bytes.data(),bytes.length());
             nout = dst.write(bytes);
             if( nout!=n )
             {
@@ -957,7 +960,7 @@ void backupExecuter::copySelectedFiles()
           entry.m_tocId = m_dirs.nextTocId();
           entry.m_size = srcInfo.size();
           entry.m_modify = modify;
-          entry.m_crc = crcsum;
+          entry.m_crc = crcsum.releaseInstance(0);
           m_dirs.addFile(relPath,prefix+fileName,entry);
         }
         else
@@ -1427,7 +1430,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
         backupStatistics results;
         while( m_running && (it2!=it1.value().end()) )
         {
-          tocDataEntryList entries = it2.value();
+            tocDataEntryList entries = it2.value();
           tocDataEntryList::iterator it3 = entries.begin();
           while( it3!=entries.end() )
           {
@@ -1801,9 +1804,11 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
     totaldirkbytes = 0;
     totalcount = 0;
     filemap.clear();
+    crcmap.clear();
 
     m_toBeRemovedFromToc.clear();
 
+    // identify files with same name and size in different directories
     tocDataContainerMap::iterator it1 = m_dirs.getFirstElement();
     while( m_running &&(it1!=m_dirs.getLastElement()) )
     {
@@ -1824,11 +1829,10 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
           QString listFile = fileinfs.at(1);
           int listSize = fileinfs.at(3).toLongLong();
 
-          QString sourceFileRemoved;
-          QString mappedFile;
-
           if( listSize==m_dirs.getNewestEntry(it2).m_size )
           {
+            if( m_config.m_bVerbose )
+              stream << "same name and size: '" << listPath+"/"+listFile << "' and '" << relpath+"/"+filename << "'\r\n";
             m_toBeRemovedFromToc.append(qMakePair(listPath,listFile));
             m_toBeRemovedFromToc.append(qMakePair(relpath,filename));
           }
@@ -1842,6 +1846,47 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
       }
 
       ++it1;
+    }
+
+    // identify files with same crc sum in different directories
+    tocDataContainerMap::iterator it3 = m_dirs.getFirstElement();
+    while( m_running &&(it3!=m_dirs.getLastElement()) )
+    {
+      tocDataEntryMap::iterator it4 = it3.value().begin();
+
+      QString path = it3.key();
+      m_engine->setFileNameText(m_config.m_sDst + "/" + path);
+      m_engine->setProgressValue(scanned++);
+
+      while( m_running && (it4!=it3.value().end()) )
+      {
+        QString file = it4.key();
+        qint64 totalcrc = it4.value().begin()->m_crc;
+
+        if( totalcrc>0 )
+        {
+          if( crcmap.contains(totalcrc) )
+          {
+            QStringList fileinfs = crcmap.value(totalcrc).split(";");
+            QString listPath = fileinfs.at(0);
+            QString listFile = fileinfs.at(1);
+
+            if( m_config.m_bVerbose )
+              stream << "same crc(" << QString::number(totalcrc) << "): '" << listPath+"/"+listFile << "' and '" << path+"/"+file << "'\r\n";
+            m_toBeRemovedFromToc.append(qMakePair(listPath,listFile));
+            m_toBeRemovedFromToc.append(qMakePair(path,file));
+          }
+          else
+          {
+            crcmap.insert(totalcrc,path+";"+file+";"+QString::number(m_dirs.getNewestEntry(it4).m_modify)+";"
+              +QString::number(m_dirs.getNewestEntry(it4).m_size));
+          }
+        }
+
+        ++it4;
+      }
+
+      ++it3;
     }
 
     deleteFilesFromDestination(m_toBeRemovedFromToc,totalcount,totaldirkbytes);
@@ -1890,7 +1935,10 @@ void backupExecuter::deleteFilesFromDestination(const QList<QPair<QString, QStri
     totaldirkbytes += historykbytes;
 
     QStringList toBeDeleted;
-    m_dirs.removeFile(relPath,file,toBeDeleted);
+    if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
+      m_dirs.expandFile(relPath,file,toBeDeleted);
+    else
+      m_dirs.removeFile(relPath,file,toBeDeleted);
 
     QStringList::iterator it = toBeDeleted.begin();
     while (it!=toBeDeleted.end())
@@ -1898,7 +1946,15 @@ void backupExecuter::deleteFilesFromDestination(const QList<QPair<QString, QStri
       if( !QFile::exists(m_config.m_sSrc + "/" + *it) )
       {
         QString fullName = m_config.m_sDst + "/" + *it;
-        QFile::remove(fullName);
+
+        if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
+        {
+          stream << "---> " << "would remove file in destination " << fullName << " with no longer existent source\r\n";
+        }
+        else
+        {
+          QFile::remove(fullName);
+        }
       }
       ++it;
     }
@@ -1981,6 +2037,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
               int n = 0;
 
               QVector<quint16> crclist(0);
+              Crc32 crctotal;
               bool errFound = false;
 
               dst.read ((char *)(&l1),sizeof(unsigned long));
@@ -2020,6 +2077,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
               {
                 dst.reset();
                 bytes = fi.size();
+                crctotal.initInstance(0);
                 while( m_running && (read<bytes) )
                 {
                   QByteArray data = dst.read(BUFF_SIZE);
@@ -2037,6 +2095,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                   read += data.size();
                   quint16 crc = qChecksum(data.data(),data.size());
                   crclist.append(crc);
+                  crctotal.pushData(0,data.data(),data.size());
 
                   verifiedK += (data.size()/1024);
                   if( verifiedK<=lastVerifiedK )
@@ -2057,6 +2116,17 @@ void backupExecuter::verifyBackup(QString const &startPath)
                 crcSummary[verifyFile].crc = crclist;
                 crcSummary[verifyFile].lastScan = startTime.toTime_t();
                 checksumsChanged = true;
+
+                QString tocpath = fi.absolutePath().mid(m_config.m_sDst.length()+1);
+                QString tocFile = fi.fileName();
+                if( m_dirs.exists(tocpath,tocFile) )
+                {
+                  quint32 crc = crctotal.releaseInstance(0);
+                  if( m_dirs.getEntryList(tocpath,tocFile).begin()->m_crc==0 )
+                    m_dirs.getEntryList(tocpath,tocFile).begin()->m_crc = crc;
+                  else if( m_dirs.getEntryList(tocpath,tocFile).begin()->m_crc!=crc )
+                    errFound = true;
+                }
               }
 
               if( errFound )
