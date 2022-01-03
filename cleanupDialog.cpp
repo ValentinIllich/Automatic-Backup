@@ -16,6 +16,7 @@
 #include <QCalendarWidget>
 #include <QMessageBox>
 #include <QFontMetrics>
+#include <QDebug>
 
 #if defined(Q_OS_WIN)
 #include <windows.h>
@@ -59,9 +60,18 @@ void CMyDelegate::paint(QPainter* painter, const QStyleOptionViewItem & option, 
       }
       else
       {
+        if( item->childCount()>0 ) painter->fillRect(itemOption.rect,Qt::lightGray);
+        QColor col;
+        //col.setGreen(255-2*percent);
+        //col.setRed(percent);
+        //col.setBlue(0);
+        // h=0 rot h=120 grün
+        // s=100
+        // L=50
+        col.setHsl(100-percent,220,128);
+        painter->fillRect(itemOption.rect.x(),itemOption.rect.y(),w,itemOption.rect.height(),col/*Qt::gray*/);
         painter->setPen(Qt::black);
       }
-      painter->fillRect(itemOption.rect.x(),itemOption.rect.y(),w,itemOption.rect.height(),Qt::gray);
 
       painter->drawText(itemOption.rect,item->text(0));
       if( percent>1.0 )
@@ -239,7 +249,7 @@ QString formatSize( double size )
   QString result;
 
   double MBytes = size / 1024.0 / 1024.0;
-  result.sprintf("%'10.3f MB",MBytes);
+  result.sprintf("%'15.3f MB",MBytes);
   return result;
 }
 
@@ -262,6 +272,8 @@ void cleanupDialog::operationFinishedEvent()
   populateTree(m_rootEntry,item,depth,dirsProcessed);
 
   item->setText(1,formatSize(m_rootEntry->m_tocData.m_size/*m_totalbytes*/));
+  item->setFont(1,QFont("Courier",12));
+  item->setFont(2,QFont("Courier",12));
   item->setTextAlignment(1,Qt::AlignRight);
   item->setData(0,Qt::UserRole,QVariant(qint64(m_rootEntry)));
   item->setData(3,Qt::UserRole,QVariant(qint64(m_rootEntry)));
@@ -330,10 +342,10 @@ void cleanupDialog::doAnalyze()
 
 void cleanupDialog::doRescan()
 {
-  QString startingPath;
+  QString startingPath = m_analyzingPath;
 
-  startingPath = QFileDialog::getExistingDirectory(this, tr("Rescan Directory"),m_path,QFileDialog::ShowDirsOnly);
-  if( !startingPath.isEmpty() )
+//  startingPath = QFileDialog::getExistingDirectory(this, tr("Rescan Directory"),m_path,QFileDialog::ShowDirsOnly);
+//  if( !startingPath.isEmpty() )
   {
     QString tocSummaryFile = backupDirStruct::getTocSummaryFile(startingPath);
     if( QFile::exists(tocSummaryFile) )
@@ -495,8 +507,10 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
     //dirItem->setBackgroundColor(0,Qt::lightGray);
     //dirItem->setBackgroundColor(1,Qt::lightGray);
     dirItem->setText(1,formatSize(it.value()->m_tocData.m_size));
+    dirItem->setFont(1,QFont("Courier",12));
     dirItem->setTextAlignment(1,Qt::AlignRight);
     dirItem->setText(2,QDateTime::fromMSecsSinceEpoch(it.value()->m_tocData.m_modify).toString("yyyy/MM/dd-hh:mm"));
+    dirItem->setFont(2,QFont("Courier",12));
     if( depth>0 )
       dirItem->setExpanded(false);
     else
@@ -524,8 +538,10 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
 
       fileItem->setText(0,(*it2)->m_tocData.m_prefix+(*it2)->m_name);
       fileItem->setText(1,formatSize((*it2)->m_tocData.m_size));
+      fileItem->setFont(1,QFont("Courier",12));
       fileItem->setTextAlignment(1,Qt::AlignRight);
       fileItem->setText(2,filedate.toString("yyyy/MM/dd-hh:mm"));
+      fileItem->setFont(2,QFont("Courier",12));
       fileItem->setText(3,(*it2)->absoluteFilePath());
       fileItem->setData(0,Qt::UserRole,QVariant(qint64(*it2)));
       fileItem->setData(3,Qt::UserRole,QVariant(qint64(*it2)));
@@ -721,6 +737,7 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
     {
       dirEntry *entry = (dirEntry*)startingItem->data(3,Qt::UserRole).toLongLong();
       startingItem->setText(1,formatSize(entry->m_tocData.m_size));
+      startingItem->setFont(1,QFont("Courier",12));
       startingItem->setTextAlignment(1,Qt::AlignRight);
     }
   }
@@ -738,6 +755,7 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
       {
         dirEntry *it = (dirEntry*)item->parent()->data(3,Qt::UserRole).toLongLong();
         item->parent()->setText(1,formatSize(it->m_tocData.m_size));
+        item->parent()->setFont(1,QFont("Courier",12));
         item = item->parent();
       }
 
