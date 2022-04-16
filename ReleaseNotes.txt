@@ -1,4 +1,21 @@
-Automatic Backup Release Notes (C) Valentin Illich 2011-2017
+Automatic Backup Release Notes (C) Valentin Illich 2011-2022
+
+Release 1.27:
+=============
+
+ + exclude filters now working on verify operation as well
+ + verify operation may now be cancelled and repeated: only verifying files which have not been verified within the last 5 days
+ + improving progress diaply during verify: now showing current file and MBytes already verified
+
+Release 1.26:
+=============
+
+ + improved cleanup dialog:
+    + adding filter ability for file diesplay
+    + upon rescanning, ask user for CRC recalculation for all files
+    + adding duplicate file finding: taking CRC of first 5 MB of file
+ + improved duplicate file finding:
+    + after coyping files check fo all known CRC sums in addition to file name / time spamp / size
 
 Release 1.25:
 =============
@@ -6,6 +23,7 @@ Release 1.25:
  + improved user interface: all properties in one sheet
  + improved cleanup functionality: giving time delay for files being removed
  + enhanced support for NAS destinations: verifying files in backup only on demand
+ + storing file CRC inside backup toc upon copying
 
 Release 1.21:
 ============
