@@ -3,11 +3,13 @@
 #include "backupEngine.h"
 #include "backupExecuter.h"
 #include "Utilities.h"
+#include "crc32.h"
 
 #include <QStyledItemDelegate>
 #include <QPainter>
 #include <QThread>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QDateTime>
 #include <QContextMenuEvent>
 #include <QMenu>
@@ -41,13 +43,13 @@ void CMyDelegate::paint(QPainter* painter, const QStyleOptionViewItem & option, 
     QTreeWidgetItem *item = (QTreeWidgetItem*)index.internalPointer();
     if( item && /*!item->isSelected() &&*/ (index.column()==0) )
     {
-      double percent = 100;
+      double percent = 0;
       dirEntry *entry = (dirEntry*)item->data(3,Qt::UserRole).toLongLong();
       if( entry && entry->m_parent )
       {
         qint64 size = entry->m_tocData.m_size;
         qint64 parsize = entry->m_parent->m_tocData.m_size;
-        percent = double(size * 100) / double(parsize);
+        percent = parsize==0 ? 0 : double(size * 100) / double(parsize);
         if( percent>100.0 ) percent = 100.0;
       }
       int w = double(itemOption.rect.width() * percent +0.5) / 100;
@@ -58,9 +60,9 @@ void CMyDelegate::paint(QPainter* painter, const QStyleOptionViewItem & option, 
         painter->fillRect(itemOption.rect,Qt::blue);
         painter->setPen(Qt::white);
       }
-      else
+      else if( item->parent()!=nullptr )
       {
-        if( item->childCount()>0 ) painter->fillRect(itemOption.rect,Qt::lightGray);
+        if( entry && item->childCount()>0 ) painter->fillRect(itemOption.rect,Qt::lightGray);
         QColor col;
         //col.setGreen(255-2*percent);
         //col.setRed(percent);
@@ -72,6 +74,8 @@ void CMyDelegate::paint(QPainter* painter, const QStyleOptionViewItem & option, 
         painter->fillRect(itemOption.rect.x(),itemOption.rect.y(),w,itemOption.rect.height(),col/*Qt::gray*/);
         painter->setPen(Qt::black);
       }
+      else if( item->childCount()>0 )
+        painter->fillRect(itemOption.rect,Qt::lightGray);
 
       painter->drawText(itemOption.rect,item->text(0));
       if( percent>1.0 )
@@ -205,7 +209,10 @@ void cleanupDialog::threadedVerifyOperation()
   if( backupDirStruct::convertFromTocFile(tocSummaryFile,m_rootEntry,m_dirCount)/*canReadFromTocFile(path,entry)*/ )
     m_dirStructValid = true;
   else
+  {
+    m_hashMap.clear();
     scanRelativePath(m_path,m_rootEntry,m_dirCount);
+  }
 
   m_engine->setProgressText("");
   m_engine->setProgressMaximum(1);
@@ -293,9 +300,38 @@ void cleanupDialog::operationFinishedEvent()
   ui->treeView->sortByColumn(1,Qt::DescendingOrder);
 
   discInfo info = getDiscInfo(m_analyzingPath);
-  m_engine->setProgressText(QString::number(info.m_capacity)+"% of disk space used ("+formatSize(info.m_availableBytes)+" total)");
+  m_engine->setProgressText(QString::number(info.m_capacity)+"% of disk space used ("+formatSize(info.m_freeBytes)+" remaining)");
   m_engine->setProgressMaximum(1);
   m_engine->setProgressValue(0);
+
+  QTreeWidgetItem *duplicatesBase = nullptr;
+  for( auto &it : qAsConst(m_hashMap) )
+  {
+    if( it.size()>1 )
+    {
+        if( duplicatesBase==nullptr )
+        {
+          duplicatesBase = new QTreeWidgetItem(ui->treeView,rootColumns);
+          ui->treeView->addTopLevelItem(duplicatesBase);
+          duplicatesBase->setText(0,"identical files found:");
+          duplicatesBase->setText(1,"");
+          duplicatesBase->setText(2,"");
+        }
+        QTreeWidgetItem *entry = new QTreeWidgetItem(duplicatesBase);
+        QFileInfo info(it.at(0));
+        entry->setText(0,info.fileName());
+        for( int i=0; i<it.size(); i++ )
+        {
+          QFileInfo info(it.at(i));
+          QTreeWidgetItem *item1 = new QTreeWidgetItem(entry);
+          item1->setText(0,info.path());
+          item1->setText(3,info.path());
+          QTreeWidgetItem *item2 = new QTreeWidgetItem(item1);
+          item2->setText(0,info.fileName());
+          item2->setText(3,it.at(i));
+        }
+    }
+  }
 
   m_doRescan = false;
 }
@@ -323,6 +359,21 @@ void cleanupDialog::doAnalyze()
     else
     {
       checkForBackupPath(startingPath);
+
+      QString tocSummaryFile = backupDirStruct::getTocSummaryFile(startingPath);
+      QFileInfo info(tocSummaryFile);
+      if( info.exists() )
+      {
+        if( info.lastModified().daysTo(QDateTime::currentDateTime())>30 )
+          QMessageBox::information(this,"information","The Table of Contents in ths directory is older than 30 days. Please consider doing a rescan.");
+      }
+      else
+      {
+        if( QMessageBox::question(0,"checksum reset","Recalculate all verify file checksums\nduring scan (will be slower)?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::Yes )
+          m_resetCrc = true;
+        else
+          m_resetCrc = false;
+      }
 
       setLimitDate();
 
@@ -355,6 +406,7 @@ void cleanupDialog::doRescan()
     m_analyzingPath = startingPath;
 
     m_doRescan = true;
+    m_fileFilter = "";
     doAnalyze();
   }
 }
@@ -369,6 +421,7 @@ void cleanupDialog::doFinish()
     m_engine->setProgressMaximum(0);
     m_engine->setProgressValue(0);
 
+    ui->treeView->clear();
     actionThread saver([this]()
       {
         delete m_rootEntry;
@@ -452,10 +505,39 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
       tocentry.m_modify = fileInfo.lastModified().toMSecsSinceEpoch();;
       tocentry.m_crc = 0;
 
+      ///////
+      const int buffsize = 1*1024*1024;
+
+      Crc32 crcsum;
+      quint32 currentCrc = 0;
+      QFile src(fileInfo.absoluteFilePath());
+      if( src.open(QIODevice::ReadOnly) )
+      {
+        crcsum.initInstance(0);
+        while( m_run )
+        {
+          QByteArray bytes = src.read(buffsize);
+          crcsum.pushData(0,bytes.data(),bytes.length());
+          if( !m_resetCrc )
+            break;
+          if( bytes.length()<buffsize )
+            break;
+        }
+        currentCrc = crcsum.releaseInstance(0);
+        if( m_run && m_resetCrc )
+          tocentry.m_crc = currentCrc;
+        src.close();
+      }
+      /////////
+
       dirEntry *newEntry = new dirEntry(entry,name);
       newEntry->m_tocData = tocentry;
 
       entry->m_files.append(newEntry);
+
+      QString fullPath = newEntry->absoluteFilePath();
+      if( !fullPath.contains("._") && currentCrc>0 )
+        m_hashMap[currentCrc].push_back(fullPath);
 
       fileSizes += tocentry.m_size;
       if( tocentry.m_modify>lastModifiedFile ) lastModifiedFile = tocentry.m_modify;
@@ -473,6 +555,28 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
     m_rootEntry = new dirEntry(0,m_path);
     m_dirStructValid = m_dirStructChanged = false;
   }
+}
+
+void cleanupDialog::displayResult( QWidget *parent, QString const &text, QString const windowTitle )
+{
+  QDialog d(parent);
+  QVBoxLayout *l = new QVBoxLayout(&d);
+  QTextEdit *ed = new QTextEdit(&d);
+  QPushButton *ok = new QPushButton(&d);
+  l->addWidget(ed);
+  l->addWidget(ok);
+
+  ed->setFont(QFont("Courier"));
+  ed->setLineWrapMode(QTextEdit::NoWrap);
+  ed->setWordWrapMode(QTextOption::NoWrap);
+  ed->setReadOnly(true);
+  ed->setText(text);
+  ok->setText("OK");
+  ok->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Fixed);
+  connect(ok,SIGNAL(clicked()),&d,SLOT(accept()));
+  d.setWindowTitle(windowTitle);
+  d.resize(800,600);
+  d.exec();
 }
 
 void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &depth, int &processedDirs )
@@ -528,11 +632,23 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
   qint64 lastModifiedFile = 0;
   qint64 fileSizes = 0;
 
+  QStringList selections = m_fileFilter.isEmpty() ? QStringList() : m_fileFilter.split(";");
+
   QList<dirEntry*>::iterator it2 = entry->m_files.begin();
   while( m_run && it2!=entry->m_files.end() )
   {
     QDateTime filedate = QDateTime::fromMSecsSinceEpoch((*it2)->m_tocData.m_modify);
-    if( filedate<m_lastmodified )
+    bool fileSelected = true;
+    if( !selections.isEmpty() )
+    {
+      fileSelected = false;
+      for( auto & selection : qAsConst(selections) )
+      {
+        if( (*it2)->absoluteFilePath().contains(selection) )
+          fileSelected = true;
+      }
+    }
+    if( filedate<m_lastmodified && fileSelected )
     {
       QTreeWidgetItem *fileItem = new QTreeWidgetItem(item);
 
@@ -565,31 +681,35 @@ void cleanupDialog::doBreak()
 
 void cleanupDialog::openFile( QString const &fn )
 {
-  QString name = /*"file:/C:/Qt/myProject/test.html"*/"file://"+fn;
+  QString name;
   QString webbrowser;
 
+  QStringList args;
+
 #if defined(Q_OS_WIN)
+  name = "file://"+fn;
   ShellExecuteA((HWND)winId(), 0, name.toLocal8Bit(), 0, 0, SW_SHOWNORMAL);
 #endif
 #if defined(Q_OS_MAC)
   webbrowser = "open";
+  name = fn;
 #elif defined(Q_WS_X11)
   if (isKDERunning())
   {
     webbrowser = "kfmclient";
+    args.append(QLatin1String("exec"));
+    name = "file://"+fn;
   }
 #endif
 
   if( !webbrowser.isEmpty() )
   {
     QProcess *proc = new QProcess(this);
-    //		show.startDetached("notepad " + fn);
     QObject::connect(proc, SIGNAL(finished(int)), proc, SLOT(deleteLater()));
 
-    QStringList args;
-    if (webbrowser == QLatin1String("kfmclient"))
-      args.append(QLatin1String("exec"));
     args.append(name);
+
+    qDebug() << webbrowser << args;
     proc->start(webbrowser, args);
   }
 }
@@ -623,6 +743,8 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
   QAction *expand = menu.addAction("Expand All...");
   QAction *collapse = menu.addAction("Collapse All...");
   menu.addSeparator();
+  QAction *filter = menu.addAction("Set Filter...");
+  menu.addSeparator();
   QAction *reveal = menu.addAction("Reveal in Shell...");
   menu.addSeparator();
   QAction *cleanup = menu.addAction("Clean Up...");
@@ -637,6 +759,19 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
   else if( selected==collapse )
   {
     ui->treeView->collapseAll();
+  }
+  else if( selected==filter )
+  {
+    bool ok;
+    QString text = QInputDialog::getText(this, ("display only files"),
+                                         "file name contains:", QLineEdit::Normal,
+                                         m_fileFilter, &ok);
+    if (ok)
+    {
+        m_fileFilter = text;
+
+        doAnalyze();
+    }
   }
   else if( selected==reveal )
   {
@@ -673,6 +808,10 @@ void cleanupDialog::contextMenuEvent ( QContextMenuEvent * e )
         }
         parent = parent->parent();
       }*/
+      discInfo info = getDiscInfo(m_analyzingPath);
+      m_engine->setProgressText(QString::number(info.m_capacity)+"% of disk space used ("+formatSize(info.m_freeBytes)+" remaining)");
+      m_engine->setProgressMaximum(1);
+      m_engine->setProgressValue(0);
 
     }
   }
@@ -715,6 +854,7 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
     if( list.count()<=2 )
     {
       QFile::remove(startingItem->text(3)+"/.DS_Store");
+      QFile::remove(startingItem->text(3)+"/._.DS_Store");
       QString name = dir.dirName();
       dir.cdUp();
       if( dir.rmdir(name) )
@@ -746,20 +886,27 @@ bool cleanupDialog::traverseItems(QTreeWidgetItem *startingItem,double &dirSize)
     qDebug("fil: %s",startingItem->text(3).toLatin1().data());
     const QTreeWidgetItem *item = startingItem;
     QFile::setPermissions(item->text(3),QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther);
-    if( QFile::remove(item->text(3)) )
+    bool removedFromDisk = true;
+    if( QFile::exists(item->text(3)) && !QFile::remove(item->text(3)) )
+      removedFromDisk = false;
+    if( removedFromDisk )
     {
       dirEntry *entry = (dirEntry*)item->data(3,Qt::UserRole).toLongLong();
-      if( entry->m_parent ) entry->m_parent->deleteFile(entry);
-
-      while( item->parent() )
+      if( entry )
       {
-        dirEntry *it = (dirEntry*)item->parent()->data(3,Qt::UserRole).toLongLong();
-        item->parent()->setText(1,formatSize(it->m_tocData.m_size));
-        item->parent()->setFont(1,QFont("Courier",12));
-        item = item->parent();
+        if( entry->m_parent ) entry->m_parent->deleteFile(entry);
+
+        while( item->parent() )
+        {
+          dirEntry *it = (dirEntry*)item->parent()->data(3,Qt::UserRole).toLongLong();
+          item->parent()->setText(1,formatSize(it->m_tocData.m_size));
+          item->parent()->setFont(1,QFont("Courier",12));
+          item = item->parent();
+        }
+
+        delete entry;
       }
 
-      delete entry;
       delete startingItem;
 
       dirSize += (double)(info.size());

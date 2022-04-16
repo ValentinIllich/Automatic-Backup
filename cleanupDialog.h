@@ -47,6 +47,7 @@ protected:
 
 private:
     void scanRelativePath( QString const &path, dirEntry *entry, int &dirCount );
+    void displayResult( QWidget *parent, QString const &text, QString const windowTitle );
     void populateTree( dirEntry *entry, QTreeWidgetItem *item, int &depth, int &processedDirs );
 
     bool traverseItems(QTreeWidgetItem *startingItem,double &dirSize);
@@ -71,12 +72,16 @@ private:
 
     QString m_path;
     dirEntry *m_rootEntry;
+    QMap<qint64,QList<QString>> m_hashMap;
     QDateTime m_lastmodified;
     int m_dirCount;
+
+    QString m_fileFilter;
 
     bool m_dirStructValid;
     bool m_dirStructChanged;
     bool m_doRescan;
+    bool m_resetCrc;
 
     backupEngine *m_engine;
 };
