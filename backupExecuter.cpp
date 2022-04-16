@@ -611,25 +611,26 @@ void backupExecuter::findDirectories( QString const &start )
       if( actual!="." && actual!=".." )
       {
         QString path = start+actual;
-        bool passed = true;
-        bool stepinto = true;
+//        bool passed = true;
+//        bool stepinto = true;
 
-        if( !dirincludes.isEmpty() )
-          passed = false;
-        for ( QStringList::Iterator it2 = dirincludes.begin(); it2 != dirincludes.end(); ++it2 )
-        {
-          if( (*it2).isEmpty() || path.contains(*it2) )
-            passed = true;
-        }
-        for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
-        {
-          if( !(*it3).isEmpty() && path.contains(*it3) )
-          {
-            passed = false;
-            stepinto = false;
-          }
-        }
+//        if( !dirincludes.isEmpty() )
+//          passed = false;
+//        for ( QStringList::Iterator it2 = dirincludes.begin(); it2 != dirincludes.end(); ++it2 )
+//        {
+//          if( (*it2).isEmpty() || path.contains(*it2) )
+//            passed = true;
+//        }
+//        for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
+//        {
+//          if( !(*it3).isEmpty() && path.contains(*it3) )
+//          {
+//            passed = false;
+//            stepinto = false;
+//          }
+//        }
 
+        bool passed = allowedByExcludes(path,true,false);
         if( passed )
         {
           if( m_config.m_bVerbose )
@@ -649,9 +650,9 @@ void backupExecuter::findDirectories( QString const &start )
             m_engine->setProgressValue(dircount);
           m_engine->setFileNameText(path);
           directories.append(path);
-        }
-        if( stepinto )
+
           findDirectories(path+"/");
+        }
       }
       ++it;
     }
@@ -713,23 +714,23 @@ void backupExecuter::analyzeDirectories()
       srcFile = *it2;
       QString actualName = srcFile.fileName();
       QString fullName = srcFile.absoluteFilePath();
-      bool passed = true;
+//      bool passed = true;
       bool copy = true;
 
-      if( !fileincludes.isEmpty() )
-        passed = false;
-      for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
-      {
-        if( (*it3).isEmpty() || fullName.contains(*it3) )
-          passed = true;
-      }
-      for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
-      {
-        if( !(*it4).isEmpty() && fullName.contains(*it4) )
-          passed = false;
-      }
-      if( backupDirStruct::isTocSummaryFile(actualName) || backupDirStruct::isChecksumSummaryFile(actualName) )
-        passed = false;
+//      if( !fileincludes.isEmpty() )
+//        passed = false;
+//      for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
+//      {
+//        if( (*it3).isEmpty() || fullName.contains(*it3) )
+//          passed = true;
+//      }
+//      for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
+//      {
+//        if( !(*it4).isEmpty() && fullName.contains(*it4) )
+//          passed = false;
+//      }
+//      if( backupDirStruct::isTocSummaryFile(actualName) || backupDirStruct::isChecksumSummaryFile(actualName) )
+//        passed = false;
 
       if( isAutoBackupCreatedFile(actualName) )
       {
@@ -737,7 +738,7 @@ void backupExecuter::analyzeDirectories()
       }
       else if( !srcFile.isSymLink() && actualName!="." && actualName!=".." )
       {
-        if( passed )
+        if( allowedByExcludes(fullName,false,true) )
         {
           if( dirCreated )
           {
@@ -797,6 +798,51 @@ void backupExecuter::analyzeDirectories()
   {
     stream << "====> " << totalcount << " changed files with " << totaldirkbytes << " Kbytes\r\n";
   }
+}
+
+bool backupExecuter::allowedByExcludes(QString const &fullPath, bool checkDirectoriesFilter, bool checkFilesFilter)
+{
+  bool passed = true;
+
+  if( checkDirectoriesFilter )
+  {
+    if( !dirincludes.isEmpty() )
+      passed = false;
+    for ( QStringList::Iterator it2 = dirincludes.begin(); it2 != dirincludes.end(); ++it2 )
+    {
+      if( (*it2).isEmpty() || fullPath.contains(*it2) )
+        passed = true;
+    }
+    for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
+    {
+      if( !(*it3).isEmpty() && fullPath.contains(*it3) )
+      {
+        passed = false;
+      }
+    }
+  }
+
+  if( checkFilesFilter )
+  {
+    if( passed )
+    {
+      // second, check files filter
+      if( !fileincludes.isEmpty() )
+        passed = false;
+      for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
+      {
+        if( (*it3).isEmpty() || fullPath.contains(*it3) )
+          passed = true;
+      }
+      for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
+      {
+        if( !(*it4).isEmpty() && fullPath.contains(*it4) )
+          passed = false;
+      }
+    }
+  }
+
+  return passed;
 }
 
 bool backupExecuter::ensureDirExists( QString const &fullPath, QString const &srcBase, QString const &dstBase )
@@ -1311,40 +1357,40 @@ backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date
     {
       if( QFile::exists(srcfile) )
       {
-        bool passed = true;
+//        bool passed = true;
 
         // first, check directories filter
-        if( !dirincludes.isEmpty() )
-          passed = false;
-        for ( QStringList::Iterator it2 = dirincludes.begin(); it2 != dirincludes.end(); ++it2 )
-        {
-          if( (*it2).isEmpty() || srcfile.contains(*it2) )
-            passed = true;
-        }
-        for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
-        {
-          if( !(*it3).isEmpty() && srcfile.contains(*it3) )
-            passed = false;
-        }
+//        if( !dirincludes.isEmpty() )
+//          passed = false;
+//        for ( QStringList::Iterator it2 = dirincludes.begin(); it2 != dirincludes.end(); ++it2 )
+//        {
+//          if( (*it2).isEmpty() || srcfile.contains(*it2) )
+//            passed = true;
+//        }
+//        for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
+//        {
+//          if( !(*it3).isEmpty() && srcfile.contains(*it3) )
+//            passed = false;
+//        }
 
-        if( passed )
-        {
-          // second, check files filter
-          if( !fileincludes.isEmpty() )
-            passed = false;
-          for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
-          {
-            if( (*it3).isEmpty() || srcfile.contains(*it3) )
-              passed = true;
-          }
-          for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
-          {
-            if( !(*it4).isEmpty() && srcfile.contains(*it4) )
-              passed = false;
-          }
-        }
+//        if( passed )
+//        {
+//          // second, check files filter
+//          if( !fileincludes.isEmpty() )
+//            passed = false;
+//          for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
+//          {
+//            if( (*it3).isEmpty() || srcfile.contains(*it3) )
+//              passed = true;
+//          }
+//          for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
+//          {
+//            if( !(*it4).isEmpty() && srcfile.contains(*it4) )
+//              passed = false;
+//          }
+//        }
 
-        if( !passed )
+        if( !allowedByExcludes(srcfile,true,true) )
         {
           maybeErased = true;
           result.count++;
@@ -1553,40 +1599,40 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
             {
               if( QFile::exists(srcfile) )
               {
-                bool passed = true;
+//                bool passed = true;
 
-                // first, check directories filter
-                if( !dirincludes.isEmpty() )
-                  passed = false;
-                for ( QStringList::Iterator it2 = dirincludes.begin(); it2 != dirincludes.end(); ++it2 )
-                {
-                  if( (*it2).isEmpty() || srcfile.contains(*it2) )
-                    passed = true;
-                }
-                for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
-                {
-                  if( !(*it3).isEmpty() && srcfile.contains(*it3) )
-                    passed = false;
-                }
+//                // first, check directories filter
+//                if( !dirincludes.isEmpty() )
+//                  passed = false;
+//                for ( QStringList::Iterator it2 = dirincludes.begin(); it2 != dirincludes.end(); ++it2 )
+//                {
+//                  if( (*it2).isEmpty() || srcfile.contains(*it2) )
+//                    passed = true;
+//                }
+//                for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
+//                {
+//                  if( !(*it3).isEmpty() && srcfile.contains(*it3) )
+//                    passed = false;
+//                }
 
-                if( passed )
-                {
-                  // second, check files filter
-                  if( !fileincludes.isEmpty() )
-                    passed = false;
-                  for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
-                  {
-                    if( (*it3).isEmpty() || srcfile.contains(*it3) )
-                      passed = true;
-                  }
-                  for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
-                  {
-                    if( !(*it4).isEmpty() && srcfile.contains(*it4) )
-                      passed = false;
-                  }
-                }
+//                if( passed )
+//                {
+//                  // second, check files filter
+//                  if( !fileincludes.isEmpty() )
+//                    passed = false;
+//                  for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
+//                  {
+//                    if( (*it3).isEmpty() || srcfile.contains(*it3) )
+//                      passed = true;
+//                  }
+//                  for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
+//                  {
+//                    if( !(*it4).isEmpty() && srcfile.contains(*it4) )
+//                      passed = false;
+//                  }
+//                }
 
-                if( !passed )
+                if( !allowedByExcludes(srcfile,true,true) )
                 {
                   eraseIt = true;
                   count++;
@@ -1687,6 +1733,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
 
   if( operatingOnSource )
   {
+    // operating on source
     if( startPath.isNull() )
     {
       m_engine->setProgressText("Finding duplicate files...");
@@ -1722,6 +1769,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
 
       QString indent = "";
 
+      // identify files with same name and size in different directories
       while ( m_running && (it!=list.end()) )
       {
         checkTimeout();
@@ -1798,6 +1846,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
   }
   else
   {
+    // operating on destination
     m_engine->setProgressText("Finding duplicate files...");
     m_engine->setProgressMaximum(m_dirs.size());
     scanned = 0;
@@ -1954,6 +2003,16 @@ void backupExecuter::deleteFilesFromDestination(const QList<QPair<QString, QStri
         else
         {
           QFile::remove(fullName);
+
+          QFileInfo info(fullName);
+          QDir dir(info.path());
+          if( dir.isEmpty() )
+          {
+            dir.rmpath(dir.absolutePath());
+//            QString emptydir = dir.dirName();
+//            dir.cdUp();
+//            dir.rmdir(emptydir);
+          }
         }
       }
       ++it;
@@ -2017,16 +2076,24 @@ void backupExecuter::verifyBackup(QString const &startPath)
           QString verifyFile = fi.absolutePath()+"/"+fi.fileName();
 
           QDateTime scanTime;
-          bool willVerify = !isAutoBackupCreatedFile(filename);
+          bool willVerify = allowedByExcludes(verifyFile,true,true) && !isAutoBackupCreatedFile(filename);
 
           // check if this file has an own verify interval
           if( willVerify && crcSummary.contains(verifyFile) )
           {
             scanTime = QDateTime::fromTime_t(crcSummary[verifyFile].lastScan);
-         }
 
+            // this allows cancelling of a verify and continuing within 5 days without repeating all files
+            if( scanTime.daysTo(startTime)<5 )
+              willVerify = false;
+          }
+
+          scanned++;
           if( willVerify )
           {
+            m_engine->setFileNameText(verifyFile);
+            m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L/1024L)+" MB scanned)...");
+
             if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
               stream << "--- verifying '" << verifyFile << "'...";
             QFile dst(verifyFile);
@@ -2039,6 +2106,8 @@ void backupExecuter::verifyBackup(QString const &startPath)
               QVector<quint16> crclist(0);
               Crc32 crctotal;
               bool errFound = false;
+
+              QDateTime lastUpdate = QDateTime::currentDateTime();
 
               dst.read ((char *)(&l1),sizeof(unsigned long));
               dst.read ((char *)(&l2),sizeof(unsigned long));
@@ -2098,10 +2167,16 @@ void backupExecuter::verifyBackup(QString const &startPath)
                   crctotal.pushData(0,data.data(),data.size());
 
                   verifiedK += (data.size()/1024);
-                  if( verifiedK<=lastVerifiedK )
-                    m_engine->setProgressValue(verifiedK);
-                  else
-                    m_engine->setProgressMaximum(0);
+
+//                  if( QDateTime::currentDateTime().toSecsSinceEpoch()>lastUpdate.toSecsSinceEpoch() )
+//                  {
+//                    lastUpdate = QDateTime::currentDateTime();
+                    m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L/1024L)+" MB scanned)...");
+                    if( verifiedK<=lastVerifiedK )
+                      m_engine->setProgressValue(verifiedK);
+                    else
+                      m_engine->setProgressMaximum(0);
+//                  }
                   if( m_config.m_bBackground )
                     m_waiter.Sleep(20);
                 }
@@ -2144,14 +2219,14 @@ void backupExecuter::verifyBackup(QString const &startPath)
               m_error = true;
               QString str = "++++ could not open '" + verifyFile + "'!\r\n";
               stream << str; errstream.append(str);
+              verifiedK += fi.size();
             }
-
-            m_engine->setProgressText("verifying file " + QString::number(scanned++) + " of " + QString::number(crcSummary.size()) + "...");
           }
           else
           {
             if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
               stream << "--- skipping verify on '" << verifyFile << " , last scanned on " << scanTime.toString() << "\r\n";
+            verifiedK += fi.size();
           }
         }
       }

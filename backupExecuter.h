@@ -127,6 +127,7 @@ private:
   bool updateAutoVerifyTime();
 
   void analyzeDirectories();
+  bool allowedByExcludes(QString const &path, bool checkDirectoriesFilter, bool checkFilesFilter);
   bool ensureDirExists( QString const &fullPath, QString const &srcBase, QString const &dstBase );
   void copySelectedFiles();
   void restoreDirectory(QString const &startPath);
