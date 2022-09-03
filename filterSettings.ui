@@ -29,7 +29,7 @@
             <item>
              <widget class="QCheckBox" name="dirIncActive">
               <property name="text">
-               <string>Include directory names containing</string>
+               <string>Include directory names mask</string>
               </property>
              </widget>
             </item>
@@ -47,7 +47,7 @@
             <item>
              <widget class="QCheckBox" name="dirExclActive">
               <property name="text">
-               <string>...but exclude containing:</string>
+               <string>...but excluding names mask:</string>
               </property>
              </widget>
             </item>
@@ -78,7 +78,7 @@
             <item>
              <widget class="QCheckBox" name="fileInclActive">
               <property name="text">
-               <string>Include file names containing:</string>
+               <string>Include file names mask:</string>
               </property>
              </widget>
             </item>
@@ -96,7 +96,7 @@
             <item>
              <widget class="QCheckBox" name="fileExclActive">
               <property name="text">
-               <string>...but exclude containing:</string>
+               <string>...but excluding names mask:</string>
               </property>
              </widget>
             </item>

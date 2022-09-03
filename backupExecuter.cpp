@@ -808,14 +808,19 @@ bool backupExecuter::allowedByExcludes(QString const &fullPath, bool checkDirect
   {
     if( !dirincludes.isEmpty() )
       passed = false;
+    int separator = fullPath.lastIndexOf("/");
+    QString path = separator>=0 ? fullPath.mid(separator+1) : fullPath;
     for ( QStringList::Iterator it2 = dirincludes.begin(); it2 != dirincludes.end(); ++it2 )
     {
-      if( (*it2).isEmpty() || fullPath.contains(*it2) )
+      QString regexp = QRegularExpression::wildcardToRegularExpression(*it2);
+      if( (*it2).isEmpty() || path.indexOf(QRegularExpression(regexp))>=0 )
         passed = true;
     }
     for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
     {
-      if( !(*it3).isEmpty() && fullPath.contains(*it3) )
+      QString regexp = QRegularExpression::wildcardToRegularExpression(*it3);
+      if( !(*it3).isEmpty() && path.indexOf(QRegularExpression(regexp))>=0 )
+      //if( !(*it3).isEmpty() && fullPath.contains(*it3) )
       {
         passed = false;
       }
@@ -826,17 +831,21 @@ bool backupExecuter::allowedByExcludes(QString const &fullPath, bool checkDirect
   {
     if( passed )
     {
+      int separator = fullPath.lastIndexOf("/");
+      QString filename = separator>=0 ? fullPath.mid(separator+1) : fullPath;
       // second, check files filter
       if( !fileincludes.isEmpty() )
         passed = false;
       for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
       {
-        if( (*it3).isEmpty() || fullPath.contains(*it3) )
+        QString regexp = QRegularExpression::wildcardToRegularExpression(*it3);
+        if( (*it3).isEmpty() || filename.indexOf(QRegularExpression(regexp))>=0 )
           passed = true;
       }
       for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
       {
-        if( !(*it4).isEmpty() && fullPath.contains(*it4) )
+        QString regexp = QRegularExpression::wildcardToRegularExpression(*it4);
+        if( !(*it4).isEmpty() && filename.indexOf(QRegularExpression(regexp))>=0 )
           passed = false;
       }
     }
@@ -900,14 +909,22 @@ void backupExecuter::copySelectedFiles()
   {
     checkTimeout();
 
+    static quint64 lastmsecs = 0;
+    quint64 msecs = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    if( (msecs-lastmsecs)>100 )
+    {
+      m_engine->setProgressText("processing "+QString::number(copiedFiles)+" of "+QString::number(files_to_copy)+" files ("+QString::number(copiedk/1024L)+" of "+QString::number(kbytes_to_copy/1024L)+" MB done)...");
+      m_engine->setFileNameText(*it2);
+      m_engine->setProgressValue(copiedk);
+
+      qApp->processEvents();
+      lastmsecs = msecs;
+    }
     copiedFiles++;
-    m_engine->setProgressText("processing "+QString::number(copiedFiles)+" of "+QString::number(files_to_copy)+" files...");
+    //m_engine->setProgressText("processing "+QString::number(copiedFiles)+" of "+QString::number(files_to_copy)+" files...");
 
     if( !m_running )
       break;
-
-    m_engine->setFileNameText(*it2);
-    m_engine->setProgressValue(copiedk);
 
     QString relName = *it2;
     srcFile = m_config.m_sSrc + relName;
@@ -975,6 +992,7 @@ void backupExecuter::copySelectedFiles()
             }
           }
           copiedk += (n/1024);
+          m_engine->setProgressText("processing "+QString::number(copiedFiles)+" of "+QString::number(files_to_copy)+" files ("+QString::number(copiedk/1024L)+" of "+QString::number(kbytes_to_copy/1024L)+" MB done)...");
           m_engine->setProgressValue(copiedk);
 
           if( /*isBatch &&*/ m_config.m_bBackground )
@@ -1097,7 +1115,7 @@ void backupExecuter::operationFinishedEvent()
 
 void backupExecuter::doIt(bool runningInBackground)
 {
-  if( m_running )
+  if( m_running && !m_isBatch )
     return;
 
   bool cancelled = false;
@@ -1545,7 +1563,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     m_engine->setFileNameText(actPath);
     m_engine->setProgressValue(scanned++);
 
-    QString lastName = "";
+    //QString lastName = "";
     QString indent = "";
 
     if( m_config.m_bVerboseMaint && m_config.m_bScanDestPath ) // bei Detail-Listing
@@ -2076,23 +2094,58 @@ void backupExecuter::verifyBackup(QString const &startPath)
           QString verifyFile = fi.absolutePath()+"/"+fi.fileName();
 
           QDateTime scanTime;
-          bool willVerify = allowedByExcludes(verifyFile,true,true) && !isAutoBackupCreatedFile(filename);
+          bool backupContainsFile = allowedByExcludes(verifyFile,true,true) && !isAutoBackupCreatedFile(filename);
+          bool willVerify = backupContainsFile;
 
           // check if this file has an own verify interval
-          if( willVerify && crcSummary.contains(verifyFile) )
+          if( backupContainsFile && crcSummary.contains(verifyFile) )
           {
             scanTime = QDateTime::fromTime_t(crcSummary[verifyFile].lastScan);
 
-            // this allows cancelling of a verify and continuing within 5 days without repeating all files
-            if( scanTime.daysTo(startTime)<5 )
+            int verifydays = 5;
+            switch( m_config.m_iInterval )
+            {
+            case 0://daily
+              verifydays = 7;
+              break;
+            case 1://weekly
+              verifydays = 30;
+              break;
+            case 2://14 days
+              verifydays = 30;
+              break;
+            case 3://monthly
+              verifydays = 90;
+              break;
+            case 4://3 months
+              verifydays = 180;
+              break;
+            case 5://yearly
+              verifydays = 365;
+              break;
+            }
+
+            if( scanTime.daysTo(QDateTime::currentDateTime())<verifydays )
               willVerify = false;
           }
 
           scanned++;
           if( willVerify )
           {
-            m_engine->setFileNameText(verifyFile);
-            m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L/1024L)+" MB scanned)...");
+            static quint64 lastmsecs = 0;
+            quint64 msecs = QDateTime::currentDateTime().toMSecsSinceEpoch();
+            if( (msecs-lastmsecs)>100 )
+            {
+              m_engine->setFileNameText(verifyFile);
+              if( verifiedK<=lastVerifiedK )
+                m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L)+" of "+QString::number(lastVerifiedK/1024L)+" MB scanned)...");
+              else
+                m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L)+" MB scanned)...");
+              //m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L)+" MB scanned)...");
+
+              qApp->processEvents();
+              lastmsecs = msecs;
+            }
 
             if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
               stream << "--- verifying '" << verifyFile << "'...";
@@ -2107,7 +2160,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
               Crc32 crctotal;
               bool errFound = false;
 
-              QDateTime lastUpdate = QDateTime::currentDateTime();
+              //QDateTime lastUpdate = QDateTime::currentDateTime();
 
               dst.read ((char *)(&l1),sizeof(unsigned long));
               dst.read ((char *)(&l2),sizeof(unsigned long));
@@ -2168,15 +2221,25 @@ void backupExecuter::verifyBackup(QString const &startPath)
 
                   verifiedK += (data.size()/1024);
 
-//                  if( QDateTime::currentDateTime().toSecsSinceEpoch()>lastUpdate.toSecsSinceEpoch() )
-//                  {
-//                    lastUpdate = QDateTime::currentDateTime();
-                    m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L/1024L)+" MB scanned)...");
+                  static quint64 lastmsecs = 0;
+                  quint64 msecs = QDateTime::currentDateTime().toMSecsSinceEpoch();
+                  if( (msecs-lastmsecs)>100 )
+                  {
                     if( verifiedK<=lastVerifiedK )
+                    {
+                      m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L)+" of "+QString::number(lastVerifiedK/1024L)+" MB scanned)...");
                       m_engine->setProgressValue(verifiedK);
+                    }
                     else
+                    {
+                      m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L)+" MB scanned)...");
                       m_engine->setProgressMaximum(0);
-//                  }
+                    }
+
+                    qApp->processEvents();
+                    lastmsecs = msecs;
+                  }
+
                   if( m_config.m_bBackground )
                     m_waiter.Sleep(20);
                 }
@@ -2219,14 +2282,15 @@ void backupExecuter::verifyBackup(QString const &startPath)
               m_error = true;
               QString str = "++++ could not open '" + verifyFile + "'!\r\n";
               stream << str; errstream.append(str);
-              verifiedK += fi.size();
+              verifiedK += fi.size()/1024;
             }
           }
           else
           {
             if( m_config.m_bVerbose || m_config.m_bVerboseMaint )
               stream << "--- skipping verify on '" << verifyFile << " , last scanned on " << scanTime.toString() << "\r\n";
-            verifiedK += fi.size();
+            if( backupContainsFile )
+              verifiedK += fi.size()/1024;
           }
         }
       }
