@@ -682,7 +682,6 @@ void backupExecuter::analyzeDirectories()
       m_waiter.Sleep(20);
 
     QString srcpath = *it;
-    bool dirCreated = ensureDirExists(srcpath,m_config.m_sSrc,m_config.m_sDst);
 
     QDir dir(srcpath);
 
@@ -703,6 +702,7 @@ void backupExecuter::analyzeDirectories()
 
     unsigned count = 0;
     unsigned long dirkbytes = 0;
+    bool destinationExists = false;
 
     while ( m_running && (it2!=list.end()) )
     {
@@ -714,23 +714,7 @@ void backupExecuter::analyzeDirectories()
       srcFile = *it2;
       QString actualName = srcFile.fileName();
       QString fullName = srcFile.absoluteFilePath();
-//      bool passed = true;
-      bool copy = true;
-
-//      if( !fileincludes.isEmpty() )
-//        passed = false;
-//      for ( QStringList::Iterator it3 = fileincludes.begin(); it3 != fileincludes.end(); ++it3 )
-//      {
-//        if( (*it3).isEmpty() || fullName.contains(*it3) )
-//          passed = true;
-//      }
-//      for ( QStringList::Iterator it4 = fileexcludes.begin(); passed && it4 != fileexcludes.end(); ++it4 )
-//      {
-//        if( !(*it4).isEmpty() && fullName.contains(*it4) )
-//          passed = false;
-//      }
-//      if( backupDirStruct::isTocSummaryFile(actualName) || backupDirStruct::isChecksumSummaryFile(actualName) )
-//        passed = false;
+      bool copy = false;
 
       if( isAutoBackupCreatedFile(actualName) )
       {
@@ -740,11 +724,21 @@ void backupExecuter::analyzeDirectories()
       {
         if( allowedByExcludes(fullName,false,true) )
         {
-          if( dirCreated )
+          if( !destinationExists )
           {
-            copy = true;
+            destinationExists = ensureDirExists(srcpath,m_config.m_sSrc,m_config.m_sDst);
+            if( destinationExists )
+              copy = true;
+            else
+            {
+              m_error = true;
+              QString str = "++++ problem found in backup: destination directory could not be created for: '"+srcpath+"'\r\n";
+              stream << str; errstream.append(str);
+              continue;
+            }
           }
-          else
+
+          if( !copy )
           {
             QString filePath = srcFile.dir().absolutePath();
             QString fileName = srcFile.fileName();
@@ -757,8 +751,6 @@ void backupExecuter::analyzeDirectories()
               qint64 lastm = m_dirs.lastModified(relPath,fileName);
               if( modify>lastm )
                 copy = true;
-              else
-                copy = false;
             }
             else
             {
@@ -767,10 +759,7 @@ void backupExecuter::analyzeDirectories()
           }
         }
         else
-        {
           stream << "        skipping file " << fullName << "\r\n";
-          copy = false;
-        }
       }
 
       if( copy )

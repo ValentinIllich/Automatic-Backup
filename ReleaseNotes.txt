@@ -5,7 +5,9 @@ Release 1.27:
 
  + exclude filters now working on verify operation as well
  + verify operation may now be cancelled and repeated: only verifying files which have not been verified within the last 5 days
- + improving progress diaply during verify: now showing current file and MBytes already verified
+ + improving progress display during copy / verify: now showing current file and MBytes already done
+
+ - creating destination directory only if files are to be copied
 
 Release 1.26:
 =============

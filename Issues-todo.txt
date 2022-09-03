@@ -29,7 +29,7 @@ DONE Bei erneuter Analyse auf anderem Verzeichnis Treeview leeren!
 Release 1.22:
 =============
 
-- Zielverzecihnis nur anlegen wenn nicht leer
+DONE Zielverzecihnis nur anlegen wenn nicht leer
 DONE wenn Zielverzeichnis angelegt werden muss, keine Dateien mehr prüfen
 
 DONE properties konsequent in Struktur halten

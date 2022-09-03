@@ -329,8 +329,8 @@ void backupMain::checkSelection()
   if( runAndShutdown() )
   {
     exitButt->setText("Close");
-    keepRun->setChecked(true);
-    keepRun->setEnabled(false);
+    //keepRun->setChecked(true);
+    //keepRun->setEnabled(false);
   }
   else if( keepRun->isChecked() )
     exitButt->setText("Close");
