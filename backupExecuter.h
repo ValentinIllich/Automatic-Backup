@@ -113,7 +113,7 @@ private:
     }
   };
 
-  backupStatistics getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool &maybeErased);
+  backupStatistics getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool &maybeErased, QString &reasonfordelete);
 
   void loadData();
   void saveData();
@@ -133,8 +133,8 @@ private:
   void restoreDirectory(QString const &startPath);
   void copyFile(QString const &srcFile, QString const &dstFile);
 
-  void deletePath(QString const &absolutePath,QString const &indent = "");
-  void scanDirectory(QDate const &date, QString const &startPath = QString::null, bool eraseAll = false);
+  void deletePath(QString const &absolutePath,QString const &indent,QString const &collectingPath);
+  void scanDirectory(QDate const &date, QString const &startPath, bool eraseAll, QString const &collectingPath);
   void findDuplicates(QString const &startPath = QString::null,bool operatingOnSource = false);
 
   void deleteFilesFromDestination(QList< QPair<QString,QString> > const &m_toBeRemovedFromToc, unsigned &totalcount, unsigned long &totaldirkbytes);
@@ -170,9 +170,6 @@ private:
   bool m_background;
   bool m_diskFull;
   bool m_runUnattended;
-
-  bool collectingDeleted;
-  QString collectingPath;
 
   int dircount;
   unsigned int files_to_copy;

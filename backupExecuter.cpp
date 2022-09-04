@@ -100,7 +100,6 @@ backupExecuter::backupExecuter(backupConfigData &configData)
 , m_background(false)
 , m_diskFull(false)
 , m_runUnattended(false)
-, collectingDeleted(false)
 , dircount(0)
 , files_to_copy(0)
 , kbytes_to_copy(0)
@@ -1251,8 +1250,11 @@ void backupExecuter::cleanup()
 
   if( date.isValid() )
   {
+    QString collectingPath = m_config.m_bCollectDeleted ? QFileDialog::getExistingDirectory (
+                this, "collecting deleted files here:", m_config.m_sDst) : "";
+
     startingAction();
-    scanDirectory(date.date());
+    scanDirectory(date.date(),QString::null,false,collectingPath);
     findDuplicates();
     if( m_config.m_bFindSrcDupl ) findDuplicates(QString::null,true);
     stoppingAction();
@@ -1261,7 +1263,7 @@ void backupExecuter::cleanup()
   close();
 }
 
-void backupExecuter::deletePath(QString const &absolutePath,QString const &indent)
+void backupExecuter::deletePath(QString const &absolutePath,QString const &indent,QString const &collectingPath)
 {
   QString destinationPath = absolutePath;
   if( destinationPath.startsWith(m_config.m_sSrc) ) destinationPath = m_config.m_sDst + "/" + destinationPath.mid(m_config.m_sSrc.length()+1);
@@ -1270,7 +1272,7 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
 
   if( fi.isDir() )
   {
-    scanDirectory(QDate::currentDate(),destinationPath,true);
+    scanDirectory(QDate::currentDate(),destinationPath,true,collectingPath);
   }
   else
   {
@@ -1294,17 +1296,8 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
       {
         if( m_config.m_bCollectDeleted )
         {
-            if( collectingDeleted )
-            {
-                if( !collectingPath.isEmpty() )
-                    QFile::copy(absolutePath,collectingPath+"/"+fi.lastModified().toString("yyyy-MM-dd")+"_"+fi.fileName());
-            }
-            else
-            {
-              collectingDeleted = true;
-              collectingPath = QFileDialog::getExistingDirectory (
-                          this, "collecting deleted files here:", collectingPath );
-            }
+          if( !collectingPath.isEmpty() )
+              QFile::copy(absolutePath,collectingPath+"/"+fi.lastModified().toString("yyyy-MM-dd")+"_"+fi.fileName());
         }
         if( file.setPermissions(QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther)
         && file.remove() )
@@ -1348,7 +1341,7 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
   }
 }
 
-backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool &maybeErased)
+backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date,QString const &srcfile,QDate const &filemodified,qint64 const filesize,bool &maybeErased,QString &reasonfordelete)
 {
   QDate today = QDate::currentDate();
   backupExecuter::backupStatistics result;
@@ -1400,6 +1393,7 @@ backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date
         if( !allowedByExcludes(srcfile,true,true) )
         {
           maybeErased = true;
+          reasonfordelete = "file was filtered out by configuration";
           result.count++;
           result.dirkbytes += (filesize/1024);
         }
@@ -1407,6 +1401,7 @@ backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date
       else
       {
         maybeErased = true;
+        reasonfordelete = "file does not any longer exist in source";
         result.count++;
         result.dirkbytes += (filesize/1024);
       }
@@ -1442,7 +1437,7 @@ backupExecuter::backupStatistics backupExecuter::getStatistics(QDate const &date
   return result;
 }
 
-void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, bool eraseAll)
+void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, bool eraseAll, QString const &collectingPath)
 {
   static int scanned;
 
@@ -1462,7 +1457,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
     level = 0;
     m_engine->setProgressMaximum(m_dirs.size());
     if( m_dirs.size()==0 || m_config.m_bScanDestPath )
-      scanDirectory(date,m_config.m_sDst);
+      scanDirectory(date,m_config.m_sDst,eraseAll,collectingPath);
     else
     {
       m_toBeRemovedFromToc.clear();
@@ -1489,9 +1484,10 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
           {
             QDate filemodified = QDateTime::fromMSecsSinceEpoch((*it3).m_modify).date();
             QString srcfile = path+"/"+it2.key();
+            QString reasonfordelete;
 
             bool maybeErased = eraseAll;
-            results += getStatistics(date,srcfile,filemodified,(*it3).m_size,maybeErased);
+            results += getStatistics(date,srcfile,filemodified,(*it3).m_size,maybeErased,reasonfordelete);
             totalCounts += results;
 
             found++;
@@ -1500,8 +1496,8 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
             if( maybeErased )
             {
-              deletePath(srcfile);
-              stream << "     " << "    (file was filtered out or source does not exist any more) \r\n";
+              deletePath(srcfile,"",collectingPath);
+              stream << "     " << "    ("+reasonfordelete+") \r\n";
             }
           }
           ++it2;
@@ -1580,13 +1576,14 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
         if( fi.isDir() )
         {
           level++;
-          scanDirectory(date,actPath+"/"+name);
+          scanDirectory(date,actPath+"/"+name,eraseAll,collectingPath);
           level--;
         }
         else
         {
           found++;
           foundkbytes += (fi.size()/1024);
+          QString reasonfordelete = "";
 
           bool eraseIt = false;
 
@@ -1642,6 +1639,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
                 if( !allowedByExcludes(srcfile,true,true) )
                 {
                   eraseIt = true;
+                  reasonfordelete = "file was filtered out by configuration";
                   count++;
                   dirkbytes += (fi.size()/1024);
                 }
@@ -1649,6 +1647,7 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
               else
               {
                 eraseIt = true;
+                reasonfordelete = "file does not any longer exist in source";
                 count++;
                 dirkbytes += (fi.size()/1024);
               }
@@ -1683,8 +1682,8 @@ void backupExecuter::scanDirectory(QDate const &date, QString const &startPath, 
 
           if( eraseIt )
           {
-            deletePath(actPath+"/"+name,indent);
-            stream << "     " << "    (file was filtered out or source does not exist any more) \r\n";
+            deletePath(actPath+"/"+name,indent,collectingPath);
+            stream << "     " << "    ("+reasonfordelete+") \r\n";
           }
         }
       }
@@ -1831,7 +1830,7 @@ void backupExecuter::findDuplicates(QString const &startPath,bool operatingOnSou
                   +QString::number(size));
                 }
 
-                deletePath(fileToDelete);
+                deletePath(fileToDelete,"","");
                 stream << indent << "     " << "    (was duplicate, keeping file " << mappedFile << ") \r\n";
 
                 totaldirkbytes += size / 1024;
