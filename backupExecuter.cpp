@@ -725,14 +725,16 @@ void backupExecuter::analyzeDirectories()
         {
           if( !destinationExists )
           {
-            destinationExists = ensureDirExists(srcpath,m_config.m_sSrc,m_config.m_sDst);
+            bool justCreated = false;
+            destinationExists = ensureDirExists(srcpath,m_config.m_sSrc,m_config.m_sDst,justCreated);
             if( destinationExists )
-              copy = true;
+              copy = justCreated;
             else
             {
               m_error = true;
               QString str = "++++ problem found in backup: destination directory could not be created for: '"+srcpath+"'\r\n";
               stream << str; errstream.append(str);
+              ++it2;
               continue;
             }
           }
@@ -842,9 +844,10 @@ bool backupExecuter::allowedByExcludes(QString const &fullPath, bool checkDirect
   return passed;
 }
 
-bool backupExecuter::ensureDirExists( QString const &fullPath, QString const &srcBase, QString const &dstBase )
+bool backupExecuter::ensureDirExists( QString const &fullPath, QString const &srcBase, QString const &dstBase, bool &hasbeenCreated)
 {
-  bool result = false;
+  bool result = true;
+  hasbeenCreated = false;
 
   QString relpath = fullPath.mid(srcBase.length());
   QString dstpath = relpath.prepend(dstBase);
@@ -852,16 +855,17 @@ bool backupExecuter::ensureDirExists( QString const &fullPath, QString const &sr
   QDir dst(dstpath);
   if( !dst.exists() )
   {
-    result = true;
-
     if( m_config.m_bVerboseMaint )
       stream << dst.absolutePath() << " not found in destination, would be created\r\n";
     else
     {
       stream << dst.absolutePath() << " not found in destination, so creating it\r\n";
 
-      if( !dst.mkpath(dstpath) )
+      if( dst.mkpath(dstpath) )
+        hasbeenCreated = true;
+      else
       {
+        result = false;
         m_error = true;
         QString str = "++++ can't create directory '"+dst.absolutePath()+"'!\r\n";
         stream << str; errstream.append(str);
@@ -904,8 +908,6 @@ void backupExecuter::copySelectedFiles()
       m_engine->setProgressText("processing "+QString::number(copiedFiles)+" of "+QString::number(files_to_copy)+" files ("+QString::number(copiedk/1024L)+" of "+QString::number(kbytes_to_copy/1024L)+" MB done)...");
       m_engine->setFileNameText(*it2);
       m_engine->setProgressValue(copiedk);
-
-      qApp->processEvents();
       lastmsecs = msecs;
     }
     copiedFiles++;
@@ -941,12 +943,33 @@ void backupExecuter::copySelectedFiles()
     crcsum.initInstance(0);
 
     QFile src(srcFile);
+    bool opened = false;
     if( src.open(QIODevice::ReadOnly) )
     {
       QFile dst(dstFile);
-      if( dst.exists() ) dst.setPermissions(dst.permissions() |
-            QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther);
-      if( dst.open(QIODevice::WriteOnly) )
+
+      if( QFile::exists(dstFile+".partial") )
+      {
+        QFile dst2(dstFile+".partial");
+        qint64 pos = dst2.size();
+        src.seek(pos);
+        copiedk += (pos/1024);
+        //crcsum.initfromfile()
+        dst2.rename(dstFile);
+        opened = dst.open(QIODevice::Append|QIODevice::WriteOnly);
+
+        stream << "* found  part of destination file " << dstFile << " (" << pos << " bytes), continuing with copy\r\n";
+      }
+      else
+      {
+        if( dst.exists() )
+        {
+          dst.setPermissions(dst.permissions() |
+              QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther);
+        }
+        opened = dst.open(QIODevice::WriteOnly);
+      }
+      if( opened )
       {
         // remove file entry from CRC list
         if( crcSummary.contains(dstFile) )
@@ -980,8 +1003,15 @@ void backupExecuter::copySelectedFiles()
             }
           }
           copiedk += (n/1024);
-          m_engine->setProgressText("processing "+QString::number(copiedFiles)+" of "+QString::number(files_to_copy)+" files ("+QString::number(copiedk/1024L)+" of "+QString::number(kbytes_to_copy/1024L)+" MB done)...");
-          m_engine->setProgressValue(copiedk);
+
+          quint64 msecs = QDateTime::currentDateTime().toMSecsSinceEpoch();
+          if( (msecs-lastmsecs)>100 )
+          {
+            m_engine->setProgressText("processing "+QString::number(copiedFiles)+" of "+QString::number(files_to_copy)+" files ("+QString::number(copiedk/1024L)+" of "+QString::number(kbytes_to_copy/1024L)+" MB done)...");
+            m_engine->setFileNameText(relName);
+            m_engine->setProgressValue(copiedk);
+            lastmsecs = msecs;
+          }
 
           if( /*isBatch &&*/ m_config.m_bBackground )
           {
@@ -1016,7 +1046,11 @@ void backupExecuter::copySelectedFiles()
           m_dirs.addFile(relPath,prefix+fileName,entry);
         }
         else
-          dst.remove();
+        {
+          stream << "\r\n";
+          stream << "* backup cancelled during copy of destination file " << dstFile << " (" << bytes << " bytes), keeping part of it" << "\r\n";
+          dst.rename(dstFile+".partial");
+        }
       }
       else
       {
@@ -1188,7 +1222,6 @@ void backupExecuter::contextMenuEvent(QContextMenuEvent */*event*/)
 
 void backupExecuter::closeEvent ( QCloseEvent */*event*/ )
 {
-  fileObj.close();
   m_closed = true;
   cancel();
 }
@@ -2037,7 +2070,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
     if( m_config.m_bVerbose )
       return;
 
-    m_engine->setProgressText("verifying files in backup...");
+    m_engine->setProgressText("searching for files to be verified...");
     m_engine->setProgressMaximum(lastVerifiedK);
     scanned = 0;
     verifiedK = 0;

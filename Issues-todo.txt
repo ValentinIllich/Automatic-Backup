@@ -3,7 +3,9 @@ Automatic Backup Release Notes (C) Valentin Illich 2011-2019
 Bugs:
 =====
 
-- path selection for collecting of deleted files must be moved
+- Datumsabfrage für Löschen in eigene Methode (nicht mehr einzeln in scanDIrectory und getStatistics)
+
+DONE path selection for collecting of deleted files must be moved
 DONE getStatistics may not delete files --> move to upper level
 
 DONE auto verify zurücksetzen wenn manuell ausgelöst
