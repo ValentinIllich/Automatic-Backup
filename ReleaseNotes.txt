@@ -1,5 +1,10 @@
 Automatic Backup Release Notes (C) Valentin Illich 2011-2022
 
+Release 1.29:
+=============
+
+ + files missing in TOC are checked for size and mofification now before being copied again
+
 Release 1.27:
 =============
 

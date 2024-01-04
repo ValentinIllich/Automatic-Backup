@@ -10,6 +10,8 @@ TEMPLATE = app
 TARGET = backup
 CONFIG += sdk_no_version_check
 
+#QMAKE_CXXFLAGS += -std=c++11
+
 # Input
 HEADERS += backupExecuter.h \
     backupConfigData.h \
