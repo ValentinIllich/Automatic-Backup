@@ -14,7 +14,7 @@ public:
 
   void connectSignalSlots();
 
-  void saveConfig(QString const &configFile = QString::null);
+  void saveConfig(QString const &configFile = QString());
   void autoExecute(bool runningInBackground);
   bool keepRunning() const;
   bool runAndShutdown() const;

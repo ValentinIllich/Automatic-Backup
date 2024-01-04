@@ -111,7 +111,7 @@ private:
 
 void do_log( QString const &txt )
 {
-  QFile *log = backupExecuter::openFile(QString::null);
+  QFile *log = backupExecuter::openFile(QString());
   QTextStream stream;
 
   if( log->isOpen() )
