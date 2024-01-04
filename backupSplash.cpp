@@ -25,18 +25,18 @@ public:
     QFontMetrics buttons(font());
 
     m_ok = addButton("Ok",QMessageBox::ActionRole);
-    m_ok->setMinimumWidth(buttons.width("Config...")+50);
+    m_ok->setMinimumWidth(buttons.horizontalAdvance("Config...")+50);
     m_config = addButton("Config...",QMessageBox::ActionRole);
-    m_config->setMinimumWidth(buttons.width("Config...")+50);
+    m_config->setMinimumWidth(buttons.horizontalAdvance("Config...")+50);
     m_help =  addButton("Help",QMessageBox::ActionRole);
-    m_help->setMinimumWidth(buttons.width("Config...")+50);
+    m_help->setMinimumWidth(buttons.horizontalAdvance("Config...")+50);
     if( allowAdmin )
     {
       m_admin = addButton("Root",QMessageBox::ActionRole);
-      m_admin->setMinimumWidth(buttons.width("Config...")+50);
+      m_admin->setMinimumWidth(buttons.horizontalAdvance("Config...")+50);
     }
     m_cancel = addButton("Quit",QMessageBox::ActionRole);
-    m_cancel->setMinimumWidth(buttons.width("Config...")+50);
+    m_cancel->setMinimumWidth(buttons.horizontalAdvance("Config...")+50);
     setIconPixmap(QApplication::style()->standardPixmap(QStyle::SP_DesktopIcon));
 
     updateText();
@@ -97,9 +97,9 @@ public:
     QFontMetrics buttons(font());
 
     m_ok = addButton("Continue...",QMessageBox::ActionRole);
-    m_ok->setMinimumWidth(buttons.width("Continue...")+50);
+    m_ok->setMinimumWidth(buttons.horizontalAdvance("Continue...")+50);
     m_cancel = addButton("Quit",QMessageBox::ActionRole);
-    m_cancel->setMinimumWidth(buttons.width("Continue...")+50);
+    m_cancel->setMinimumWidth(buttons.horizontalAdvance("Continue...")+50);
     setIconPixmap(QApplication::style()->standardPixmap(QStyle::SP_ComputerIcon));
     updateText();
     startTimer(1000);
@@ -197,7 +197,7 @@ bool backupSplash::startup(int argc,char **argv)
   bool startDialog = (settings.value("KeepRunning").toInt()==1 ? false : true);
 
   QFile *fp = backupExecuter::openFile("errors",true);
-  if( fp->fileName()!=QString::null )
+  if( !fp->fileName().isNull() )
   {
     QApplication::alert(this);
     QMessageBox::warning(this,"backup problems","at least one of the last executed backups had errors.\nPlease check the following details.");

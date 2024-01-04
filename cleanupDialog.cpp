@@ -235,7 +235,7 @@ void cleanupDialog::processProgressText(const QString &text)
   if( !text.isEmpty() )
   {
     QString messagetext = text;
-    while( ui->label->width()<metrics.width(messagetext) )
+    while( ui->label->width()<metrics.horizontalAdvance(messagetext) )
     {
       int len = messagetext.length() - 4;
       messagetext = text.left(len/2)+"..."+messagetext.right(len/2);
@@ -256,7 +256,7 @@ QString formatSize( double size )
   QString result;
 
   double MBytes = size / 1024.0 / 1024.0;
-  result.sprintf("%'15.3f MB",MBytes);
+  result.asprintf("%'15.3f MB",MBytes);
   return result;
 }
 
