@@ -38,7 +38,7 @@ public:
   void startBatchProcessing();
   void stopBatchProcessing();
   void findDirectories( QString const &start = "" );
-  void verifyBackup(QString const &startPath = QString::null);
+  void verifyBackup(QString const &startPath = QString());
 
   QString getAutobackupCheckFile(QString const &suffix);
   bool isAutoBackupCreatedFile(QString const &file);
@@ -135,7 +135,7 @@ private:
 
   void deletePath(QString const &absolutePath,QString const &indent,QString const &collectingPath);
   void scanDirectory(QDate const &date, QString const &startPath, bool eraseAll, QString const &collectingPath);
-  void findDuplicates(QString const &startPath = QString::null,bool operatingOnSource = false);
+  void findDuplicates(QString const &startPath = QString(),bool operatingOnSource = false);
 
   void deleteFilesFromDestination(QList< QPair<QString,QString> > const &m_toBeRemovedFromToc, unsigned &totalcount, unsigned long &totaldirkbytes);
 

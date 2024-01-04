@@ -20,6 +20,16 @@ QFile backupExecuter::fileObj;
 static const unsigned long header = 'VISL';
 static const unsigned long magic = 'BKUP';
 
+QString getConfigurationsPath(QString const &organization, QString const &application)
+{
+  QString path = QDir::homePath()+"/"+organization+"/"+application+"/";
+  QDir dir(path);
+  if( dir.mkpath(path) )
+    return path;
+  else
+    return "";
+}
+
 class waitHelper : public QThread
 {
 public:
@@ -115,7 +125,7 @@ backupExecuter::backupExecuter(backupConfigData &configData)
 
   connect(qApp->desktop(),SIGNAL(resized(int)),this,SLOT(screenResizedSlot(int)));
 
-  loadData();
+  //loadData();
 
   QSettings settings;
   int titleheight = settings.value("WindowTitlebarHeight").toInt();
@@ -271,19 +281,34 @@ QString const &backupExecuter::defaultAt( QStringList const &list, int ix )
 
 QFile *backupExecuter::openFile( QString const &filename, bool readOnly )
 {
-  QSettings settings;
-  QString path = settings.value("LogFile","").toString();
-  if( path.isEmpty() ) settings.setValue("LogFile",path = "./backup.log");
+  const char *organization = "config-valentins-qtsolutions";
+  const char *application = "backup";
+  QString inifile = getConfigurationsPath(organization,application)+"settings.ini";
+  QSettings settings(inifile,QSettings::IniFormat);
+  QString path = "";
+  if( settings.contains("LogFile") )
+  {
+    path = settings.value("LogFile").toString();
+    if( !path.endsWith("/") ) path.append("/");
+  }
+  else
+  {
+    path = getConfigurationsPath(organization,application);
+    settings.setValue("LogFile",path);
+  }
+
+  //path = settings.value("LogFile","").toString();
+  //if( path.isEmpty() ) settings.setValue("LogFile",path = "./backup.log");
 
   if( fileObj.isOpen() ) fileObj.close();
 
-  fileObj.setFileName(filename.isNull() ? path : path.replace("backup",filename));
+  fileObj.setFileName(path + (filename.isNull() ? "backup.log" : filename));
   if( fileObj.size()>2000000 ) fileObj.remove();
   if( fileObj.open(readOnly ? QIODevice::ReadOnly : QIODevice::ReadWrite|QIODevice::Append) )
     return &fileObj;
   else
   {
-    fileObj.setFileName(QString::null);
+    fileObj.setFileName(QString());
     return &fileObj;
   }
 }
@@ -431,8 +456,8 @@ void backupExecuter::startingAction()
   }
   else
   {
-    log = openFile(QString::null);
-    if( log->fileName()!=QString::null )
+    log = openFile(QString());
+    if( log->fileName()!=QString() )
       stream.setDevice(log);
     else if( m_config.m_bAuto )
       stream << "++++ problem found in backup: directory doesn't exist: couldn't open log file " << "\r\n";
@@ -486,7 +511,7 @@ void backupExecuter::stoppingAction()
         QString str = "#### problem(s) found in backup: one or more files couldn't be copied to destination.\r\n";
         stream << str;
         QFile *fp = openFile("errors");
-        if( fp->fileName()!=QString::null )
+        if( fp->fileName()!=QString() )
         {
           fp->write(errstream.toLatin1().data());
           fp->close();
@@ -960,15 +985,30 @@ void backupExecuter::copySelectedFiles()
 
         stream << "* found  part of destination file " << dstFile << " (" << pos << " bytes), continuing with copy\r\n";
       }
-      else
+      else if( QFile::exists(dstFile) )
       {
-        if( dst.exists() )
+        QFileInfo dstInfo(dstFile);
+        if(    (srcInfo.size()!=dstInfo.size())
+            || (srcInfo.lastModified().toSecsSinceEpoch()!=dstInfo.lastModified().toSecsSinceEpoch())
+            )
         {
           dst.setPermissions(dst.permissions() |
               QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther);
+          opened = dst.open(QIODevice::WriteOnly);
         }
-        opened = dst.open(QIODevice::WriteOnly);
+        else
+        {
+          fileTocEntry entry;
+          entry.m_prefix.clear();
+          entry.m_tocId = m_dirs.nextTocId();
+          entry.m_size = srcInfo.size();
+          entry.m_modify = modify;
+          entry.m_crc = 0;
+          m_dirs.addFile(relPath,prefix+fileName,entry);
+        }
       }
+      else
+        opened = dst.open(QIODevice::WriteOnly);
       if( opened )
       {
         // remove file entry from CRC list
@@ -1082,7 +1122,7 @@ backupConfigData backupExecuter::getConfigData()
 void backupExecuter::setConfigData(const backupConfigData &config)
 {
   m_config = config;
-  loadData();
+  //loadData();
 }
 
 void backupExecuter::setUnattendedMode(bool doIt)
@@ -1093,6 +1133,9 @@ void backupExecuter::setUnattendedMode(bool doIt)
 
 void backupExecuter::threadedCopyOperation()
 {
+  m_engine->setProgressText("loading table of contents...");
+  loadData();
+
   findDirectories();
   analyzeDirectories();
   if( m_running && !m_config.m_bVerbose )
@@ -1111,17 +1154,22 @@ void backupExecuter::threadedCopyOperation()
       updateAutoVerifyTime();
   }
 
+  m_engine->setProgressText("writing table of contents...");
   saveData();
 }
 
 void backupExecuter::threadedVerifyOperation()
 {
+  m_engine->setProgressText("loading table of contents...");
+  loadData();
+
   if( m_config.m_bVerify )
     verifyBackup();
 
   if( m_running )
     updateAutoVerifyTime();
 
+  m_engine->setProgressText("writing table of contents...");
   saveData();
 }
 
@@ -1283,15 +1331,21 @@ void backupExecuter::cleanup()
 
   if( date.isValid() )
   {
+    m_engine->setProgressText("loading table of contents...");
+    loadData();
+
     QString collectingPath = m_config.m_bCollectDeleted ? QFileDialog::getExistingDirectory (
                 this, "collecting deleted files here:", m_config.m_sDst) : "";
 
     startingAction();
-    scanDirectory(date.date(),QString::null,false,collectingPath);
+    scanDirectory(date.date(),QString(),false,collectingPath);
     findDuplicates();
-    if( m_config.m_bFindSrcDupl ) findDuplicates(QString::null,true);
+    if( m_config.m_bFindSrcDupl ) findDuplicates(QString(),true);
     stoppingAction();
   }
+
+  m_engine->setProgressText("writing table of contents...");
+  saveData();
 
   close();
 }
