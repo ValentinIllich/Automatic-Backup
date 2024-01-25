@@ -475,10 +475,10 @@ void backupExecuter::startingAction()
   QStringList includings = includingsstr.remove(")").split("(");
   QStringList excludings = excludingsstr.remove(")").split("(");
 
-  dirincludes = defaultAt(includings,0).split( ";" );
-  fileincludes = defaultAt(includings,1).split( ";" );
-  direxcludes = defaultAt(excludings,0).split( ";" );
-  fileexcludes = defaultAt(excludings,1).split( ";" );
+  dirincludes = defaultAt(includings,0).split( ";", QString::SkipEmptyParts );
+  fileincludes = defaultAt(includings,1).split( ";", QString::SkipEmptyParts );
+  direxcludes = defaultAt(excludings,0).split( ";", QString::SkipEmptyParts );
+  fileexcludes = defaultAt(excludings,1).split( ";", QString::SkipEmptyParts );
 
   stream << "regarding directory names containing '" << defaultAt(includings,0) <<  "' but not '" << defaultAt(excludings,0) << "'\r\n";
   stream << "regarding file names containing '" << defaultAt(includings,1) << "' but not'" << defaultAt(excludings,1) << "'\r\n";
@@ -776,13 +776,18 @@ void backupExecuter::analyzeDirectories()
             {
               qint64 lastm = m_dirs.lastModified(relPath,fileName);
               if( modify>lastm )
+                // file is newer than in TOC
                 copy = true;
             }
             else
             {
+              // file not found in TOC, add to list for later check and copy
               copy = true;
             }
           }
+
+          if( !copy )
+            stream << "        no changes in " << fullName << "\r\n";
         }
         else
           stream << "        skipping file " << fullName << "\r\n";
@@ -830,7 +835,7 @@ bool backupExecuter::allowedByExcludes(QString const &fullPath, bool checkDirect
       QString regexp = QRegularExpression::wildcardToRegularExpression(*it2);
       if( (*it2).isEmpty() || path.indexOf(QRegularExpression(regexp))>=0 )
         passed = true;
-    }
+    }        
     for ( QStringList::Iterator it3 = direxcludes.begin(); passed && it3 != direxcludes.end(); ++it3 )
     {
       QString regexp = QRegularExpression::wildcardToRegularExpression(*it3);
@@ -1005,6 +1010,8 @@ void backupExecuter::copySelectedFiles()
           entry.m_modify = modify;
           entry.m_crc = 0;
           m_dirs.addFile(relPath,prefix+fileName,entry);
+
+          stream << "# found up to date destination file" << dstFile << " (" << entry.m_size << " bytes), addint to TOC\r\n";
         }
       }
       else
