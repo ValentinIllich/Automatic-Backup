@@ -17,7 +17,7 @@ struct discInfo
 };
 
 discInfo getDiscInfo( QString const &filename );
-extern void setTimestamps( QString const &filename, QDateTime const &modified );
+extern void setTimestamps( QString const &filename, QDateTime const &modified, QTextStream &errors );
 
 extern void showHelp(QObject *parent,QString const &ressourcePath,QString const &helpfile);
 

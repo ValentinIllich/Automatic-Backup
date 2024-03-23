@@ -4,6 +4,7 @@
 #include <qdatetime.h>
 #include <qprocess.h>
 #include <qstorageinfo.h>
+#include <qtextstream.h>
 
 #if defined(Q_OS_WIN32)
 #include <windows.h>
@@ -67,7 +68,7 @@ discInfo getDiscInfo( QString const &filename )
   return info;
 }
 
-void setTimestamps( QString const &filename, QDateTime const &modified )
+void setTimestamps( QString const &filename, QDateTime const &modified, QTextStream &errors )
 {
 #if defined(Q_OS_WIN32)
   // taken from MSDN example
@@ -83,14 +84,15 @@ void setTimestamps( QString const &filename, QDateTime const &modified )
                     FILE_ATTRIBUTE_NORMAL, NULL);
   //set the filetime on the file
   if( SetFileTime(filehndl,&thefiletime,&thefiletime,&thefiletime)==0 )
-      QMessageBox::critical(0,"error","could not set creation time of "+filename+" "+QString::number(GetLastError(),16));
+      errors << "could not set creation time of "+filename+" "+QString::number(GetLastError(),16);
   //close our handle.
   CloseHandle(filehndl);
   delete[] _wfilename;
 #elif defined(Q_OS_MAC) || defined(Q_WS_X11)
   QStringList args;
   args << "-t" << modified.toString("yyyyMMddhhmm.ss") << filename;
-  QProcess::execute("touch",args);
+  if( QProcess::execute("touch",args)!=0 )
+    errors << "could not set creation time of " + filename;
 #endif
 }
 

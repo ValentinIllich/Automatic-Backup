@@ -1082,7 +1082,7 @@ void backupExecuter::copySelectedFiles()
           stream << "\r\n";
 
           // finally, fix modification time stamp to src file
-          setTimestamps(dstFile,srcInfo.lastModified());
+          setTimestamps(dstFile,srcInfo.lastModified(),stream);
 
           fileTocEntry entry;
           entry.m_prefix.clear();
