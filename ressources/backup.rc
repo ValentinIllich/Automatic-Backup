@@ -2,7 +2,7 @@
 #ifndef _STRINGS_H_
 #define _STRINGS_H_
 
-#include "version.inc"
+#include "version.h"
 
 #define _STR_COMPANY_NAME       "VI Solutions"
 #define _STR_PRODUCT_NAME       "Automatic Backup"
@@ -12,7 +12,7 @@
 #define _FILE_VERSION           BACKUP_VERSION,BACKUP_BUILDNO
 #define _STR_FILE_VERSION       BACKUP_STR_VERSION "," BACKUP_STR_BUILDNO
 #define _STR_INTERNAL_NAME      "Automatic Backup"
-#define _STR_LEGAL_COPYRIGHT    "Copyright (C) 2019 (GPL)"
+#define _STR_LEGAL_COPYRIGHT    "Copyright (C) 2024 (GPL)"
 #define _STR_LEGAL_TRADE_1      "All rights reserved or something"
 #define _STR_LEGAL_TRADE_2      _STR_LEGAL_TRADE_1
 #define _STR_ORIGINAL_FILE_NAME "backup.exe"
