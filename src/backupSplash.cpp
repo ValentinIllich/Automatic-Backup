@@ -1,16 +1,18 @@
-#include <qdesktopwidget.h>
+//#include <qdesktopwidget.h>
 #include <qsettings.h>
 #include <qpainter.h>
 #include <qmenu.h>
 #include <QString>
 #include <QInputDialog>
+#include <QGuiApplication>
+#include <QScreen>
 
 #include "backupSplash.h"
 #include "backupMain.h"
 #include "backupExecuter.h"
 #include "Utilities.h"
 
-extern "C" int getAdminRights(int argc, char* argv[],char *password);
+extern int getAdminRights(int argc, char* argv[],char *password);
 
 class startMessage : public QMessageBox
 {
@@ -174,7 +176,8 @@ backupSplash::backupSplash(QObject */*parent = 0*/)
 , shtdwnwarning(true)
 , shtdwncontinue(false)
 {
-  connect(qApp->desktop(),SIGNAL(resized(int)),this,SLOT(screenResizedSlot(int)));
+  QScreen *screen = QGuiApplication::primaryScreen();
+  connect(screen,SIGNAL(geometryChanged(const QRect&)),this,SLOT(screenResizedSlot(int)));
 }
 
 backupSplash::~backupSplash()

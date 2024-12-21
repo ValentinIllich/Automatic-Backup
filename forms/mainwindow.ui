@@ -983,7 +983,7 @@ subdirectories.</string>
    <sender>exitButt</sender>
    <signal>clicked()</signal>
    <receiver>mainwindow</receiver>
-   <slot>quit()</slot>
+   <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>866</x>

@@ -1,8 +1,8 @@
 #ifndef	__backupMain__
 #define	__backupMain__
 
-#include "ui_mainwindow.h"
-#include "ressources/version.inc"
+#include "../forms/ui_mainwindow.h"
+#include "version.h"
 #include "backupConfigData.h"
 
 class backupMain : public QDialog, public Ui_mainwindow

@@ -7,7 +7,8 @@
 #include <QFileDialog>
 #include <QTextBrowser>
 #include <QCalendarWidget>
-#include <QDesktopWidget>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QThread>
 #include <QWidget>
 #include <QMenu>
@@ -80,7 +81,7 @@ protected:
       if( m_path.length()>=2 )
       {
         if( m_path.at(1)==':' )
-          m_path[1] = 'A'+deviceNo;
+          m_path[1] = QChar('A'+deviceNo);
 
         QDir dir(m_path);
         if( dir.exists() )
@@ -123,7 +124,8 @@ backupExecuter::backupExecuter(backupConfigData &configData)
 
   setWindowTitle("Backup Configuration '"+m_config.m_sName+"'");
 
-  connect(qApp->desktop(),SIGNAL(resized(int)),this,SLOT(screenResizedSlot(int)));
+  QScreen *screen = QGuiApplication::primaryScreen();
+  connect(screen,SIGNAL(geometryChanged(const QRect&)),this,SLOT(screenResizedSlot(int)));
 
   //loadData();
 
@@ -132,8 +134,8 @@ backupExecuter::backupExecuter(backupConfigData &configData)
   int framewidth = settings.value("WindowFramewidth").toInt();
   int w = width();
   int h = minimumSizeHint().height();
-  QRect screen = qApp->desktop()->availableGeometry();
-  setGeometry(screen.x()+screen.width()/2-w/2-framewidth,screen.y()+screen.height()/2-(h+titleheight)/2,w,h);
+  QRect geo = QGuiApplication::primaryScreen()->availableGeometry();
+  setGeometry(geo.x()+geo.width()/2-w/2-framewidth,geo.y()+geo.height()/2-(h+titleheight)/2,w,h);
 
   startTimer(100);
 }
@@ -341,7 +343,7 @@ void backupExecuter::setWindowOnScreen(QWidget *widget,int width,int height)
   QString position = settings.value("BackupWindowPosition","ll").toString();
   int titleheight = (widget->objectName()=="backupExecuter") ? settings.value("WindowTitlebarHeight").toInt() : 0;
   int framewidth = (widget->objectName()=="backupExecuter") ? settings.value("WindowFramewidth").toInt() : 0;
-  QRect screen = qApp->desktop()->availableGeometry();
+  QRect screen = QGuiApplication::primaryScreen()->availableGeometry();
 
   if( position=="ll" )
     widget->setGeometry(screen.x(),screen.y()+screen.height()-height,width,height); // lower left (the default)
@@ -386,7 +388,7 @@ QDateTime backupExecuter::getLimitDate(QWidget *parent,const QDateTime &starting
   d.resize(d.sizeHint());
   if( d.exec()==QDialog::Accepted )
   {
-    result = QDateTime(w.selectedDate());
+    result = QDateTime(w.selectedDate(),QTime());
   }
   else
   {
@@ -412,7 +414,7 @@ void backupExecuter::processProgressText(QString const &text)
   if( !text.isEmpty() )
   {
     QString messagetext = text;
-    while( progresslabel->width()<metrics.width(messagetext) )
+    while( progresslabel->width()<metrics.horizontalAdvance(messagetext) )
     {
       int len = messagetext.length() - 4;
       messagetext = text.left(len/2)+"..."+messagetext.right(len/2);
@@ -429,7 +431,7 @@ void backupExecuter::processFileNameText(QString const &text)
   if( !text.isEmpty() )
   {
     QString messagetext = text;
-    while( actualfile->width()<metrics.width(messagetext) )
+    while( actualfile->width()<metrics.horizontalAdvance(messagetext) )
     {
       int len = messagetext.length() - 4;
       messagetext = text.left(len/2)+"..."+messagetext.right(len/2);
@@ -475,10 +477,10 @@ void backupExecuter::startingAction()
   QStringList includings = includingsstr.remove(")").split("(");
   QStringList excludings = excludingsstr.remove(")").split("(");
 
-  dirincludes = defaultAt(includings,0).split( ";", QString::SkipEmptyParts );
-  fileincludes = defaultAt(includings,1).split( ";", QString::SkipEmptyParts );
-  direxcludes = defaultAt(excludings,0).split( ";", QString::SkipEmptyParts );
-  fileexcludes = defaultAt(excludings,1).split( ";", QString::SkipEmptyParts );
+  dirincludes = defaultAt(includings,0).split( ";", Qt::SkipEmptyParts );
+  fileincludes = defaultAt(includings,1).split( ";", Qt::SkipEmptyParts );
+  direxcludes = defaultAt(excludings,0).split( ";", Qt::SkipEmptyParts );
+  fileexcludes = defaultAt(excludings,1).split( ";", Qt::SkipEmptyParts );
 
   stream << "regarding directory names containing '" << defaultAt(includings,0) <<  "' but not '" << defaultAt(excludings,0) << "'\r\n";
   stream << "regarding file names containing '" << defaultAt(includings,1) << "' but not'" << defaultAt(excludings,1) << "'\r\n";
@@ -1375,7 +1377,7 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
       if( fi.exists() )
       {
         stream << indent << "---> " << "would remove file " << destinationPath
-        << ", created("+fi.created().toString(Qt::ISODate)
+        << ", created("+fi.birthTime().toString(Qt::ISODate)
         +") modified("+fi.lastModified().toString(Qt::ISODate)
         +")" << "\r\n";
       }
@@ -2182,7 +2184,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
           // check if this file has an own verify interval
           if( backupContainsFile && crcSummary.contains(verifyFile) )
           {
-            scanTime = QDateTime::fromTime_t(crcSummary[verifyFile].lastScan);
+            scanTime = QDateTime::fromMSecsSinceEpoch(crcSummary[verifyFile].lastScan);
 
             int verifydays = 5;
             switch( m_config.m_iInterval )
@@ -2265,7 +2267,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                   QByteArray decode = qUncompress(data);
                   //dst.write(decode);
                   read += decode.size();
-                  quint16 crc = qChecksum(decode.data(),decode.size());
+                  quint16 crc = qChecksum(QByteArrayView(decode));
                   crclist.append(crc);
 
                   verifiedK += (decode.size()/1024);
@@ -2297,7 +2299,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                     break;
                   }
                   read += data.size();
-                  quint16 crc = qChecksum(data.data(),data.size());
+                  quint16 crc = qChecksum(QByteArrayView(data));
                   crclist.append(crc);
                   crctotal.pushData(0,data.data(),data.size());
 
@@ -2334,7 +2336,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                     errFound = true;
                 }
                 crcSummary[verifyFile].crc = crclist;
-                crcSummary[verifyFile].lastScan = startTime.toTime_t();
+                crcSummary[verifyFile].lastScan = startTime.toSecsSinceEpoch();
                 checksumsChanged = true;
 
                 QString tocpath = fi.absolutePath().mid(m_config.m_sDst.length()+1);

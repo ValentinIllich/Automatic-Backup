@@ -27,7 +27,7 @@ public:
   , m_config(confiData)
   , m_executer(NULL)
   {
-    setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled|Qt::ItemIsTristate);
+    setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled|Qt::ItemIsAutoTristate);
     if( m_config.m_bAuto )
       setCheckState(Qt::Checked);
     else
@@ -459,9 +459,11 @@ void backupMain::deleteBackup()
   {
     QListWidgetItem *item = *it;
 
-    if( QMessageBox::information(this,"confirmation","Do you really want to delete '"
-    +static_cast<backupListItem*>(item)->getConfigData().m_sName+"' ?",
-    QMessageBox::Yes,QMessageBox::No|QMessageBox::Default)==QMessageBox::Yes )
+    if( QMessageBox::information(
+          this,"confirmation","Do you really want to delete '"
+                              + static_cast<backupListItem*>(item)->getConfigData().m_sName+"' ?",
+          QMessageBox::StandardButton::Yes |QMessageBox::StandardButton::No, QMessageBox::StandardButton::No
+        ) == QMessageBox::StandardButton::Yes )
       delete item;
   }
 }

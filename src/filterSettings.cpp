@@ -1,5 +1,5 @@
 #include "filterSettings.h"
-#include "ui_filterSettings.h"
+#include "../forms/ui_filterSettings.h"
 
 filterSettings::filterSettings(QWidget *parent) :
   QDialog(parent),

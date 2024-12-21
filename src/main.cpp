@@ -2,7 +2,6 @@
 #include <qmessagebox.h>
 #include <qdialog.h>
 #include <qdatetime.h>
-#include <qdesktopwidget.h>
 #include <qsettings.h>
 #include <qinputdialog.h>
 
@@ -11,7 +10,7 @@
 #include "backupExecuter.h"
 #include "Utilities.h"
 
-extern "C" void checkForPasswdHelper(int argc, char **argv);
+extern void checkForPasswdHelper(int argc, char **argv);
 
 int main( int argc, char **argv )
 {

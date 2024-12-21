@@ -1,7 +1,7 @@
 #ifndef	__backupExecuter__
 #define	__backupExecuter__
 
-#include "ui_backupwindow.h"
+#include "../forms/ui_backupwindow.h"
 #include "backupEngine.h"
 #include "backupDirStruct.h"
 #include "backupConfigData.h"

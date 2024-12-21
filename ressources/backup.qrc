@@ -1,8 +1,8 @@
 <RCC>
     <qresource prefix="/helptext">
-        <file alias="AutomaticBackup.pdf">ressources/AutomaticBackup.pdf</file>
+        <file>AutomaticBackup.pdf</file>
     </qresource>
     <qresource prefix="/images">
-        <file alias="save.png">ressources/save.png</file>
+        <file>save.png</file>
     </qresource>
 </RCC>

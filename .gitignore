@@ -21,6 +21,8 @@ test.qip
 *.pro.user*
 *.6pre1
 *.log
+*.user
 backup.cfg
 backupMini.pro
 .qmake.stash
+win-CMakeLists.txt.user
