@@ -1,5 +1,5 @@
 #include "cleanupDialog.h"
-#include "ui_cleanupDialog.h"
+#include "../forms/ui_cleanupDialog.h"
 #include "backupEngine.h"
 #include "backupExecuter.h"
 #include "Utilities.h"
@@ -253,10 +253,8 @@ void cleanupDialog::processFileNameText(const QString &/*text*/)
 
 QString formatSize( double size )
 {
-  QString result;
-
   double MBytes = size / 1024.0 / 1024.0;
-  result.asprintf("%'15.3f MB",MBytes);
+  QString result = QString::asprintf("%15.3f MB",MBytes);
   return result;
 }
 
