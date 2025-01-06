@@ -34,7 +34,6 @@ set(PROJECT_SOURCES
         src/utilities.cpp
 
         forms/backupwindow.ui
-        forms/backupwindow_.ui
         forms/cleanupDialog.ui
         forms/filterSettings.ui
         forms/mainwindow.ui
