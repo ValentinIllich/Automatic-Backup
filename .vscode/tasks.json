@@ -1,0 +1,139 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "Mac Debug CMAKE",
+            "command": "cmake",
+            "args": [
+                "-S",
+                ".",
+                "-B",
+                "~/Programme/backup_debug",
+                "-DCMAKE_PREFIX_PATH:PATH=~/Qt/6.4.3/macos",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "type": "cppbuild",
+            "label": "Mac Debug Build",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "~/Programme/backup_debug",
+                "--target",
+                "all"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "type": "cppbuild",
+            "label": "Windows Debug CMAKE",
+            "command": "C:/Program Files/CMake/bin/cmake.exe",
+            "args": [
+                "-S",
+                ".",
+                "-B",
+                "%USERPROFILE%/Programme/backup_debug",
+                "-G",
+                "Ninja",
+                "-DCMAKE_PREFIX_PATH:PATH=C:/Qt/6.5.3/mingw_64",
+                "-DCMAKE_C_COMPILER:FILEPATH=C:/Qt/Tools/mingw1310_64/bin/gcc.exe",
+                "-DCMAKE_CXX_COMPILER:FILEPATH=C:/Qt/Tools/mingw1310_64/bin/g++.exe",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "type": "cppbuild",
+            "label": "Windows Debug Build",
+            "command": "C:/Program Files/CMake/bin/cmake.exe",
+            "args": [
+                "--build",
+                "%USERPROFILE%/Programme/backup_debug",
+                "--target",
+                "all"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "type": "cppbuild",
+            "label": "Windows Release CMAKE",
+            "command": "C:/Program Files/CMake/bin/cmake.exe",
+            "args": [
+                "-S",
+                ".",
+                "-B",
+                "%USERPROFILE%/Programme/backup_release",
+                "-G",
+                "Ninja",
+                "-DCMAKE_PREFIX_PATH:PATH=C:/Qt/6.5.3/mingw_64",
+                "-DCMAKE_C_COMPILER:FILEPATH=C:/Qt/Tools/mingw1310_64/bin/gcc.exe",
+                "-DCMAKE_CXX_COMPILER:FILEPATH=C:/Qt/Tools/mingw1310_64/bin/g++.exe",
+                "-DCMAKE_BUILD_TYPE=Release"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "type": "cppbuild",
+            "label": "Windows Release Build",
+            "command": "C:/Program Files/CMake/bin/cmake.exe",
+            "args": [
+                "--build",
+                "%USERPROFILE%/Programme/backup_release",
+                "--target",
+                "all"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "type": "process",
+            "label": "Windows Edit UI",
+            "command": "C:/Qt/6.5.3/mingw_64/bin/designer.exe",
+            "args": [
+                "${file}"
+            ],
+            "detail": "Open ui file in Designer.",
+            "problemMatcher": []
+        }
+    ],
+    "version": "2.0.0"
+}

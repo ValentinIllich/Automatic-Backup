@@ -1,0 +1,41 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Mac Debug",
+            "type": "lldb",
+            //"type": "cppdbg",
+            "request": "launch",
+            "program": "~/Programme/backup_debug/backup.app/Contents/MacOS/backup",
+            "args": [],
+            //"stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            //"environment": [],
+            //"externalConsole": false,
+            //"MIMode": "lldb",
+        },
+        {
+            "name": "Windows Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${env:USERPROFILE}/Programme/backup_debug/backup.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            //"environment": [],
+            //"externalConsole": false,
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "C:/Qt/6.5.3/mingw_64/bin;C:/Qt/Tools/mingw1310_64/bin;${env:PATH}"
+                }
+            ],
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:/Qt/Tools/mingw1310_64/bin/gdb.exe"
+        }
+    ]
+}

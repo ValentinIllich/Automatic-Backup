@@ -67,6 +67,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     AUTORCC ON
 )
 
+if(CMAKE_BUILD_TYPE STREQUAL DEBUG)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy
+                        ${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json
+                        ${CMAKE_SOURCE_DIR}/compile_commands.json
+    )
+endif()
+
 ##############################################################################
 
 set(CPACK_PACKAGE_NAME "Automatic Backup")
