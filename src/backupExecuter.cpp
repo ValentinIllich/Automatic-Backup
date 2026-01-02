@@ -81,7 +81,7 @@ protected:
       if( m_path.length()>=2 )
       {
         if( m_path.at(1)==':' )
-          m_path[1] = QChar('A'+deviceNo);
+          m_path[0] = QChar('A'+deviceNo);
 
         QDir dir(m_path);
         if( dir.exists() )
@@ -788,7 +788,7 @@ void backupExecuter::analyzeDirectories()
             }
           }
 
-          if( !copy )
+          if( !copy  && (m_config.m_bVerbose) )
             stream << "        no changes in " << fullName << "\r\n";
         }
         else
@@ -1013,7 +1013,11 @@ void backupExecuter::copySelectedFiles()
           entry.m_crc = 0;
           m_dirs.addFile(relPath,prefix+fileName,entry);
 
-          stream << "# found up to date destination file" << dstFile << " (" << entry.m_size << " bytes), addint to TOC\r\n";
+          if( m_config.m_bVerbose )
+            stream << "# found up to date destination file" << dstFile << " (" << entry.m_size << " bytes), addint to TOC\r\n";
+
+          src.close();
+          continue;
         }
       }
       else
@@ -1382,7 +1386,7 @@ void backupExecuter::deletePath(QString const &absolutePath,QString const &inden
         +")" << "\r\n";
       }
       else
-        stream << indent << "---> " << "file " << destinationPath << " does not exist any longer, removing from toc\r\n";
+        stream << indent << "---> " << "file " << destinationPath << " does not exist any longer, would be removed from toc\r\n";
     }
     else
     {
@@ -2226,8 +2230,6 @@ void backupExecuter::verifyBackup(QString const &startPath)
               else
                 m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L)+" MB scanned)...");
               //m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L)+" MB scanned)...");
-
-              qApp->processEvents();
               lastmsecs = msecs;
             }
 
@@ -2319,8 +2321,6 @@ void backupExecuter::verifyBackup(QString const &startPath)
                       m_engine->setProgressText("verifying file " + QString::number(scanned) + " of " + QString::number(crcSummary.size()) + " in storage ("+ QString::number(verifiedK/1024L)+" MB scanned)...");
                       m_engine->setProgressMaximum(0);
                     }
-
-                    qApp->processEvents();
                     lastmsecs = msecs;
                   }
 
@@ -2336,7 +2336,7 @@ void backupExecuter::verifyBackup(QString const &startPath)
                     errFound = true;
                 }
                 crcSummary[verifyFile].crc = crclist;
-                crcSummary[verifyFile].lastScan = startTime.toSecsSinceEpoch();
+                crcSummary[verifyFile].lastScan = startTime.toMSecsSinceEpoch();
                 checksumsChanged = true;
 
                 QString tocpath = fi.absolutePath().mid(m_config.m_sDst.length()+1);
