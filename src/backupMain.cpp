@@ -1,3 +1,4 @@
+#include <qaction.h>
 #include <qapplication.h>
 #include <qsettings.h>
 #include <qlistwidget.h>
@@ -122,6 +123,8 @@ void do_log( QString const &txt )
   log->close();
 }
 
+QString getConfigurationsPath(QString const &organization, QString const &application);
+
 backupMain::backupMain(bool runsAsAdmin, QString const &configfile)
 : m_selected(0)
 , m_immediateShutdown(false)
@@ -129,7 +132,8 @@ backupMain::backupMain(bool runsAsAdmin, QString const &configfile)
 {
   QSettings settings;
   QString path = settings.value("ConfigFile","").toString();
-  if( path.isEmpty() ) settings.setValue("ConfigFile",path = "./backup.cfg");
+  if( path.isEmpty() )
+    settings.setValue("ConfigFile",path = getConfigurationsPath("config-valentins-qtsolutions","backup")+"/backup.cfg");
 
   QFile config;
   QString line;
@@ -291,7 +295,7 @@ void backupMain::saveConfig(QString const &configFile)
   if( configFile.isEmpty() )
   {
     QSettings settings;
-    QString path = settings.value("ConfigFile","./backup.cfg").toString();
+    QString path = settings.value("ConfigFile","").toString();
     config.setFileName(path);
   }
   else
