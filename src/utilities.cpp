@@ -110,7 +110,6 @@ void showHelp(QObject *parent,QString const &ressourcePath,QString const &helpfi
       if( QFile::exists(destfile) && !QFile::remove(destfile) )
           error("could not delete help file "+destfile+". Probably you will see an older version.");
       QFile::copy(ressourcePath,destfile);
-      QFile::setPermissions(destfile, QFile::WriteOwner|QFile::WriteUser|QFile::WriteGroup|QFile::WriteOther);
     }
 
     QString webbrowser;

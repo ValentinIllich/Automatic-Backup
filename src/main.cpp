@@ -22,6 +22,8 @@ int main( int argc, char **argv )
   QApplication app(argc,argv);
   backupSplash object(0);
 
+  app.setStyle("WindowsVista");
+
   if( object.startup(argc,argv) )
   {
     if( object.keepRunning() )
