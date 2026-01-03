@@ -2,32 +2,32 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "Mac Debug CMAKE",
+            "label": "CMAKE Mac",
             "command": "cmake",
             "args": [
                 "-S",
                 ".",
                 "-B",
-                "~/Programme/backup_debug",
-                "-DCMAKE_PREFIX_PATH:PATH=~/Qt/6.4.3/macos",
-                "-DCMAKE_BUILD_TYPE=Debug",
+                "${userHome}/Programme/backup_${input:buildType}",
+                "-DCMAKE_PREFIX_PATH:PATH=${userHome}/Qt/6.9.3/llvm-mingw_64",
+                "-DCMAKE_BUILD_TYPE=${input:buildType}",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
             ],
             "problemMatcher": [
                 "$gcc"
             ],
             "group": {
-                "kind": "build",
+                "kind": "none",
                 "isDefault": true
-            },
+            }
         },
         {
             "type": "cppbuild",
-            "label": "Mac Debug Build",
+            "label": "Build",
             "command": "cmake",
             "args": [
                 "--build",
-                "~/Programme/backup_debug",
+                "${userHome}/Programme/backup_${input:buildType}",
                 "--target",
                 "all"
             ],
@@ -37,11 +37,11 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
-            },
+            }
         },
         {
             "type": "cppbuild",
-            "label": "Windows Debug CMAKE",
+            "label": "__CMAKE Win old",
             "command": "C:/Program Files/CMake/bin/cmake.exe",
             "args": [
                 "-S",
@@ -51,6 +51,7 @@
                 "-G",
                 "Ninja",
                 "-DCMAKE_PREFIX_PATH:PATH=C:/Qt/6.5.3/mingw_64",
+                "-DQt6_DIR:PATH=C:/Qt/6.5.3/mingw_64/lib/cmake/Qt6",
                 "-DCMAKE_C_COMPILER:FILEPATH=C:/Qt/Tools/mingw1310_64/bin/gcc.exe",
                 "-DCMAKE_CXX_COMPILER:FILEPATH=C:/Qt/Tools/mingw1310_64/bin/g++.exe",
                 "-DCMAKE_BUILD_TYPE=Debug",
@@ -60,79 +61,57 @@
                 "$gcc"
             ],
             "group": {
-                "kind": "build",
+                "kind": "none",
                 "isDefault": true
-            },
+            }
         },
         {
             "type": "cppbuild",
-            "label": "Windows Debug Build",
-            "command": "C:/Program Files/CMake/bin/cmake.exe",
-            "args": [
-                "--build",
-                "%USERPROFILE%/Programme/backup_debug",
-                "--target",
-                "all"
-            ],
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-        },
-        {
-            "type": "cppbuild",
-            "label": "Windows Release CMAKE",
+            "label": "CMAKE Win",
             "command": "C:/Program Files/CMake/bin/cmake.exe",
             "args": [
                 "-S",
                 ".",
                 "-B",
-                "%USERPROFILE%/Programme/backup_release",
+                "${userHome}/Programme/backup_${input:buildType}",
                 "-G",
                 "Ninja",
-                "-DCMAKE_PREFIX_PATH:PATH=C:/Qt/6.5.3/mingw_64",
-                "-DCMAKE_C_COMPILER:FILEPATH=C:/Qt/Tools/mingw1310_64/bin/gcc.exe",
-                "-DCMAKE_CXX_COMPILER:FILEPATH=C:/Qt/Tools/mingw1310_64/bin/g++.exe",
-                "-DCMAKE_BUILD_TYPE=Release"
+                "-DCMAKE_PREFIX_PATH:PATH=C:/Qt/6.9.3/llvm-mingw_64",
+                "-DQt6_DIR:PATH=C:/Qt/6.9.3/llvm-mingw_64/lib/cmake/Qt6",
+                "-DCMAKE_C_COMPILER:FILEPATH=C:/Qt/Tools/llvm-mingw1706_64/bin/gcc.exe",
+                "-DCMAKE_CXX_COMPILER:FILEPATH=C:/Qt/Tools/llvm-mingw1706_64/bin/g++.exe",
+                "-DCMAKE_BUILD_TYPE=${input:buildType}",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
             ],
             "problemMatcher": [
                 "$gcc"
             ],
             "group": {
-                "kind": "build",
+                "kind": "none",
                 "isDefault": true
-            },
-        },
-        {
-            "type": "cppbuild",
-            "label": "Windows Release Build",
-            "command": "C:/Program Files/CMake/bin/cmake.exe",
-            "args": [
-                "--build",
-                "%USERPROFILE%/Programme/backup_release",
-                "--target",
-                "all"
-            ],
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            }
         },
         {
             "type": "process",
             "label": "Windows Edit UI",
-            "command": "C:/Qt/6.5.3/mingw_64/bin/designer.exe",
+            "command": "C:/Qt/6.9.3/mingw_64/bin/designer.exe",
             "args": [
                 "${file}"
             ],
-            "detail": "Open ui file in Designer.",
+            "detail": "Open currently opened ui file in Designer.",
             "problemMatcher": []
+        },
+    ],
+    "inputs": [
+        {
+        "type": "pickString",
+        "id": "buildType",
+        "description": "What type of build?",
+        "options": [
+            "debug",
+            "release"
+        ],
+        "default": "debug"
         }
     ],
     "version": "2.0.0"
