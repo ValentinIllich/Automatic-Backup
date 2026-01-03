@@ -10,16 +10,26 @@
             "type": "lldb",
             //"type": "cppdbg",
             "request": "launch",
-            "program": "~/Programme/backup_debug/backup.app/Contents/MacOS/backup",
+            "program": "/Users/valentinillich//Programme/backup_debug/backup.app/Contents/MacOS/backup",
             "args": [],
-            //"stopAtEntry": false,
+            //"stopOnEntry": false,
             "cwd": "${workspaceFolder}",
-            //"environment": [],
-            //"externalConsole": false,
-            //"MIMode": "lldb",
+            //Settings -> Lldb › Launch: Init Commands: <command script import "~/Nextcloud/Dropbox-nextCloud/Qt6Renderer/python/lldb/register.py">
         },
         {
-            "name": "Windows Debug",
+            "name": "Windows Debug lldb",
+            "type": "lldb",
+            //"type": "cppdbg",
+            "request": "launch",
+            "program": "${env:USERPROFILE}/Programme/backup_debug/backup.exe",
+            "args": [],
+            //"stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "env": { "PATH": "C:/Qt/6.9.3/llvm-mingw_64/bin;C:/Qt/Tools/llvm-mingw1706_64/bin;${env:PATH}" }
+            //Settings -> Lldb › Launch: Init Commands: <command script import "C:/Users/Valen/Nextcloud/Dropbox-nextCloud/Qt6Renderer/python/lldb/register.py">
+        },
+        {
+            "name": "__Windows Debug gdb",
             "type": "cppdbg",
             "request": "launch",
             "program": "${env:USERPROFILE}/Programme/backup_debug/backup.exe",
@@ -33,6 +43,18 @@
                     "name": "PATH",
                     "value": "C:/Qt/6.5.3/mingw_64/bin;C:/Qt/Tools/mingw1310_64/bin;${env:PATH}"
                 }
+            ],
+            "logging": {
+                "trace": false,
+                "traceResponse": false,
+                "engineLogging": true
+            },
+            "setupCommands": [
+                { "text": "python sys.path.insert(1, 'C:/Users/Valen/Nextcloud/Dropbox-nextCloud/Qt6Renderer/python/gdb')"},
+                { "text": "python import qt6renderer"},
+                { "text": "python gdb.pretty_printers.append(qt6renderer.qt6_lookup)"},
+                { "text": "-enable-pretty-printing" },
+                
             ],
             "MIMode": "gdb",
             "miDebuggerPath": "C:/Qt/Tools/mingw1310_64/bin/gdb.exe"
