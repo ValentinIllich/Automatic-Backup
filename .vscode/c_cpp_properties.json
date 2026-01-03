@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "compileCommands": [
+                "~/Programme/backup_debug/compile_commands.json"
+            ]
+        },
+        {
+            "name": "Win32",
+            "compileCommands": [
+                "C:/Users/Valen/Programme/backup_debug/compile_commands.json"
+            ]
+        }
+    ],
+    "version": 4
+}
