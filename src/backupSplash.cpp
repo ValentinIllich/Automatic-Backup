@@ -69,13 +69,14 @@ protected:
     else
       updateText();
   }
-private:
+  private:
   void updateText()
   {
     if( m_allowAdmin )
       setText("Automatic Backup will start in "+QString::number(m_seconds)+" seconds.");
     else
       setText("Backup with Administrator Rights starts in "+QString::number(m_seconds)+" seconds.");
+      setDetailedText("You may select an operation. If you do not so, the automatic configred backups will be exeuted in " + QString::number(m_seconds) + " seconds.");
   }
 
   bool m_allowAdmin;
@@ -123,6 +124,7 @@ private:
   void updateText()
   {
     setText("Computer will shut\ndown in "+QString::number(m_seconds)+" seconds.");
+    setDetailedText("If yu do not quit the application now, the computer will be shut down in " + QString::number(m_seconds) + " seconds.");
   }
 
   int	m_seconds;
@@ -160,6 +162,7 @@ private:
   void updateText()
   {
     setText(m_template+"Automatic Backup will quit in "+QString::number(m_seconds)+" seconds.");
+    setDetailedText("If yu do not press OK, the program will quit in " + QString::number(m_seconds) + " seconds.");
   }
 
   int	m_seconds;
@@ -215,7 +218,9 @@ bool backupSplash::startup(int argc,char **argv)
   {
     startMessage msg(enableAdminButton);
     //interactive = false;
-    msg.exec();
+    //msg.exec();
+    msg.show();
+    qApp->exec();
     if( msg.isConfig() )
       interactive = true;
     if( msg.isHelp() )
@@ -359,7 +364,9 @@ void backupSplash::contextMenuEvent(QContextMenuEvent */*event*/)
   QAction *help = menu.addAction("Help...");
 
   QAction *result = menu.exec(QCursor::pos());
-  if( result==config )
+  if( result==NULL )
+    QMessageBox::warning(this,"info","menu was cancelled, no action performed.");
+  else if( result==config )
   {
     bool shutDown = false;
 
