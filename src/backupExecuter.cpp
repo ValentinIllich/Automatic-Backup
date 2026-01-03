@@ -75,20 +75,20 @@ protected:
   virtual void timerEvent ( QTimerEvent */* event*/ )
   {
     bool tryMultiple = false;
-    int deviceNo = 3;
+    int deviceNo = -1;
     do
     {
       if( m_path.length()>=2 )
       {
         if( m_path.at(1)==':' )
-          m_path[0] = QChar('A'+deviceNo);
+          m_path[0] = QChar('A'+ ++deviceNo);
 
         QDir dir(m_path);
         if( dir.exists() )
           accept();
 
         if( m_path.at(1)==':' )
-          tryMultiple = (deviceNo<10);
+          tryMultiple = (deviceNo<25);
       }
     } while(tryMultiple);
   }
