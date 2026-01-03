@@ -303,7 +303,7 @@ void cleanupDialog::operationFinishedEvent()
   m_engine->setProgressValue(0);
 
   QTreeWidgetItem *duplicatesBase = nullptr;
-  for( auto &it : qAsConst(m_hashMap) )
+  for( auto &it : std::as_const(m_hashMap) )
   {
     if( it.size()>1 )
     {
@@ -528,17 +528,25 @@ void cleanupDialog::scanRelativePath( QString const &path, dirEntry *entry, int 
       }
       /////////
 
-      dirEntry *newEntry = new dirEntry(entry,name);
-      newEntry->m_tocData = tocentry;
+      if(
+           !name.endsWith(".DS_Store")
+        && !name.endsWith("Thumbs.db")
+        && !backupDirStruct::isSummaryFile(name)
+      )
+      {
+        dirEntry *newEntry = new dirEntry(entry,name);
+        newEntry->m_tocData = tocentry;
 
-      entry->m_files.append(newEntry);
+        entry->m_files.append(newEntry);
 
-      QString fullPath = newEntry->absoluteFilePath();
-      if( !fullPath.contains("._") && currentCrc>0 )
-        m_hashMap[currentCrc].push_back(fullPath);
+        QString fullPath = newEntry->absoluteFilePath();
+        if( !fullPath.contains("._") && currentCrc>0 )
+          m_hashMap[currentCrc].push_back(fullPath);
 
+        if( tocentry.m_modify>lastModifiedFile ) lastModifiedFile = tocentry.m_modify;
+      }
+      
       fileSizes += tocentry.m_size;
-      if( tocentry.m_modify>lastModifiedFile ) lastModifiedFile = tocentry.m_modify;
     }
   }
 
@@ -640,7 +648,7 @@ void cleanupDialog::populateTree( dirEntry *entry, QTreeWidgetItem *item, int &d
     if( !selections.isEmpty() )
     {
       fileSelected = false;
-      for( auto & selection : qAsConst(selections) )
+      for( auto & selection : std::as_const(selections) )
       {
         if( (*it2)->absoluteFilePath().contains(selection) )
           fileSelected = true;
